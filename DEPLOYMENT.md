@@ -198,6 +198,25 @@ docker compose up -d
 
 ## Troubleshooting
 
+### Manual Backup/Restore (Repo scripts)
+
+- Manual backup:
+    ```bash
+    cd ~/referral-_hlp
+    bash scripts/db_backup.sh "$HOME/db_backups"
+    ```
+    Result: `~/db_backups/referral_db_YYYY-MM-DD_HH-MM-SS.sql`
+
+- Restore:
+    ```bash
+    sudo docker compose cp /path/to/referral_db.sql db:/tmp/referral_db.sql
+    sudo docker compose exec db psql -U hlp_user -d referral_db -f /tmp/referral_db.sql
+    ```
+
+Notes:
+- Never run `docker compose down -v` in production; it removes volumes (data).
+- Ensure DB volume remains `postgres_data:/var/lib/postgresql/data` in `docker-compose.yml`.
+
 **View logs:**
 ```bash
 docker compose logs -f backend
