@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
 import openpyxl
+import bcrypt
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://user:password@localhost/referral_db")
 engine = create_engine(DATABASE_URL)
@@ -22,8 +23,14 @@ def health():
     return {"status": "ok"}
 
 security = HTTPBearer()
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret")
+JWT_SECRET = os.getenv("SECRET_KEY", os.getenv("JWT_SECRET", "dev-secret"))
 JWT_EXP_MINUTES = int(os.getenv("JWT_EXP_MINUTES", "120"))
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 def create_token(payload: dict):
     to_encode = payload.copy()
@@ -169,3 +176,53 @@ def issue_token(payload: dict):
     # payload can include {"sub": "n8n", "role": "system"}
     token = create_token(payload)
     return {"token": token}
+
+# Registration endpoint (no auth required - first user setup)
+@app.post("/auth/register")
+def register(payload: dict, db: Session = Depends(get_db)):
+    username = payload.get("username")
+    email = payload.get("email")
+    password = payload.get("password")
+    role = payload.get("role", "user")
+    name = payload.get("name", username)
+    
+    if not username or not email or not password:
+        raise HTTPException(status_code=400, detail="username, email, and password required")
+    
+    # Check if user exists
+    existing = db.query(User).filter((User.username == username) | (User.email == email)).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Username or email already exists")
+    
+    # Create user
+    user = User(
+        username=username,
+        email=email,
+        password_hash=hash_password(password),
+        role=role,
+        name=name,
+        ability=payload.get("ability")
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Return token
+    token = create_token({"sub": user.username, "user_id": user.id, "role": user.role})
+    return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role}}
+
+# Login endpoint
+@app.post("/auth/login")
+def login(payload: dict, db: Session = Depends(get_db)):
+    username = payload.get("username")
+    password = payload.get("password")
+    
+    if not username or not password:
+        raise HTTPException(status_code=400, detail="username and password required")
+    
+    user = db.query(User).filter(User.username == username).first()
+    if not user or not user.password_hash or not verify_password(password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    token = create_token({"sub": user.username, "user_id": user.id, "role": user.role})
+    return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role}}

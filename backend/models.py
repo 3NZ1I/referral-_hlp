@@ -10,6 +10,12 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     ability = Column(String, nullable=True)
+    # Authentication fields
+    username = Column(String, unique=True, nullable=True, index=True)
+    email = Column(String, unique=True, nullable=True, index=True)
+    password_hash = Column(String, nullable=True)
+    role = Column(String, default="user")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
     cases = relationship("Case", back_populates="assigned_to")
 
 class Case(Base):
