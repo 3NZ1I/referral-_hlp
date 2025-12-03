@@ -118,12 +118,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('authToken');
-  };
-
   const addUser = async (userData) => {
     try {
       const response = await request('/auth/register', {

@@ -10,6 +10,7 @@ import * as XLSX from 'xlsx';
 import { message } from 'antd';
 import { formSections, caseFieldMapping } from '../data/formMetadata';
 import { useAuth } from './AuthContext';
+import { validateXlsxFile } from '../utils/xlsxGuard';
 
 // ========================================================================
 // ARCHIVED CODE - OLD NORMALIZATION APPROACH (kept for reference)
@@ -490,6 +491,15 @@ export const CasesProvider = ({ children }) => {
   }, []);
 
   const importDataset = useCallback((file) => new Promise((resolve, reject) => {
+    // Validate file before processing
+    try {
+      validateXlsxFile(file);
+    } catch (err) {
+      message.error(`File validation failed: ${err.message}`);
+      reject(err);
+      return;
+    }
+    
     const existingCaseNumbers = new Set((cases || []).map((entry) => normalizeCaseNumberValue(entry.caseNumber)).filter(Boolean));
     const reader = new FileReader();
     reader.onload = (event) => {
