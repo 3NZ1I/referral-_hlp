@@ -16,6 +16,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = FastAPI()
 
+# Lightweight health endpoint for readiness checks
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 security = HTTPBearer()
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret")
 JWT_EXP_MINUTES = int(os.getenv("JWT_EXP_MINUTES", "120"))
