@@ -2,8 +2,8 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-# Use npm ci for faster, reproducible builds
-RUN npm ci
+# Use npm ci with --include=dev to ensure devDependencies are installed
+RUN npm ci --include=dev
 COPY . ./
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
