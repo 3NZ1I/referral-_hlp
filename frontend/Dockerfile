@@ -1,7 +1,8 @@
 # Production Dockerfile for React frontend
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY package.json ./
+# Regenerate package-lock.json with correct dependencies
 RUN npm install
 COPY . ./
 ARG VITE_API_URL
