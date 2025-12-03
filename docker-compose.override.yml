@@ -1,0 +1,6 @@
+services:
+  backend:
+    image: referral-hlp-backend:latest
+    
+  frontend:
+    image: referral-hlp-frontend:latest
