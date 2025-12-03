@@ -8,11 +8,9 @@ COPY . ./
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 ENV NODE_OPTIONS=--max-old-space-size=2048
-# Debug: list what's actually in node_modules/.bin
-RUN ls -la ./node_modules/.bin/ || echo "No .bin directory"
-RUN find ./node_modules -name "*vite*" -o -name "*rolldown*" | head -20
-# Run vite build with PATH set to include node_modules/.bin
-RUN PATH="$PATH:./node_modules/.bin" npm run build
+# Add node_modules/.bin to PATH and run build
+ENV PATH="/app/node_modules/.bin:${PATH}"
+RUN vite build --logLevel info
 
 FROM nginx:1.27-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
