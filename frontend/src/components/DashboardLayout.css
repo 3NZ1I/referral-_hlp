@@ -1,0 +1,351 @@
+.dashboard-shell {
+  min-height: 100vh;
+  background: #f5f2ed;
+}
+
+body.dark-mode .dashboard-shell {
+  background: #0a0a0a;
+}
+
+.dashboard-sider {
+  background: #f8d8ba !important;
+  padding: 32px 24px;
+  border-right: 1px solid #f5c9a6;
+}
+
+body.dark-mode .dashboard-sider {
+  background: #1a1a1a !important;
+  border-right: 1px solid #2a2a2a;
+}
+
+.sider-brand {
+  margin-bottom: 24px;
+  margin-top: -8px;
+}
+
+.brand-logo {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  margin-bottom: 16px;
+  display: block;
+}
+
+body.dark-mode .brand-logo {
+  filter: invert(1) brightness(1.2);
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #5a3e2b;
+  margin-bottom: 4px;
+}
+
+body.dark-mode .brand-title {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.brand-caption {
+  color: #7c5d47;
+  margin: 0;
+  font-size: 14px;
+}
+
+body.dark-mode .brand-caption {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sider-section {
+  margin-bottom: 32px;
+}
+
+.section-label {
+  color: #7c5d47;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 12px;
+}
+
+body.dark-mode .section-label {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.section-link {
+  margin: 4px 0;
+  color: #5a3e2b;
+  font-weight: 500;
+}
+
+body.dark-mode .section-link {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.sider-section.muted .section-link {
+  color: #7c7c7c;
+}
+
+body.dark-mode .sider-section.muted .section-link {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Theme toggle and user info dark mode */
+body.dark-mode .theme-icon {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body.dark-mode .user-icon {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body.dark-mode .user-name {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.user-role {
+  color: #7c5d47;
+}
+
+body.dark-mode .user-role {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.dashboard-sider .ant-menu {
+  background: transparent;
+  border-inline-end: none !important;
+}
+
+.dashboard-sider .ant-menu-item {
+  margin: 4px 0;
+  border-radius: 8px;
+  font-size: 15px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-sider .ant-menu-item-selected {
+  background: #f1ae89 !important;
+  color: #5a3e2b !important;
+}
+
+body.dark-mode .dashboard-sider .ant-menu-item {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+body.dark-mode .dashboard-sider .ant-menu-item-selected {
+  background: #2a2a2a !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.dashboard-main {
+  background: #f5f2ed;
+}
+
+body.dark-mode .dashboard-main {
+  background: #0a0a0a;
+}
+
+.dashboard-header {
+  background: #f5f2ed !important;
+  padding: 24px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-left {
+  font-size: 14px;
+  color: #9f8f80;
+}
+
+.crumb {
+  margin-right: 8px;
+}
+
+.crumb.current {
+  color: #1f1f1f;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.ghost-btn,
+.primary-btn {
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ghost-btn {
+  background: #fff;
+  border-color: #e2dfda;
+}
+
+body.dark-mode .ghost-btn {
+  background: #1a2332;
+  border-color: #2a3a4f;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+body.dark-mode .ghost-btn:hover:not(:disabled) {
+  background: #243447;
+  border-color: #3a4a5f;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+body.dark-mode .ghost-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary-btn {
+  background: #1f1f1f;
+  color: #fff;
+}
+
+body.dark-mode .primary-btn {
+  background: #1e3a5f;
+  border-color: #1e3a5f;
+  color: #fff;
+}
+
+body.dark-mode .primary-btn:hover {
+  background: #2a4d7c;
+  border-color: #2a4d7c;
+}
+
+.dashboard-content {
+  padding: 24px 32px 32px;
+}
+
+.card-panel .ant-table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.card-panel .ant-table-thead > tr > th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+/* Mobile and Tablet Responsive Styles */
+@media screen and (max-width: 1024px) {
+  .dashboard-shell {
+    flex-direction: row;
+  }
+
+  .dashboard-sider {
+    width: 250px !important;
+    max-width: 250px !important;
+    min-width: 200px !important;
+    flex: 0 0 250px !important;
+    padding: 16px;
+  }
+
+  .sider-brand {
+    margin-bottom: 16px;
+  }
+
+  .brand-title {
+    font-size: 16px;
+  }
+
+  .brand-caption {
+    font-size: 13px;
+  }
+
+  .sider-section {
+    margin-bottom: 16px;
+  }
+
+  .dashboard-sider .ant-menu {
+    display: block;
+  }
+
+  .dashboard-sider .ant-menu-item {
+    height: 40px;
+    font-size: 14px;
+    margin: 4px 0;
+  }
+
+  .dashboard-header {
+    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-left {
+    font-size: 13px;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .dashboard-content {
+    padding: 0 16px 16px;
+  }
+
+  .card-panel {
+    padding: 16px;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .dashboard-sider {
+    width: 180px !important;
+    max-width: 180px !important;
+    min-width: 180px !important;
+    flex: 0 0 180px !important;
+    padding: 12px 8px;
+  }
+
+  .brand-title {
+    font-size: 14px;
+  }
+
+  .brand-caption {
+    font-size: 12px;
+  }
+
+  .dashboard-sider .ant-menu-item {
+    font-size: 13px;
+    height: 36px;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .dashboard-sider .ant-menu-item .anticon {
+    font-size: 14px;
+    min-width: 14px;
+  }
+
+  .dashboard-header {
+    padding: 12px;
+  }
+
+  .dashboard-content {
+    padding: 0 12px 12px;
+  }
+
+  .card-panel {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .ghost-btn,
+  .primary-btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}

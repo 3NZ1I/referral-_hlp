@@ -1,0 +1,302 @@
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-card: #ffffff;
+  --text-primary: rgba(0, 0, 0, 0.88);
+  --text-secondary: rgba(0, 0, 0, 0.65);
+  --border-color: #e8e8e8;
+  --shadow-color: rgba(15, 15, 15, 0.06);
+}
+
+body.dark-mode {
+  --bg-primary: #141414;
+  --bg-secondary: #1f1f1f;
+  --bg-card: #1f1f1f;
+  --text-primary: rgba(255, 255, 255, 0.85);
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --border-color: #424242;
+  --shadow-color: rgba(0, 0, 0, 0.45);
+  --dashboard-bg: #0a0a0a;
+  --sidebar-bg: #1a1a1a;
+  --sidebar-selected: #2a2a2a;
+  --button-bg: #1e3a5f;
+  --button-hover: #2a4d7c;
+  --table-header: #1a2332;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+#root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.card-panel {
+  background: var(--bg-card);
+  border-radius: 16px;
+  box-shadow: 0 6px 24px var(--shadow-color);
+  padding: 24px;
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  width: 100%;
+  align-items: center;
+}
+
+.filters-bar .ant-btn {
+  border-radius: 999px;
+  border-color: #e8e8e8;
+}
+
+.table-wrapper {
+  margin-top: 24px;
+}
+
+.roster-table__wrapper {
+  margin-top: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+/* Dark mode button styles */
+body.dark-mode .ant-btn-primary {
+  background: #1e3a5f;
+  border-color: #1e3a5f;
+}
+
+body.dark-mode .ant-btn-primary:hover {
+  background: #2a4d7c;
+  border-color: #2a4d7c;
+}
+
+body.dark-mode .ant-btn-primary:focus,
+body.dark-mode .ant-btn-primary:active {
+  background: #2a4d7c;
+  border-color: #2a4d7c;
+}
+
+body.dark-mode .ant-btn-default {
+  background: #1a2332;
+  border-color: #2a3a4f;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+body.dark-mode .ant-btn-default:hover {
+  background: #243447;
+  border-color: #3a4a5f;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+body.dark-mode .ant-btn-default:focus,
+body.dark-mode .ant-btn-default:active {
+  background: #243447;
+  border-color: #3a4a5f;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Dark mode table styles */
+body.dark-mode .ant-table-thead > tr > th {
+  background: #1a2332 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-color: #2a3a4f !important;
+}
+
+body.dark-mode .ant-table {
+  background: #1f1f1f !important;
+}
+
+body.dark-mode .ant-table-tbody > tr > td {
+  background: #1f1f1f !important;
+  border-color: #2a2a2a !important;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+body.dark-mode .ant-table-tbody > tr:hover > td {
+  background: #252525 !important;
+}
+
+.roster-table__scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.roster-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.roster-table thead tr:first-child th {
+  background: #f5f6fa;
+  border-bottom: 1px solid #dcdfe6;
+  font-weight: 600;
+}
+
+.roster-table__instruction {
+  text-align: center;
+  padding: 14px;
+  font-size: 15px;
+  letter-spacing: 0.3px;
+  color: #2f3542;
+}
+
+.roster-table__header-ar {
+  font-weight: 600;
+  display: block;
+  color: #2f3542;
+}
+
+.roster-table__header-en {
+  font-size: 12px;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.roster-table th,
+.roster-table td {
+  border: 1px solid #dfe4ea;
+  padding: 12px 14px;
+  vertical-align: middle;
+}
+
+.roster-table tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+.roster-table__slot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.roster-table__slot-number {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2d3436;
+}
+
+.roster-table__slot-text {
+  font-size: 12px;
+  color: #95a5a6;
+  text-transform: uppercase;
+}
+
+.roster-table__slot-text-ar {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2f3542;
+  text-transform: none;
+}
+
+.roster-table__empty {
+  padding: 32px;
+  text-align: center;
+  background: repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.02),
+      rgba(0, 0, 0, 0.02) 10px,
+      rgba(0, 0, 0, 0.04) 10px,
+      rgba(0, 0, 0, 0.04) 20px
+    );
+}
+
+/* Mobile and Tablet Responsive Styles */
+@media screen and (max-width: 1024px) {
+  .card-panel {
+    padding: 16px;
+  }
+
+  .filters-bar {
+    gap: 8px;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .metadata-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .roster-table th,
+  .roster-table td {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .roster-table__instruction {
+    font-size: 14px;
+    padding: 10px;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .card-panel {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .filters-bar {
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .filters-bar .ant-btn {
+    font-size: 13px;
+    padding: 4px 12px;
+    height: auto;
+  }
+
+  .table-wrapper {
+    margin-top: 16px;
+  }
+
+  .metadata-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .roster-table th,
+  .roster-table td {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .roster-table__slot-number {
+    font-size: 16px;
+  }
+
+  .roster-table__slot-text {
+    font-size: 11px;
+  }
+
+  .roster-table__slot-text-ar {
+    font-size: 12px;
+  }
+
+  .roster-table__header-en {
+    font-size: 11px;
+  }
+
+  .roster-table__instruction {
+    font-size: 13px;
+    padding: 8px;
+  }
+
+  .roster-table__empty {
+    padding: 20px;
+  }
+}

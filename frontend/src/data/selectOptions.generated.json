@@ -1,0 +1,1996 @@
+{
+  "mn9fp15": [
+    {
+      "value": "Darayya",
+      "label": {
+        "en": "Darayya",
+        "ar": "داريا"
+      }
+    },
+    {
+      "value": "Jobar",
+      "label": {
+        "en": "Jobar",
+        "ar": "جوبر"
+      }
+    }
+  ],
+  "lk47q22": [
+    {
+      "value": "female",
+      "label": {
+        "en": "Female",
+        "ar": "انثى"
+      }
+    },
+    {
+      "value": "male",
+      "label": {
+        "en": "Male",
+        "ar": "ذكر"
+      }
+    }
+  ],
+  "bs1xd91": [
+    {
+      "value": "yes_mary",
+      "label": {
+        "en": "Married",
+        "ar": "متزوج/ـة"
+      }
+    },
+    {
+      "value": "not_mary",
+      "label": {
+        "en": "Single",
+        "ar": "اعزب / عزباء"
+      }
+    },
+    {
+      "value": "widow",
+      "label": {
+        "en": "Widow/Widower",
+        "ar": "ارمل/ـة"
+      }
+    },
+    {
+      "value": "divorced",
+      "label": {
+        "en": "Divorced",
+        "ar": "مطلق/ـة"
+      }
+    },
+    {
+      "value": "other_mary",
+      "label": {
+        "en": "Other (please write it in the following field)",
+        "ar": "غير ذلك ( يرجى كتابته في الحقل التالي)"
+      }
+    }
+  ],
+  "mr3vz82": [
+    {
+      "value": "yesthereid",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "noidfound",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    }
+  ],
+  "cy2hy89": [
+    {
+      "value": "id_y",
+      "label": {
+        "en": "National identity card",
+        "ar": "بطاقة هوية وطنية"
+      }
+    },
+    {
+      "value": "fam_y",
+      "label": {
+        "en": "Family card",
+        "ar": "بطاقة العائلة (دفتر العائلة)"
+      }
+    },
+    {
+      "value": "passaport",
+      "label": {
+        "en": "Passport",
+        "ar": "جواز سفر"
+      }
+    }
+  ],
+  "ky0wg79": [
+    {
+      "value": "yescangetdoc",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "nocantgetdoc",
+      "label": {
+        "en": "No (please write the reason in the following field)",
+        "ar": "لا (يرجى كتابة السبب في الحقل التالي)"
+      }
+    }
+  ],
+  "od1fr98": [
+    {
+      "value": "syrdocs",
+      "label": {
+        "en": "Syrian civil documents",
+        "ar": "وثائق مدنية سورية"
+      }
+    },
+    {
+      "value": "palstdocs",
+      "label": {
+        "en": "Arab/Palestinian",
+        "ar": "عربي/ـة فلسطيني/ـة"
+      }
+    },
+    {
+      "value": "syrwife",
+      "label": {
+        "en": "Spouse of a Syrian citizen",
+        "ar": "زوج/ـة مواطن/ـة سوري/ـة"
+      }
+    },
+    {
+      "value": "resedindoc",
+      "label": {
+        "en": "Residence permit (citizens of other countries)",
+        "ar": "بطاقة إقامة (مواطنين دول اخرى)"
+      }
+    },
+    {
+      "value": "nodocs",
+      "label": {
+        "en": "Unregistered",
+        "ar": "مكتوم/ـة القيد"
+      }
+    },
+    {
+      "value": "refusdocs",
+      "label": {
+        "en": "Refusal to disclose",
+        "ar": "رفض الإفصاح"
+      }
+    },
+    {
+      "value": "otherdocs",
+      "label": {
+        "en": "Other (please write it in the following field)",
+        "ar": "غير ذلك ( يرجى كتابته في الحقل التالي)"
+      }
+    }
+  ],
+  "zf3vj70": [
+    {
+      "value": "can",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "cannt",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    }
+  ],
+  "df58u63": [
+    {
+      "value": "yes_have",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "no_havent",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    }
+  ],
+  "ez7lg07": [
+    {
+      "value": "partner_relationson",
+      "label": {
+        "en": "Son/Daughter",
+        "ar": "ابن/ـة"
+      }
+    },
+    {
+      "value": "partner_relationsup",
+      "label": {
+        "en": "husband/wife",
+        "ar": "زوح/ـة"
+      }
+    },
+    {
+      "value": "partner_relationfath",
+      "label": {
+        "en": "Father/Mother",
+        "ar": "أب / أم"
+      }
+    },
+    {
+      "value": "partner_relationsis",
+      "label": {
+        "en": "Brother/Sister",
+        "ar": "أخ / أخت"
+      }
+    }
+  ],
+  "mv38y92": [
+    {
+      "value": "partner_govno",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    },
+    {
+      "value": "partner_govyes",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    }
+  ],
+  "lh2wt82": [
+    {
+      "value": "partner_nationalityfor",
+      "label": {
+        "en": "Foreign",
+        "ar": "اجنبي"
+      }
+    },
+    {
+      "value": "partner_nationalitysy",
+      "label": {
+        "en": "Syrian",
+        "ar": "سوري"
+      }
+    }
+  ],
+  "er1lf19": [
+    {
+      "value": "fullyreq",
+      "label": {
+        "en": "Full ownership",
+        "ar": "ملكية كاملة"
+      }
+    },
+    {
+      "value": "sharedreq",
+      "label": {
+        "en": "Joint ownership with other people (specify the number of shares in the following question)",
+        "ar": "ملكية مشتركة مع اشخاص اخرين (قم بتحديد عدد الأسهم في السؤال التالي)"
+      }
+    },
+    {
+      "value": "partreq",
+      "label": {
+        "en": "Usufruct rights or other real estate rights (lease, loan, hosting)",
+        "ar": "حق الانتفاع او حقوق عقارية اخرى (إيجار, إعارة, إستضافة)"
+      }
+    },
+    {
+      "value": "mirath",
+      "label": {
+        "en": "Heirs",
+        "ar": "ورثة"
+      }
+    }
+  ],
+  "as4ju51": [
+    {
+      "value": "owner1",
+      "label": {
+        "en": "Property owner",
+        "ar": "مالك العقار"
+      }
+    },
+    {
+      "value": "heir",
+      "label": {
+        "en": "Heir (write it in the following field)",
+        "ar": "وريث (قم بكتابتها في الحقل التالي)"
+      }
+    },
+    {
+      "value": "otherown",
+      "label": {
+        "en": "Others (write them in the following field)",
+        "ar": "اخرون (قم بكتابتها في الحقل التالي)"
+      }
+    }
+  ],
+  "ru8lw86": [
+    {
+      "value": "insy",
+      "label": {
+        "en": "Inside Syria",
+        "ar": "داخل سوريا"
+      }
+    },
+    {
+      "value": "nearsy",
+      "label": {
+        "en": "Neighboring countries",
+        "ar": "دول الجوار"
+      }
+    },
+    {
+      "value": "othercount",
+      "label": {
+        "en": "Other countries",
+        "ar": "دول اخرى"
+      }
+    },
+    {
+      "value": "own_loc_dead",
+      "label": {
+        "en": "Deceased",
+        "ar": "متوفي/ـة"
+      }
+    }
+  ],
+  "ex3yl68": [
+    {
+      "value": "dam1",
+      "label": {
+        "en": "Damascus",
+        "ar": "دمشق"
+      }
+    },
+    {
+      "value": "alepo1",
+      "label": {
+        "en": "Aleppo",
+        "ar": "حلب"
+      }
+    },
+    {
+      "value": "hama1",
+      "label": {
+        "en": "Hama",
+        "ar": "حماه"
+      }
+    },
+    {
+      "value": "edlib1",
+      "label": {
+        "en": "Idlib",
+        "ar": "ادلب"
+      }
+    },
+    {
+      "value": "raqa1",
+      "label": {
+        "en": "Raqqa",
+        "ar": "الرقة"
+      }
+    },
+    {
+      "value": "tartus1",
+      "label": {
+        "en": "Tartous",
+        "ar": "طرطوس"
+      }
+    },
+    {
+      "value": "lazikia1",
+      "label": {
+        "en": "Latakia",
+        "ar": "اللاذقية"
+      }
+    },
+    {
+      "value": "homs1",
+      "label": {
+        "en": "Homs",
+        "ar": "حمص"
+      }
+    },
+    {
+      "value": "daraa1",
+      "label": {
+        "en": "Daraa",
+        "ar": "درعا"
+      }
+    },
+    {
+      "value": "rawdam1",
+      "label": {
+        "en": "Damascus countryside",
+        "ar": "ريف دمشف"
+      }
+    },
+    {
+      "value": "derizor1",
+      "label": {
+        "en": "Deir ez-Zor",
+        "ar": "دير الزور"
+      }
+    },
+    {
+      "value": "swaida1",
+      "label": {
+        "en": "As-Suwayda",
+        "ar": "السويداء"
+      }
+    },
+    {
+      "value": "qunaitra1",
+      "label": {
+        "en": "Quneitra",
+        "ar": "القنيطرة"
+      }
+    },
+    {
+      "value": "hasaka1",
+      "label": {
+        "en": "Hasakah",
+        "ar": "الحسكة"
+      }
+    },
+    {
+      "value": "thereisno1",
+      "label": {
+        "en": "nothing",
+        "ar": "لايوجد"
+      }
+    }
+  ],
+  "iz75n46": [
+    {
+      "value": "lebanon",
+      "label": {
+        "en": "Lebanon",
+        "ar": "لبنان"
+      }
+    },
+    {
+      "value": "iraq",
+      "label": {
+        "en": "Iraq",
+        "ar": "العراق"
+      }
+    },
+    {
+      "value": "turkey",
+      "label": {
+        "en": "Türkiye",
+        "ar": "تركيا"
+      }
+    },
+    {
+      "value": "jordan",
+      "label": {
+        "en": "Jordan",
+        "ar": "الأردن"
+      }
+    },
+    {
+      "value": "thereisno",
+      "label": {
+        "en": "Not applicaple",
+        "ar": "لايوجد"
+      }
+    }
+  ],
+  "gz1pn63": [
+    {
+      "value": "eu_countries1",
+      "label": {
+        "en": "Other countries in the European Union (mention the country in the following field)",
+        "ar": "دول أخرى في الاتحاد الأوروبي (قم بذكر الدولة في الحقل التالي)"
+      }
+    },
+    {
+      "value": "canada1",
+      "label": {
+        "en": "Canada",
+        "ar": "كندا"
+      }
+    },
+    {
+      "value": "USA1",
+      "label": {
+        "en": "USA",
+        "ar": "الولايات المتحدة الأمريكية"
+      }
+    },
+    {
+      "value": "latin_countries1",
+      "label": {
+        "en": "South America (mention the country in the following field)",
+        "ar": "أمريكا الجنوبية (قم بذكر الدولة في الحقل التالي)"
+      }
+    },
+    {
+      "value": "other_countries1",
+      "label": {
+        "en": "Other countries (mention the country in the following field)",
+        "ar": "دول أخرى (قم بذكر الدولة في الحقل التالي)"
+      }
+    },
+    {
+      "value": "Germany1",
+      "label": {
+        "en": "Germany (mention the city in the following field)",
+        "ar": "ألمانيا (قم بذكر المدينة في الحقل التالي)"
+      }
+    },
+    {
+      "value": "nonapplicable1",
+      "label": {
+        "en": "Not applicaple",
+        "ar": "لايوجد"
+      }
+    }
+  ],
+  "wo5xx05": [
+    {
+      "value": "eu_countries",
+      "label": {
+        "en": "Other countries in the European Union (select the country in the following field)",
+        "ar": "دول أخرى في الاتحاد الأوروبي (قم بتحديد الدولة في الحقل التالي)"
+      }
+    },
+    {
+      "value": "canada",
+      "label": {
+        "en": "Canada",
+        "ar": "كندا"
+      }
+    },
+    {
+      "value": "USA",
+      "label": {
+        "en": "USA",
+        "ar": "الولايات المتحدة الأمريكية"
+      }
+    },
+    {
+      "value": "latin_countries",
+      "label": {
+        "en": "South America (select the country in the following field)",
+        "ar": "أمريكا الجنوبية (قم بتحديد الدولة في الحقل التالي)"
+      }
+    },
+    {
+      "value": "other_countries",
+      "label": {
+        "en": "Other countries (select the country in the following field)",
+        "ar": "دول أخرى (قم بتحديد الدولة في الحقل التالي)"
+      }
+    },
+    {
+      "value": "Germany",
+      "label": {
+        "en": "Germany (select the city in the following field)",
+        "ar": "ألمانيا (قم بتحديد المدينة في الحقل التالي)"
+      }
+    },
+    {
+      "value": "nonapplicable",
+      "label": {
+        "en": "Not applicaple",
+        "ar": "لايوجد"
+      }
+    }
+  ],
+  "bg6hr45": [
+    {
+      "value": "yesihave",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "noidont",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    }
+  ],
+  "mi56y46": [
+    {
+      "value": "yesican1",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "noicant2",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    }
+  ],
+  "gz2ba17": [
+    {
+      "value": "order1",
+      "label": {
+        "en": "Final referral decision",
+        "ar": "قرار الإحالة القطعية"
+      }
+    },
+    {
+      "value": "order2",
+      "label": {
+        "en": "Revocable agency",
+        "ar": "وكالة قابلة للعزل"
+      }
+    },
+    {
+      "value": "order3",
+      "label": {
+        "en": "Temporary restriction",
+        "ar": "قيد مؤقت"
+      }
+    },
+    {
+      "value": "order4",
+      "label": {
+        "en": "Building permit",
+        "ar": "رخصة بناء"
+      }
+    },
+    {
+      "value": "order5",
+      "label": {
+        "en": "Occupancy Statement",
+        "ar": "بيان إشغال"
+      }
+    },
+    {
+      "value": "order6",
+      "label": {
+        "en": "Temporary Registry Statement",
+        "ar": "بيان السجل المؤقت"
+      }
+    },
+    {
+      "value": "order7",
+      "label": {
+        "en": "State property / Agrarian reform",
+        "ar": "أملاك دولة / إصلاح زراعي"
+      }
+    },
+    {
+      "value": "order8",
+      "label": {
+        "en": "State property / lease or possession",
+        "ar": "أملاك دولة / عقد إيجار او وصع يد"
+      }
+    },
+    {
+      "value": "order9",
+      "label": {
+        "en": "Financial records",
+        "ar": "سجلات مالية"
+      }
+    },
+    {
+      "value": "order10",
+      "label": {
+        "en": "Water and electricity bills",
+        "ar": "فواتير الماء و الكهرباء"
+      }
+    },
+    {
+      "value": "order11",
+      "label": {
+        "en": "Statement from the Directorate of Endowments",
+        "ar": "بيان مديرية الأوقاف"
+      }
+    },
+    {
+      "value": "order12",
+      "label": {
+        "en": "Property registration statement - title deed",
+        "ar": "بيان قيد عقاري - سند ملكية"
+      }
+    },
+    {
+      "value": "order13",
+      "label": {
+        "en": "Membership statement (before receipt) and ownership/specialization statement in the housing cooperative society register",
+        "ar": "بيان عضوية (قبل الاستلام) وبيان ملكية / تخصص في سجل الجمعية التعاونية السكنية"
+      }
+    },
+    {
+      "value": "order14",
+      "label": {
+        "en": "Written evidence includes any document issued by state institutions that refers, even indirectly, to a connection with the property.",
+        "ar": "أدلة كتابية تتضمن أي وثيقة صادرة عن مؤسسات الدولة تشير ولو بشكل غير مباشر عن العلاقة بالعقار"
+      }
+    },
+    {
+      "value": "order15",
+      "label": {
+        "en": "Other evidence that points, albeit indirectly, to a connection with the drug (mention it in the following question)",
+        "ar": "أدلة اخرى تشير ولو بشكل غير مباشر عن العلاقة بالعقار (قم بذكرها في السؤال التالي)"
+      }
+    },
+    {
+      "value": "order16",
+      "label": {
+        "en": "Ownership statement from the Public Housing Corporation",
+        "ar": "بيان ملكية من المؤسسة العامة للإسكان"
+      }
+    },
+    {
+      "value": "order17",
+      "label": {
+        "en": "Ownership statement from the General Authority for Military Housing",
+        "ar": "بيان ملكية من المؤسسة العامة للإسكان العسكري"
+      }
+    },
+    {
+      "value": "order18",
+      "label": {
+        "en": "Sale contract",
+        "ar": "عقد بيع"
+      }
+    },
+    {
+      "value": "order19",
+      "label": {
+        "en": "Frog (store register)",
+        "ar": "فروغ (سجل متاجر)"
+      }
+    },
+    {
+      "value": "order20",
+      "label": {
+        "en": "lawsuit sign",
+        "ar": "إشارة دعوى"
+      }
+    },
+    {
+      "value": "order21",
+      "label": {
+        "en": "Survey statement",
+        "ar": "بيان مساحي"
+      }
+    },
+    {
+      "value": "order22",
+      "label": {
+        "en": "final court ruling",
+        "ar": "حكم قضائي مبرم"
+      }
+    },
+    {
+      "value": "order23",
+      "label": {
+        "en": "Irrevocable agency",
+        "ar": "وكالة غير قابلة للعزل"
+      }
+    },
+    {
+      "value": "order24",
+      "label": {
+        "en": "Report of identification and drafting",
+        "ar": "محضر تحديد و تحرير"
+      }
+    },
+    {
+      "value": "order25",
+      "label": {
+        "en": "judicial approval",
+        "ar": "إقرار قضائي"
+      }
+    },
+    {
+      "value": "order26",
+      "label": {
+        "en": "nothing",
+        "ar": "لايوجد"
+      }
+    }
+  ],
+  "ux0sa46": [
+    {
+      "value": "stillinplace",
+      "label": {
+        "en": "Undamaged",
+        "ar": "سليمة"
+      }
+    },
+    {
+      "value": "destroyed",
+      "label": {
+        "en": "Destructive",
+        "ar": "مدمرة"
+      }
+    },
+    {
+      "value": "recover1",
+      "label": {
+        "en": "Original records restored",
+        "ar": "تم استعادة السجلات الأصلية"
+      }
+    },
+    {
+      "value": "recover2",
+      "label": {
+        "en": "The lost and destroyed records have been recovered",
+        "ar": "تم استعادة السجلات المفقودة و المدمرة"
+      }
+    },
+    {
+      "value": "recoverother",
+      "label": {
+        "en": "Temporary records were created in a different region / Original record cancelled",
+        "ar": "تم إنشاء سجلات مؤقتة في منطة مختلفة / الغاء السجل الأصلي"
+      }
+    },
+    {
+      "value": "notsure2",
+      "label": {
+        "en": "I don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "ew31r54": [
+    {
+      "value": "fullyownership",
+      "label": {
+        "en": "Owned",
+        "ar": "ملك"
+      }
+    },
+    {
+      "value": "princeowner",
+      "label": {
+        "en": "Amiri",
+        "ar": "أميري"
+      }
+    },
+    {
+      "value": "mixedowner",
+      "label": {
+        "en": "Mixed Ownership",
+        "ar": "مختلط"
+      }
+    },
+    {
+      "value": "noideaowner",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "my1up58": [
+    {
+      "value": "inorgnize",
+      "label": {
+        "en": "Within the organizational chart",
+        "ar": "داخل المخطط التنظيمي"
+      }
+    },
+    {
+      "value": "outorg",
+      "label": {
+        "en": "Outside the organizational plan within cities",
+        "ar": "خارج المخطط التنظيمي داخل المدن"
+      }
+    },
+    {
+      "value": "____",
+      "label": {
+        "en": "outside the city limits",
+        "ar": "خارج محيط المدينة"
+      }
+    },
+    {
+      "value": "__",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "ep7oi90": [
+    {
+      "value": "legal_state_good",
+      "label": {
+        "en": "Limited and edited",
+        "ar": "محدود ومحرر"
+      }
+    },
+    {
+      "value": "legal_state_notyet",
+      "label": {
+        "en": "The work of identifying and editing the area has not yet begun.",
+        "ar": "لم تفتح أعمال التحديد والتحرير في المنطقة"
+      }
+    },
+    {
+      "value": "legal_state_pending",
+      "label": {
+        "en": "The demarcation and registration process was initiated, but ownership was not recorded in the registration minutes.",
+        "ar": "افتتحت أعمال التحديد والتحرير ولم تسجل الملكية في محضر التحرير"
+      }
+    },
+    {
+      "value": "legal_state_noidea",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "go1om03": [
+    {
+      "value": "legal_state_final",
+      "label": {
+        "en": "ultimate",
+        "ar": "نهائي"
+      }
+    },
+    {
+      "value": "legal_state_onhold",
+      "label": {
+        "en": "Non-final (there is an objection before the real estate judge)",
+        "ar": "غير نهائي (هناك اعتراض أمام القاضي العقاري)"
+      }
+    },
+    {
+      "value": "legal_state_noidea3",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "mm3yw48": [
+    {
+      "value": "legal_state_licensed",
+      "label": {
+        "en": "Licensed",
+        "ar": "مرخص"
+      }
+    },
+    {
+      "value": "legal_state_nolicensed",
+      "label": {
+        "en": "Unlicensed",
+        "ar": "غير مرخص"
+      }
+    },
+    {
+      "value": "legal_state_noidea4",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "nq3yk22": [
+    {
+      "value": "legal_state_listed",
+      "label": {
+        "en": "Sorted",
+        "ar": "مفروز"
+      }
+    },
+    {
+      "value": "legal_state_notlisted",
+      "label": {
+        "en": "mixed",
+        "ar": "مختلط"
+      }
+    },
+    {
+      "value": "legal_state_noidea5",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "uu6fs04": [
+    {
+      "value": "legal_state_agri",
+      "label": {
+        "en": "agricultural land",
+        "ar": "أرض زراعية"
+      }
+    },
+    {
+      "value": "legal_state_arsa",
+      "label": {
+        "en": "A plot of land prepared for construction",
+        "ar": "عرصة معدة للبناء"
+      }
+    },
+    {
+      "value": "legal_state_noidea6",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "yx2ho29": [
+    {
+      "value": "legal_state_privet",
+      "label": {
+        "en": "Private property",
+        "ar": "ملكية خاصة"
+      }
+    },
+    {
+      "value": "legal_state_gov",
+      "label": {
+        "en": "State property",
+        "ar": "أملاك دولة"
+      }
+    },
+    {
+      "value": "legal_state_other2",
+      "label": {
+        "en": "Otherwise",
+        "ar": "غير ذلك"
+      }
+    },
+    {
+      "value": "legal_state_noidea7",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "cb6pq34": [
+    {
+      "value": "legal_state_blocked",
+      "label": {
+        "en": "There is a precautionary lien on the property.",
+        "ar": "يوجد حجز احتياطي على الأملاك"
+      }
+    },
+    {
+      "value": "legal_state_blocked2",
+      "label": {
+        "en": "There is an execution lien on the property.",
+        "ar": "يوجد حجز تنفيذي على الأملاك"
+      }
+    },
+    {
+      "value": "legal_state_noaccess",
+      "label": {
+        "en": "Preventing action",
+        "ar": "منع تصرف"
+      }
+    },
+    {
+      "value": "legal_state_thereany",
+      "label": {
+        "en": "There is no objection",
+        "ar": "يوجد اي مانع"
+      }
+    },
+    {
+      "value": "legal_state_noidea8",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "ts54d14": [
+    {
+      "value": "legal_state_housing1",
+      "label": {
+        "en": "residential",
+        "ar": "سكني"
+      }
+    },
+    {
+      "value": "legal_state_industrial1",
+      "label": {
+        "en": "industrial",
+        "ar": "صناعي"
+      }
+    },
+    {
+      "value": "legal_state_prof1",
+      "label": {
+        "en": "professional",
+        "ar": "مهني"
+      }
+    },
+    {
+      "value": "legal_state_farming1",
+      "label": {
+        "en": "agricultural",
+        "ar": "زراعي"
+      }
+    },
+    {
+      "value": "legal_state_buisnis1",
+      "label": {
+        "en": "commercial",
+        "ar": "تجاري"
+      }
+    },
+    {
+      "value": "legal_state_noidea9",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "nb4hs50": [
+    {
+      "value": "legal_state_housing",
+      "label": {
+        "en": "residential",
+        "ar": "سكني"
+      }
+    },
+    {
+      "value": "legal_state_industrial",
+      "label": {
+        "en": "industrial",
+        "ar": "صناعي"
+      }
+    },
+    {
+      "value": "legal_state_prof",
+      "label": {
+        "en": "professional",
+        "ar": "مهني"
+      }
+    },
+    {
+      "value": "legal_state_farming",
+      "label": {
+        "en": "agricultural",
+        "ar": "زراعي"
+      }
+    },
+    {
+      "value": "legal_state_buisnis",
+      "label": {
+        "en": "commercial",
+        "ar": "تجاري"
+      }
+    },
+    {
+      "value": "legal_state_noidea10",
+      "label": {
+        "en": "don't know / Uninhabitable",
+        "ar": "لا أعلم / غير صالح للسكن"
+      }
+    }
+  ],
+  "rm5ky17": [
+    {
+      "value": "legal_state_privateland_1",
+      "label": {
+        "en": "Violation on private property",
+        "ar": "مخالفة على أملاك خاصة"
+      }
+    },
+    {
+      "value": "legal_state_govland",
+      "label": {
+        "en": "Violation of state property",
+        "ar": "مخالفة على أملاك دولة"
+      }
+    },
+    {
+      "value": "legal_state_missland",
+      "label": {
+        "en": "Violation of the rights of absentees",
+        "ar": "مخالفة على أملاك الغائبين"
+      }
+    },
+    {
+      "value": "legal_state_otherland",
+      "label": {
+        "en": "Other (please write it in the following field)",
+        "ar": "غير ذلك (الرجاء كتابتها في الحقل التالي)"
+      }
+    },
+    {
+      "value": "legal_state_noinfo",
+      "label": {
+        "en": "The person interviewed refused to disclose or comment.",
+        "ar": "رفض الشخص الذي تمت مقابلته الإفصاح او التصريح"
+      }
+    },
+    {
+      "value": "legal_state_noidea11",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "ns5ii34": [
+    {
+      "value": "officialdoc",
+      "label": {
+        "en": "document",
+        "ar": "وثيقة"
+      }
+    },
+    {
+      "value": "verbal",
+      "label": {
+        "en": "verbal",
+        "ar": "شفهي"
+      }
+    },
+    {
+      "value": "otherkinddoc",
+      "label": {
+        "en": "Other (please write it in the following field)",
+        "ar": "غير ذلك (الرجاء كتابتها في الحقل التالي)"
+      }
+    }
+  ],
+  "al0xn57": [
+    {
+      "value": "phisic_state_destroyed",
+      "label": {
+        "en": "Completely demolished",
+        "ar": "مهدم كلياَ"
+      }
+    },
+    {
+      "value": "phisic_state_partdestroyed",
+      "label": {
+        "en": "Partially demolished",
+        "ar": "مهدم جزئيا"
+      }
+    },
+    {
+      "value": "phisic_state_destroyedarea",
+      "label": {
+        "en": "Located in a devastated area covered by the rubble removal law",
+        "ar": "موجود في منطقة مدمرة شملها قانون ازالة الأنقاض"
+      }
+    },
+    {
+      "value": "phisic_state_destroyedarea2",
+      "label": {
+        "en": "Located in a devastated area covered by the debris removal law, the owner missed the period to benefit from the compensation stipulated by law.",
+        "ar": "موجود في منطقة مدمرة شملها قانون ازالة الأنقاض وفاتت المالك مدة الإستفادة من التعويضات التي يقرها القانون"
+      }
+    },
+    {
+      "value": "phisic_state_good",
+      "label": {
+        "en": "undamaged",
+        "ar": "سليم"
+      }
+    },
+    {
+      "value": "phisic_state_noidea1",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "lx7pn21": [
+    {
+      "value": "phisic_state_land",
+      "label": {
+        "en": "land",
+        "ar": "أرض"
+      }
+    },
+    {
+      "value": "phisic_state_apt",
+      "label": {
+        "en": "residential apartment in a two-story building (enter the number of apartments and floors in the following field)",
+        "ar": "شقة سكنية في بناء طابقي (قم بإدخال عدد الشقق والطوابق في الحقل التالي)"
+      }
+    },
+    {
+      "value": "phisic_state_isolated",
+      "label": {
+        "en": "One-story house",
+        "ar": "منزل طابق واحد"
+      }
+    },
+    {
+      "value": "phisic_state_combulding",
+      "label": {
+        "en": "Used building for commercial and industrial purposes",
+        "ar": "بناء مستعمل لأغراض تجارية وصناعية"
+      }
+    },
+    {
+      "value": "phisic_state_building",
+      "label": {
+        "en": "Complete building (enter the number of apartments and floors in the following field)",
+        "ar": "بناء كامل (قم بإدخال عدد الشقق والطوابق في الحقل التالي)"
+      }
+    },
+    {
+      "value": "phisic_state_villa",
+      "label": {
+        "en": "Detached Arabic house / villa",
+        "ar": "بيت عربي مستقل / فيلا"
+      }
+    },
+    {
+      "value": "phisic_state_store",
+      "label": {
+        "en": "Shop (Enter the number of shops in the following field)",
+        "ar": "محل تجاري (قم بإدخال عدد المحال في الحقل التالي)"
+      }
+    }
+  ],
+  "np5gc15": [
+    {
+      "value": "phisic_state_border",
+      "label": {
+        "en": "The property is located in a border area",
+        "ar": "يقع العقار في منطقة حدودية"
+      }
+    },
+    {
+      "value": "phisic_state_noborder",
+      "label": {
+        "en": "The property is not located in a border area.",
+        "ar": "لا يقع العقار في منطقة حدودية"
+      }
+    }
+  ],
+  "uh9lm46": [
+    {
+      "value": "phisic_state_empty",
+      "label": {
+        "en": "vacant",
+        "ar": "شاغر"
+      }
+    },
+    {
+      "value": "phisic_state_unknown1",
+      "label": {
+        "en": "unknown",
+        "ar": "غير معروف"
+      }
+    },
+    {
+      "value": "phisic_state_Seizure",
+      "label": {
+        "en": "Occupyer without the owner's consent and without a legal contract (specify the year of the action in the following field)",
+        "ar": "مغتصب بدون موافقة المالك وبدون عقد قانوني (حدد سنة الإجراء في الحقل التالي)"
+      }
+    },
+    {
+      "value": "phisic_state_notcompleted",
+      "label": {
+        "en": "The property needs a transaction to correct its description (specify the year of the procedure in the following field).",
+        "ar": "العقار يحتاج إلى معاملة تصيح أوصاف (حدد سنة الإجراء في الحقل التالي)"
+      }
+    },
+    {
+      "value": "phisic_state_fraud",
+      "label": {
+        "en": "Property restrictions have been found to contain forgery (specify the year of the procedure in the following field)",
+        "ar": "قيود العقار وضع فيها تزوير (حدد سنة الإجراء في الحقل التالي)"
+      }
+    },
+    {
+      "value": "phisic_state_noidea2",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "ct25w56": [
+    {
+      "value": "phisic_state_belonging",
+      "label": {
+        "en": "Belonging to a particular ethnic group leads to discrimination.",
+        "ar": "الأنتماء لمجموعة اثنية معينة يمارس التمييز ضدها"
+      }
+    },
+    {
+      "value": "phisic_state_Politics",
+      "label": {
+        "en": "He/She has an opposing political opinion",
+        "ar": "لديه/ لديها رأي سياسي معارض"
+      }
+    },
+    {
+      "value": "phisic_state_notprovided",
+      "label": {
+        "en": "Refusal to disclose",
+        "ar": "رفض الإفصاح"
+      }
+    },
+    {
+      "value": "phisic_state_noidea3",
+      "label": {
+        "en": "don't know",
+        "ar": "لا أعلم"
+      }
+    }
+  ],
+  "fk7sg79": [
+    {
+      "value": "phisic_state_01",
+      "label": {
+        "en": "Invitation signal (cancellation of registration, confirmation of sale, objection)",
+        "ar": "إشارة دعوة (فسخ تسجيل, تثبيت بيع, اعتراض)"
+      }
+    },
+    {
+      "value": "phisic_state_02",
+      "label": {
+        "en": "Reserve notice (reserve, executive)",
+        "ar": "إشارة حجز (احتياطي, تنفيذي)"
+      }
+    },
+    {
+      "value": "phisic_state_03",
+      "label": {
+        "en": "Signature (mortgage, usufruct right, easement right, prohibition of disposal)",
+        "ar": "إشارة (رهن, حق انتفاع, حق ارتفاق, منع تصرف)"
+      }
+    },
+    {
+      "value": "phisic_state_04",
+      "label": {
+        "en": "Sign (Expropriation, Notice of Expropriation)",
+        "ar": "إشارة (استملاك, ملحوظ بالاستملاك)"
+      }
+    },
+    {
+      "value": "phisic_state_noidea4",
+      "label": {
+        "en": "nothing",
+        "ar": "لايوجد"
+      }
+    }
+  ],
+  "cp7iv20": [
+    {
+      "value": "phisic_state_05",
+      "label": {
+        "en": "Accused/convicted before the Terrorism Court or Field Court",
+        "ar": "متهم / مدان(ه) أمام محكمة الإرهاب أو المحكمة الميدانية"
+      }
+    },
+    {
+      "value": "phisic_state_06",
+      "label": {
+        "en": "Failure to perform mandatory or reserve military service",
+        "ar": "متخلف عن الخدمة العسكرية الإلزامية أو الإحتياطية"
+      }
+    },
+    {
+      "value": "phisic_state_07",
+      "label": {
+        "en": "Foreigner",
+        "ar": "اجنبي / اجنبية"
+      }
+    },
+    {
+      "value": "phisic_state_08",
+      "label": {
+        "en": "Palestinian Arab",
+        "ar": "عربي فلسطيني"
+      }
+    },
+    {
+      "value": "phisic_state_09",
+      "label": {
+        "en": "Former employee of state institutions",
+        "ar": "موظف/ـة سابق/ـة في مؤسسات الدولة"
+      }
+    },
+    {
+      "value": "phisic_state_10",
+      "label": {
+        "en": "Unconvicted",
+        "ar": "غير محكوم"
+      }
+    }
+  ],
+  "cw3vs05": [
+    {
+      "value": "phisic_state_11",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "phisic_state_12",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    },
+    {
+      "value": "phisic_state_13",
+      "label": {
+        "en": "He does not wish to disclose",
+        "ar": "لا يرغب بالإفصاح"
+      }
+    }
+  ],
+  "bv6df68": [
+    {
+      "value": "Inheritance_yes",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "Inheritance_no",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    }
+  ],
+  "ed2pu21": [
+    {
+      "value": "Inheritance_son",
+      "label": {
+        "en": "Son",
+        "ar": "ابن"
+      }
+    },
+    {
+      "value": "Inheritance_daughter",
+      "label": {
+        "en": "Daughter",
+        "ar": "ابنة"
+      }
+    },
+    {
+      "value": "Inheritance_partner",
+      "label": {
+        "en": "Husband/Wife",
+        "ar": "زوج/ـة"
+      }
+    },
+    {
+      "value": "Inheritance_brother",
+      "label": {
+        "en": "Sibling",
+        "ar": "اخ/ـت"
+      }
+    },
+    {
+      "value": "Inheritance_parents",
+      "label": {
+        "en": "Mother/Father",
+        "ar": "والدة/ـة"
+      }
+    },
+    {
+      "value": "Inheritance_other",
+      "label": {
+        "en": "Other (please specify in the following field)",
+        "ar": "غير ذلك (يرجى التحديد بالحقل التالي)"
+      }
+    }
+  ],
+  "hh4ya29": [
+    {
+      "value": "Inheritance_divorce",
+      "label": {
+        "en": "The divorce took place before the death of the deceased.",
+        "ar": "تم الطلاق قبل وفاة المورث/ـة"
+      }
+    },
+    {
+      "value": "Inheritance_nodivorcereg",
+      "label": {
+        "en": "The divorce was not registered.",
+        "ar": "لم يتم تسجيل الطلاق"
+      }
+    },
+    {
+      "value": "Inheritance_nodivorce",
+      "label": {
+        "en": "The marriage was still valid before the death of the spouse.",
+        "ar": "الزواج كان لا يزال قائماً قبل وفاة الزوج/ـة"
+      }
+    }
+  ],
+  "ny2qp48": [
+    {
+      "value": "_",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "__1",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    }
+  ],
+  "rc6sc23": [
+    {
+      "value": "Inheritance_deathreg_yes",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "Inheritance_deathreg_no",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    }
+  ],
+  "bo6qj13": [
+    {
+      "value": "Inheritance_guardian_yes",
+      "label": {
+        "en": "Yes",
+        "ar": "نعم"
+      }
+    },
+    {
+      "value": "Inheritance_guardian_no",
+      "label": {
+        "en": "No",
+        "ar": "لا"
+      }
+    }
+  ],
+  "lx41q01": [
+    {
+      "value": "Inheritance_own1",
+      "label": {
+        "en": "full ownership",
+        "ar": "ملكية كاملة"
+      }
+    },
+    {
+      "value": "Inheritance_own2",
+      "label": {
+        "en": "Right of use",
+        "ar": "حق انتفاع"
+      }
+    },
+    {
+      "value": "Inheritance_own3",
+      "label": {
+        "en": "Right of occupation of free space",
+        "ar": "حق اشغال فروغ"
+      }
+    },
+    {
+      "value": "Inheritance_own4_1",
+      "label": {
+        "en": "A right claimed by virtue of a claim",
+        "ar": "حق مدعى به بموجب إشارة دعوى"
+      }
+    },
+    {
+      "value": "Inheritance_own5_1",
+      "label": {
+        "en": "A shareholding exceeding 50% of the total share",
+        "ar": "حصة سهمية تتجاوز 50% من كامل السهم"
+      }
+    },
+    {
+      "value": "Inheritance_own6_1",
+      "label": {
+        "en": "Right to housing",
+        "ar": "حق سكن"
+      }
+    },
+    {
+      "value": "Inheritance_own7",
+      "label": {
+        "en": "Sharecropping rights",
+        "ar": "حق مزارعة"
+      }
+    },
+    {
+      "value": "Inheritance_own8",
+      "label": {
+        "en": "Another shareholding (please specify the percentage in the following field)",
+        "ar": "حصة سهمية أخرى (يرجى تحديد النسبة في الحقل التالي)"
+      }
+    }
+  ],
+  "ga0wn01": [
+    {
+      "value": "Inheritance_law1",
+      "label": {
+        "en": "Law 34/2010 (amending Law 15/2008)",
+        "ar": "قانون 34/ 2010 (تعديل القانون 15/ 2008)"
+      }
+    },
+    {
+      "value": "Inheritance_law2",
+      "label": {
+        "en": "Law 82/2010",
+        "ar": "قانون 82/2010"
+      }
+    },
+    {
+      "value": "Inheritance_law3",
+      "label": {
+        "en": "Law 40/2012",
+        "ar": "قانون 40/2012"
+      }
+    },
+    {
+      "value": "Inheritance_law4",
+      "label": {
+        "en": "Legislative Decree 66/2012",
+        "ar": "مرسوم تشريعي 66/ 2012"
+      }
+    },
+    {
+      "value": "Inheritance_law5",
+      "label": {
+        "en": "Law 23/2015",
+        "ar": "قانون 23/2015"
+      }
+    },
+    {
+      "value": "Inheritance_law6",
+      "label": {
+        "en": "Law 11/2016",
+        "ar": "قانون 11/2016"
+      }
+    },
+    {
+      "value": "Inheritance_law7",
+      "label": {
+        "en": "Law 33/2017",
+        "ar": "قانون 33/2017"
+      }
+    },
+    {
+      "value": "Inheritance_law8",
+      "label": {
+        "en": "Law 1/2018",
+        "ar": "قانون 1/2018"
+      }
+    },
+    {
+      "value": "Inheritance_law9",
+      "label": {
+        "en": "Law 3/2018",
+        "ar": "قانون 3/2018"
+      }
+    },
+    {
+      "value": "Inheritance_law10",
+      "label": {
+        "en": "Law 31/2018",
+        "ar": "قانون 31/2018"
+      }
+    },
+    {
+      "value": "Inheritance_law11",
+      "label": {
+        "en": "Law 10 (Amendment Law 42/2018)",
+        "ar": "قانون 10 (قانون التعديل 42/ 2018)"
+      }
+    },
+    {
+      "value": "Inheritance_law12",
+      "label": {
+        "en": "Law 18/2021",
+        "ar": "قانون 18/2021"
+      }
+    }
+  ],
+  "bq3wf58": [
+    {
+      "value": "eng_followup",
+      "label": {
+        "en": "The beneficiary should be followed up/referred/directed to the engineering side.",
+        "ar": "يجب متابعة / احالة / توجيه المستفيد للجانب الهندسي"
+      }
+    },
+    {
+      "value": "law_followup",
+      "label": {
+        "en": "The beneficiary should be followed up/referred/directed to the legal side.",
+        "ar": "يجب متابعة / احالة / توجيه المستفيد للجانب القانوني"
+      }
+    },
+    {
+      "value": "no_followup_need",
+      "label": {
+        "en": "No need to follow up on the file/refer it/direct it.",
+        "ar": "لايوجد حاجة لمتابعة الملف / إحالته / توجيهه"
+      }
+    }
+  ],
+  "sj0rz77": [
+    {
+      "value": "eng_follo_ngo_fwd",
+      "label": {
+        "en": "Directe to organizations specializing in reconstruction or rehabilitation.",
+        "ar": "توجيه لمنظمات متخصصة بإعادة الإعمار او إعادة التأهيل"
+      }
+    },
+    {
+      "value": "eng_follo_gov_fwd",
+      "label": {
+        "en": "Directe to government departments (Land Registry, Engineers Syndicate, Governorate Council, Municipality).",
+        "ar": "توجيه لدوائر حكومية ( سجل عقاري, نقابة مهندسين, مجلس المحافظة, البلدية)"
+      }
+    },
+    {
+      "value": "eng_follo_ngo_ref",
+      "label": {
+        "en": "Referral to organizations specializing in reconstruction or rehabilitation (referral depends on feedback).",
+        "ar": "إحالة لمنظمات متخصصة بإعادة الإعمار او إعادة التأهيل *(الإحالة تعتمد على التغذية الراجعة)"
+      }
+    },
+    {
+      "value": "eng_follo_gov_ref",
+      "label": {
+        "en": "Referral to government departments (Land Registry, Engineers Syndicate, Governorate Council, Municipality) (referral depends on feedback).",
+        "ar": "إحالة توجيه لدوائر حكومية ( سجل عقاري, نقابة مهندسين, مجلس المحافظة, البلدية)  *(الإحالة تعتمد على التغذية الراجعة)"
+      }
+    }
+  ],
+  "sj0rz88": [
+    {
+      "value": "law_follo_negotiable_fwd",
+      "label": {
+        "en": "Directe/referral to legal disputes open to mediation.",
+        "ar": "التوجيه / الإحالة للنزاع القانوني قابل للوساطة"
+      }
+    },
+    {
+      "value": "law_follo_non_negotiable",
+      "label": {
+        "en": "Directe/referral to legal disputes not open to mediation.",
+        "ar": "التوجيه / الإحالة للنزاع القانوني غير قابل للوساطة"
+      }
+    }
+  ],
+  "sj0rz99": [
+    {
+      "value": "law_follo_in_ref",
+      "label": {
+        "en": "Internal referral",
+        "ar": "إحالة داخلية"
+      }
+    },
+    {
+      "value": "law_follo_ex_ref",
+      "label": {
+        "en": "External referral",
+        "ar": "إحالة خارجية"
+      }
+    },
+    {
+      "value": "law_follo_ex_fwd",
+      "label": {
+        "en": "External directe",
+        "ar": "توجيه خارجي"
+      }
+    }
+  ],
+  "sj0lw91": [
+    {
+      "value": "law_follo_in_ref1",
+      "label": {
+        "en": "Legal consultation of simple complexity",
+        "ar": "إستشارة قانونية بسيطة التعقيد"
+      }
+    },
+    {
+      "value": "law_follo_in_ref2",
+      "label": {
+        "en": "Awareness sessions",
+        "ar": "جلسات توعية"
+      }
+    }
+  ],
+  "sj0lw92": [
+    {
+      "value": "law_follo_ex_ref1",
+      "label": {
+        "en": "Referral to the Bar Association",
+        "ar": "الإحالة لنقابة المحامين"
+      }
+    },
+    {
+      "value": "law_follo_ex_ref2",
+      "label": {
+        "en": "Referral to organizations or actors within this field",
+        "ar": "الإحالة لمنظمات أو فاعلين ضمن هذا المجال"
+      }
+    },
+    {
+      "value": "law_follo_ex_ref3",
+      "label": {
+        "en": "Referral to the Land Registry",
+        "ar": "الإحالة للسجل العقاري"
+      }
+    },
+    {
+      "value": "law_follo_ex_ref4",
+      "label": {
+        "en": "Referral to the Governorate (in progress)",
+        "ar": "الإحالة للمحافظة (قيد الإنجاز)"
+      }
+    }
+  ],
+  "sj0lw93": [
+    {
+      "value": "law_follo_ex_fwd1",
+      "label": {
+        "en": "Directe to the Bar Association",
+        "ar": "التوجيه لنقابة المحامين"
+      }
+    },
+    {
+      "value": "law_follo_ex_fwd2",
+      "label": {
+        "en": "Directe to organizations or actors within this field",
+        "ar": "التوجيه لمنظمات أو فاعلين ضمن هذا المجال"
+      }
+    },
+    {
+      "value": "law_follo_ex_fwd3",
+      "label": {
+        "en": "Directe to the Land Registry",
+        "ar": "التوجيه للسجل العقاري"
+      }
+    },
+    {
+      "value": "law_follo_ex_fwd4",
+      "label": {
+        "en": "Directe to the Governorate (in progress)",
+        "ar": "التوجيه للمحافظة (قيد الإنجاز)"
+      }
+    }
+  ]
+}
