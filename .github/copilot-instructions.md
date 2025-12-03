@@ -25,7 +25,7 @@
 - [x] Install Required Extensions
 	<!-- ONLY install extensions provided mentioned in the get_project_setup_info. Skip this step otherwise and mark as completed. -->
 
-- [ ] Compile the Project
+- [x] Compile the Project
 	<!--
 	Verify that all previous steps have been completed.
 	Install any missing dependencies.
@@ -33,20 +33,20 @@
 	Check for markdown files in project folder for relevant instructions on how to do this.
 	-->
 
-- [ ] Create and Run Task
+- [x] Create and Run Task
 	<!--
 	Verify that all previous steps have been completed.
 	Check https://code.visualstudio.com/docs/debugtest/tasks to determine if the project needs a task. If so, use the create_and_run_task to create and launch a task based on package.json, README.md, and project structure.
 	Skip this step otherwise.
 	 -->
 
-- [ ] Launch the Project
+- [x] Launch the Project
 	<!--
 	Verify that all previous steps have been completed.
 	Prompt user for debug mode, launch only if confirmed.
 	 -->
 
-- [ ] Ensure Documentation is Complete
+- [x] Ensure Documentation is Complete
 	<!--
 	Verify that all previous steps have been completed.
 	Verify that README.md and the copilot-instructions.md file in the .github directory exists and contains current project information.
@@ -104,6 +104,9 @@ Before starting a new task in the above plan, update progress in the plan.
 - Work through each checklist item systematically.
 - Keep communication concise and focused.
 - Follow development best practices.
+
+Notes:
+- Backend `/api/health` responds `200 OK` to `GET`. `HEAD` requests return `405` by FastAPI default; verify health with `GET` over HTTPS.
 ```
 
 Verify that a copilot-instructions.md file in the .github directory exists and systematically work through each item in the task list.

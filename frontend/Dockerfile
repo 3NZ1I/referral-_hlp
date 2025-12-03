@@ -6,6 +6,7 @@ RUN npm ci
 COPY . ./
 ARG REACT_APP_API_URL
 ENV REACT_APP_API_URL=${REACT_APP_API_URL}
+ENV NODE_OPTIONS=--max-old-space-size=2048
 RUN npm run build
 
 FROM nginx:1.27-alpine

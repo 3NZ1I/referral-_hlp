@@ -44,8 +44,12 @@ cd referral-_hlp
 nano .env
 ```
 
-Paste this content:
+Paste this content (update values as needed):
 ```env
+# Docker Compose Project Configuration
+# CRITICAL: This ensures consistent volume naming
+COMPOSE_PROJECT_NAME=referral_hlp
+
 # Database Configuration
 DATABASE_URL=postgresql+psycopg2://hlp_user:HLP_Secure_Pass_2025!@db/referral_db
 POSTGRES_USER=hlp_user
@@ -53,14 +57,14 @@ POSTGRES_PASSWORD=HLP_Secure_Pass_2025!
 POSTGRES_DB=referral_db
 
 # Backend Configuration (generate with: openssl rand -hex 32)
-JWT_SECRET=YOUR_GENERATED_SECRET_HERE
+SECRET_KEY=YOUR_GENERATED_SECRET_HERE
 JWT_EXP_MINUTES=120
 
 # Frontend Configuration
-REACT_APP_API_URL=https://api.bessar.work/api
+VITE_API_URL=https://api.bessar.work
 ```
 
-Generate JWT secret:
+Generate SECRET_KEY:
 ```bash
 openssl rand -hex 32
 ```
@@ -197,6 +201,51 @@ docker compose up -d
 ```
 
 ## Troubleshooting
+
+### Data Persistence Best Practices
+
+**CRITICAL:** Your database data is stored in a Docker volume named `referral-_hlp_postgres_data` (or `referral_hlp_postgres_data` if using `.env`). This volume persists data across container restarts.
+
+**To prevent data loss:**
+
+1. **NEVER run `docker compose down -v`** – the `-v` flag deletes volumes (and all your data)
+2. **Use `docker compose down`** (without `-v`) to stop services safely
+3. **Keep `COMPOSE_PROJECT_NAME` consistent** – changing it creates new volumes with different names
+4. **Avoid `docker volume prune`** unless you've verified your DB volume isn't in the list
+5. **Reload Nginx safely** – `sudo systemctl reload nginx` does NOT affect Docker volumes
+
+**Verify your volume is intact:**
+```bash
+# List volumes
+docker volume ls
+
+# Inspect DB volume
+docker volume inspect referral-_hlp_postgres_data
+
+# Check data inside container
+docker exec -it referral-_hlp-db-1 ls -la /var/lib/postgresql/data
+```
+
+**Check actual database contents:**
+```bash
+# List tables
+docker exec -it referral-_hlp-db-1 psql -U hlp_user -d referral_db -c "\dt"
+
+# Count rows in each table
+docker exec -it referral-_hlp-db-1 psql -U hlp_user -d referral_db -c "
+  SELECT 'users' as table_name, COUNT(*) FROM users
+  UNION ALL SELECT 'cases', COUNT(*) FROM cases
+  UNION ALL SELECT 'comments', COUNT(*) FROM comments;"
+```
+
+**If tables are empty but volume exists:**
+- Data was never seeded/imported
+- Restore from backup (see Manual Backup/Restore section below)
+- Or import initial data via `/api/import` endpoint
+
+**If you accidentally deleted the volume:**
+1. Restore from backup immediately (see below)
+2. Or start fresh with migrations: `docker compose run --rm backend alembic upgrade head`
 
 ### Manual Backup/Restore (Repo scripts)
 
