@@ -8,14 +8,12 @@ COPY . ./
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 ENV NODE_OPTIONS=--max-old-space-size=2048
-# Create vite symlink manually if rolldown-vite doesn't create it
-RUN if [ ! -f node_modules/.bin/vite ]; then \
-      ln -s ../rolldown-vite/bin/vite.js node_modules/.bin/vite || \
-      echo "Warning: Could not create vite symlink"; \
-    fi
-# Add node_modules/.bin to PATH and run build
-ENV PATH="/app/node_modules/.bin:${PATH}"
-RUN vite build --logLevel info || node node_modules/rolldown-vite/bin/vite.js build --logLevel info
+# Debug: find the actual vite/rolldown location
+RUN find node_modules -type f -name "vite.js" -o -name "vite" | head -10 || echo "No vite found"
+RUN ls -la node_modules/.bin/ | grep -i vite || echo "No vite in .bin"
+# Try running via node with the package's main entry
+RUN node -e "require('vite/dist/node/cli.js')" build --logLevel info || \
+    node node_modules/vite/bin/vite.js build --logLevel info
 
 FROM nginx:1.27-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
