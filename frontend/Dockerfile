@@ -2,7 +2,8 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --include=dev
+# Use npm install instead of ci for rolldown-vite compatibility
+RUN npm install
 COPY . ./
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
