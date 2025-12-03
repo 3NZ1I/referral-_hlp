@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import request from '../api/http';
+
 // Generate a simple initials-based SVG avatar data URL
 const generateAvatar = (name = '') => {
   const initials = (name || '?')
@@ -27,49 +29,13 @@ export const useAuth = () => {
   return context;
 };
 
-// User roles: 'admin', 'internal', 'external'
+// User roles: 'admin', 'internal', 'external', 'user'
 const ROLES = {
   ADMIN: 'admin',
   INTERNAL: 'internal',
   EXTERNAL: 'external',
+  USER: 'user',
 };
-
-// Initial users (in a real app, this would come from a backend)
-const initialUsers = [
-  {
-    id: '1',
-    username: 'admin',
-    password: 'admin123',
-    role: ROLES.ADMIN,
-    name: 'System Admin',
-    email: 'admin@hlp.org',
-    title: 'Administrator',
-    organization: 'HLP',
-    avatar: generateAvatar('System Admin'),
-  },
-  {
-    id: '2',
-    username: 'internal',
-    password: 'internal123',
-    role: ROLES.INTERNAL,
-    name: 'Internal User',
-    email: 'internal@hlp.org',
-    title: 'Case Worker',
-    organization: 'HLP',
-    avatar: generateAvatar('Internal User'),
-  },
-  {
-    id: '3',
-    username: 'external',
-    password: 'external123',
-    role: ROLES.EXTERNAL,
-    name: 'External User',
-    email: 'external@partner.org',
-    title: 'Partner Liaison',
-    organization: 'Partner Org',
-    avatar: generateAvatar('External User'),
-  },
-];
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -77,64 +43,113 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('users');
-    return saved ? JSON.parse(saved) : initialUsers;
-  });
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
     } else {
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
     }
   }, [currentUser]);
 
-  useEffect(() => {
-    localStorage.setItem('users', JSON.stringify(users));
-  }, [users]);
-
-  const login = (username, password) => {
-    const user = users.find((u) => u.username === username && u.password === password);
-    if (user) {
-      const { password: _, ...userWithoutPassword } = user;
-      setCurrentUser(userWithoutPassword);
-      return { success: true };
+  const login = async (username, password) => {
+    try {
+      const response = await request('/auth/login', {
+        method: 'POST',
+        body: { username, password },
+      });
+      
+      if (response.token && response.user) {
+        // Store token
+        localStorage.setItem('authToken', response.token);
+        
+        // Create user object with avatar
+        const userWithAvatar = {
+          ...response.user,
+          name: response.user.name || response.user.username,
+          avatar: generateAvatar(response.user.name || response.user.username),
+          title: response.user.role === 'admin' ? 'Administrator' : 'User',
+          organization: 'HLP',
+        };
+        
+        setCurrentUser(userWithAvatar);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    return { success: false, message: 'Invalid credentials' };
   };
 
   const logout = () => {
     setCurrentUser(null);
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('authToken');
   };
 
-  const addUser = (userData) => {
-    const newUser = {
-      id: Date.now().toString(),
-      ...userData,
-      avatar: userData.avatar || generateAvatar(userData.name),
-    };
-    setUsers((prev) => [...prev, newUser]);
-    return newUser;
+  const register = async (userData) => {
+    try {
+      const response = await request('/auth/register', {
+        method: 'POST',
+        body: userData,
+      });
+      
+      if (response.token && response.user) {
+        localStorage.setItem('authToken', response.token);
+        
+        const userWithAvatar = {
+          ...response.user,
+          name: response.user.name || response.user.username,
+          avatar: generateAvatar(response.user.name || response.user.username),
+          title: response.user.role === 'admin' ? 'Administrator' : 'User',
+          organization: 'HLP',
+        };
+        
+        setCurrentUser(userWithAvatar);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('authToken');
+  };
+
+  const addUser = async (userData) => {
+    try {
+      const response = await request('/auth/register', {
+        method: 'POST',
+        body: userData,
+      });
+      return response.user;
+    } catch (error) {
+      console.error('Add user error:', error);
+      throw error;
+    }
   };
 
   const updateUser = (userId, updates) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === userId ? { ...user, ...updates } : user
-      )
-    );
-    // If the current user updated their own profile, reflect changes in currentUser too
+    // Update current user if editing self
     setCurrentUser((cu) => (cu && cu.id === userId ? { ...cu, ...updates } : cu));
   };
 
-  const deleteUser = (userId) => {
-    setUsers((prev) => prev.filter((user) => user.id !== userId));
+  const deleteUser = async (userId) => {
+    // Implement backend delete if needed
+    console.warn('Delete user not yet implemented in backend');
   };
 
-  const isAdmin = currentUser?.role === ROLES.ADMIN;
-  const isInternal = currentUser?.role === ROLES.INTERNAL;
-  const isExternal = currentUser?.role === ROLES.EXTERNAL;
+  const isAdmin = currentUser?.role === ROLES.ADMIN || currentUser?.role === 'admin';
+  const isInternal = currentUser?.role === ROLES.INTERNAL || currentUser?.role === 'internal';
+  const isExternal = currentUser?.role === ROLES.EXTERNAL || currentUser?.role === 'external';
 
   const canAccessStatistics = isAdmin;
   const canAccessData = isAdmin;
@@ -145,9 +160,10 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         currentUser,
-        users: users.map(({ password, ...user }) => user), // Don't expose passwords
+        users, // Backend users list
         login,
         logout,
+        register,
         addUser,
         updateUser,
         deleteUser,

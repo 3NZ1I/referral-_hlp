@@ -14,7 +14,7 @@ const Login = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const success = login(values.username, values.password);
+      const success = await login(values.username, values.password);
       if (success) {
         message.success('Login successful!');
         navigate('/cases');
@@ -22,6 +22,7 @@ const Login = () => {
         message.error('Invalid username or password');
       }
     } catch (error) {
+      console.error('Login error:', error);
       message.error('Login failed. Please try again.');
     } finally {
       setLoading(false);
