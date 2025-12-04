@@ -88,6 +88,68 @@ hlp.bessar.work {
 ```
 Replace `/path/to/frontend/dist` with the actual path to your built frontend.
 
+### Production: Serve Built Files (Static File Server)
+After running `npm run build`, serve the built files from `frontend/dist` using Caddy or nginx.
+
+#### Caddyfile Example (Static Serving)
+```
+hlp.bessar.work {
+  root * /home/bessarf/referral-_hlp/frontend/dist
+  file_server
+  header {
+    Content-Security-Policy "default-src 'self'; connect-src 'self' https://api.bessar.work; frame-ancestors 'none';"
+    X-Frame-Options "DENY"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+  }
+}
+```
+Replace `/home/bessarf/referral-_hlp/frontend/dist` with your actual path if different.
+
+#### nginx Example (Static Serving)
+```
+server {
+    listen 80;
+    server_name hlp.bessar.work;
+    root /home/bessarf/referral-_hlp/frontend/dist;
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    # Add headers as needed
+}
+```
+
+### Development/Preview: Proxy All Requests
+For development, run the Vite preview server:
+```bash
+npm run preview -- --port 3000
+```
+Update your Caddyfile to proxy all requests to the preview server:
+```
+hlp.bessar.work {
+  reverse_proxy localhost:3000
+  header {
+    # ...security headers...
+  }
+}
+```
+This ensures all requests, including assets (e.g. `/assets/...`), are proxied correctly.
+
+### Asset Troubleshooting
+Open browser dev tools (F12) and check the Network tab.
+  - If CSS/JS files return 404 errors:
+    - For production, verify the static file server is serving the correct `dist/` directory.
+    - For development, ensure the preview server is running and Caddy is proxying all requests.
+    - Asset URLs should be `/assets/...` for Vite builds.
+    - If using nginx, ensure `try_files $uri $uri/ /index.html;` is set for SPA routing.
+
+### Summary Checklist
+Build frontend: `npm run build`
+For production: Serve `dist/` with Caddy or nginx
+For development: Run preview server and proxy with Caddy
+Check browser dev tools for asset errors
+
 ### Troubleshooting UI/Asset Issues
 - If the UI is broken or missing styles/assets:
   - Make sure you are serving the built files (`dist/`) in production.
