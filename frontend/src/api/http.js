@@ -29,11 +29,23 @@ async function request(endpoint, { method = 'GET', body, headers = {}, params } 
     credentials: 'include', // send cookies if needed
   });
 
+  // Try to parse JSON only when content-type is JSON
+  const isJson = response.headers.get('Content-Type')?.includes('application/json');
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'API Error');
+    let errorBody = null;
+    if (isJson) {
+      errorBody = await response.json().catch(() => null);
+    }
+    const message = (errorBody && errorBody.detail) || (errorBody && errorBody.message) || response.statusText || 'API Error';
+    const err = new Error(message);
+    err.status = response.status;
+    err.body = errorBody;
+    throw err;
   }
-  return response.json();
+  if (isJson) {
+    return response.json();
+  }
+  return response.text();
 }
 
 export default request;
