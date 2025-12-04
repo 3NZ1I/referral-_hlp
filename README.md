@@ -206,97 +206,117 @@ After running migrations, all tables (`users`, `cases`, `comments`) will be crea
 
 ## Production Deployment
 
-**🚀 Live Application:**
-- **Frontend:** https://hlp.bessar.work
-- **Backend API:** https://api.bessar.work/api/health
-- **Server:** Azure VM (refsys2) at 135.220.73.22
-- **SSL/TLS:** Let's Encrypt (TLS 1.3, expires Mar 4, 2026)
+## Production Deployment with nginx
 
-### Prerequisites
-- Azure Ubuntu VM (22.04+) with Docker and Docker Compose installed
-- Domain names configured (A records pointing to VM IP)
-- GitHub repository: `https://github.com/3NZ1I/referral-_hlp.git`
-- Pre-built Docker images on Docker Hub:
-  - `bessarf/referral-hlp-frontend:latest`
-  - `bessarf/referral-hlp-backend:latest`
-
-### Quick Deployment (Recommended)
+### 1. Install nginx
 ```bash
-# 1. Clone repository
-git clone https://github.com/3NZ1I/referral-_hlp.git
-
-# 2. Pull pre-built images from Docker Hub
-sudo docker pull bessarf/referral-hlp-frontend:latest
-sudo docker pull bessarf/referral-hlp-backend:latest
-# 3. Tag images locally (workaround for docker-compose issue)
-sudo docker tag bessarf/referral-hlp-frontend:latest referral-hlp-frontend:latest
-sudo docker tag bessarf/referral-hlp-backend:latest referral-hlp-backend:latest
-# 4. Start all services
-sudo docker compose up -d
-
-# 5. Verify deployment
-sudo docker compose ps
-# All containers should show "healthy" status
+sudo apt update
+sudo apt install nginx
 ```
 
-### SSL/TLS Setup
-
+### 2. Build Frontend
 ```bash
-# Install certbot
-# Stop nginx temporarily
-sudo systemctl stop nginx
-# Obtain certificates
-sudo certbot certonly --standalone \
-  -d hlp.bessar.work \
-  -d api.bessar.work
-
-# Configure nginx reverse proxy (see DEPLOYMENT.md for full config)
-sudo systemctl start nginx
-
-# Verify HTTPS works
-curl https://hlp.bessar.work
-curl https://api.bessar.work/api/health
+cd frontend
+npm install
+npm run build
 ```
 
-### Full Deployment Guide
+### 3. Configure nginx
+Edit or replace `/etc/nginx/sites-available/hlp.bessar.work` with:
+```nginx
+server {
+    listen 80;
+    server_name hlp.bessar.work;
+    root /home/bessarf/referral-_hlp/frontend/dist;
+    index index.html;
 
-**📖 See [DEPLOYMENT.md](./DEPLOYMENT.md) for:**
-- Detailed step-by-step instructions
-- Common issues & solutions (DNS, vite build errors, docker-compose quirks)
-- SSL certificate configuration
-- Nginx reverse proxy setup
-- Database backup/restore procedures
-- Security best practices
-- Monitoring and maintenance
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
 
-### Updating the System
+    location /api/ {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-When you push changes to GitHub:
-
-```bash
-# SSH into your Azure VM
-ssh bessar@135.220.73.22
-
-# Navigate to project directory
-cd ~/referral-_hlp
-
-# Pull latest code
-git pull origin main
-
-# Pull updated Docker images from Docker Hub
-sudo docker pull bessarf/referral-hlp-frontend:latest
-sudo docker pull bessarf/referral-hlp-backend:latest
-
-# Tag locally
-sudo docker tag bessarf/referral-hlp-frontend:latest referral-hlp-frontend:latest
-sudo docker tag bessarf/referral-hlp-backend:latest referral-hlp-backend:latest
-
-# Restart services with new images
-sudo docker compose up -d
-
-# View logs to verify
-sudo docker compose logs -f
+    add_header Content-Security-Policy "default-src 'self'; connect-src 'self' http://localhost:8000; frame-ancestors 'none';";
+    add_header X-Frame-Options "DENY";
+    add_header X-Content-Type-Options "nosniff";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload";
+}
 ```
+
+### 4. Enable the site
+```bash
+sudo ln -sf /etc/nginx/sites-available/hlp.bessar.work /etc/nginx/sites-enabled/hlp.bessar.work
+sudo rm /etc/nginx/sites-enabled/default
+```
+
+### 5. Set permissions for static files
+```bash
+sudo chown -R www-data:www-data /home/bessarf/referral-_hlp/frontend/dist
+sudo chmod -R 755 /home/bessarf/referral-_hlp/frontend/dist
+sudo chmod 755 /home/bessarf/referral-_hlp
+sudo chmod 755 /home/bessarf
+```
+
+### 6. Test nginx config
+```bash
+sudo nginx -t
+```
+
+### 7. Restart nginx
+```bash
+sudo systemctl restart nginx
+sudo systemctl status nginx
+```
+
+### 8. Open firewall for HTTP (if needed)
+```bash
+sudo ufw allow 80/tcp
+sudo ufw reload
+```
+
+### 9. Troubleshooting
+- If nginx fails to start, check for port conflicts:
+  ```bash
+  sudo lsof -i :80
+  ```
+- Stop other web servers (Caddy, Apache) if needed:
+  ```bash
+  sudo systemctl stop caddy
+  sudo systemctl stop apache2
+  ```
+- Check logs:
+  ```bash
+  sudo journalctl -xeu nginx.service
+  ```
+- Test locally:
+  ```bash
+  curl -I http://localhost
+  curl -I http://hlp.bessar.work
+  ```
+- Check DNS: `ping hlp.bessar.work` from your local machine. IP should match your server's public IP.
+
+### 10. HTTPS (Optional)
+Use Certbot for free SSL:
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d hlp.bessar.work
+```
+
+### 11. Checklist
+- [ ] nginx running and serving frontend
+- [ ] API proxy working
+- [ ] Static files load (no 404s)
+- [ ] Permissions correct
+- [ ] Firewall open
+- [ ] DNS points to server
+- [ ] HTTPS enabled (optional)
 
 **Note:** Pre-built images are hosted on Docker Hub to avoid DNS resolution issues during build.
 
