@@ -538,6 +538,12 @@ docker compose logs db
 - Ensure reverse proxy is configured for `api.bessar.work`
 
 ### Migration errors
+
+## Docker and Networking Notes
+- When using `docker compose` to run the full stack, services are connected by a shared docker network and your Nginx inside a `frontend` container should proxy to `http://backend:8000` since that's the service name inside the compose network.
+- The `frontend` container exposes port 80 internally; on the host it is mapped using `docker-compose.yml` to the value `8080:80`. Adjust this mapping if you already have Nginx running on host or want to run without host Nginx.
+- If running host Nginx, prefer disabling `frontend`'s internal Nginx or use a reverse proxy on the host to the `frontend` container.
+
 ```bash
 # Check current migration version
 docker compose run --rm backend alembic current
