@@ -1,3 +1,23 @@
+hlp.bessar.work {
+  reverse_proxy localhost:3000
+  header {
+    Content-Security-Policy "default-src 'self'; connect-src 'self' https://api.bessar.work; frame-ancestors 'none';"
+    X-Frame-Options "DENY"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+  }
+}
+
+api.bessar.work {
+  reverse_proxy localhost:8000
+  header {
+    X-Frame-Options "DENY"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+  }
+}
 # Caddyfile for HLP Referral System
 
 hlp.bessar.work {

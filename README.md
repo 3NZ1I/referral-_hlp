@@ -15,8 +15,8 @@ docker compose up
 ## Database Migrations (Alembic)
 
 This project uses Alembic for automatic database schema management.
+# Deployment
 
-### Initial Setup
 1. Ensure PostgreSQL is running and accessible (default: localhost, port 5432).
 2. Alembic config is in `backend/alembic.ini`.
 3. Models are in `backend/models.py`.
@@ -62,20 +62,16 @@ After running migrations, all tables (`users`, `cases`, `comments`) will be crea
   - `bessarf/referral-hlp-backend:latest`
 
 ### Quick Deployment (Recommended)
-
 ```bash
 # 1. Clone repository
 git clone https://github.com/3NZ1I/referral-_hlp.git
-cd referral-_hlp
 
 # 2. Pull pre-built images from Docker Hub
 sudo docker pull bessarf/referral-hlp-frontend:latest
 sudo docker pull bessarf/referral-hlp-backend:latest
-
 # 3. Tag images locally (workaround for docker-compose issue)
 sudo docker tag bessarf/referral-hlp-frontend:latest referral-hlp-frontend:latest
 sudo docker tag bessarf/referral-hlp-backend:latest referral-hlp-backend:latest
-
 # 4. Start all services
 sudo docker compose up -d
 
@@ -88,11 +84,8 @@ sudo docker compose ps
 
 ```bash
 # Install certbot
-sudo apt install certbot nginx -y
-
 # Stop nginx temporarily
 sudo systemctl stop nginx
-
 # Obtain certificates
 sudo certbot certonly --standalone \
   -d hlp.bessar.work \
