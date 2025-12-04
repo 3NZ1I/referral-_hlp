@@ -1,6 +1,25 @@
-version: '3.8'
 services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-referral_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-referral_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     image: bessarf/referral-hlp-backend:latest
     ports:
       - "8000:8000"
@@ -20,6 +39,9 @@ services:
       start_period: 60s
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     image: bessarf/referral-hlp-frontend:latest
     ports:
       - "8080:80"
@@ -31,23 +53,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-referral_db}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-referral_db}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
 volumes:
   postgres_data:

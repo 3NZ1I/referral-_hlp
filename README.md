@@ -329,6 +329,22 @@ sudo certbot --nginx -d hlp.bessar.work
 
 **Note:** Pre-built images are hosted on Docker Hub to avoid DNS resolution issues during build.
 
+### Systemd: make the stack start on boot
+This project includes a systemd service to ensure the Docker Compose stack starts automatically when the VM starts.
+To install the service run:
+```bash
+# Copy service file and enable it (run as root)
+sudo cp deploy/referral.service /etc/systemd/system/referral.service
+sudo systemctl daemon-reload
+sudo systemctl enable referral.service
+sudo systemctl start referral.service
+sudo systemctl status referral.service
+```
+Or run the helper script in the repo (run as root):
+```bash
+sudo bash deploy/install-referral-service.sh
+```
+
 ### Database Backup Strategy
 
 ## CI / CD
