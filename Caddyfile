@@ -1,5 +1,7 @@
+
 hlp.bessar.work {
-  reverse_proxy localhost:3000
+  root * ./frontend/dist
+  file_server
   header {
     Content-Security-Policy "default-src 'self'; connect-src 'self' https://api.bessar.work; frame-ancestors 'none';"
     X-Frame-Options "DENY"
