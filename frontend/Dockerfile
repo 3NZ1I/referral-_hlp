@@ -8,12 +8,13 @@ ENV NODE_OPTIONS=--max-old-space-size=2048
 
 COPY package.json package-lock.json ./
 # Harden npm networking to reduce DNS flakiness
+# --include=dev ensures devDependencies are installed (where @vitejs/plugin-react lives)
 RUN npm config set registry https://registry.npmjs.org/ \
 	&& npm config set fetch-retries 5 \
 	&& npm config set fetch-retry-factor 2 \
 	&& npm config set fetch-retry-maxtimeout 60000 \
 	&& npm config set fetch-timeout 60000 \
-	&& npm ci --omit=optional --prefer-offline --no-audit --progress=false
+	&& npm ci --include=dev --prefer-offline --no-audit --progress=false
 
 COPY . .
 # Ensure local binaries (like vite) are on PATH to avoid npx hitting registry
