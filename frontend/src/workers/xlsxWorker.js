@@ -1,7 +1,7 @@
 // Simple Web Worker for XLSX parsing to isolate processing
 // Main thread should post { arrayBuffer, options } and receive { success, data, error }
 
-/* eslint-disable no-restricted-globals */
+// Worker uses `self` global; eslint rule not necessary here and may not be activated in the current config
 
 let XLSX;
 

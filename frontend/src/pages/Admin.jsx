@@ -266,15 +266,15 @@ const Admin = () => {
             tooltip="Optional: link to a profile image"
             rules={[
               {
-                validator: (_, value) => {
-                  if (!value) return Promise.resolve();
-                  try {
-                    const u = new URL(value);
-                    return Promise.resolve();
-                  } catch {
-                    return Promise.reject(new Error('Please enter a valid URL'));
-                  }
-                },
+                        validator: (_, value) => {
+                          if (!value) return Promise.resolve();
+                          try {
+                            new URL(value);
+                            return Promise.resolve();
+                          } catch {
+                            return Promise.reject(new Error('Please enter a valid URL'));
+                          }
+                        },
               },
             ]}
           >

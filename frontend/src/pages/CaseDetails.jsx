@@ -149,6 +149,33 @@ const CaseDetails = () => {
     setFollowUpValue(toDayjs(caseRecord.followUpDate));
   }, [caseRecord]);
 
+  // compute category & staff options early so hooks are not conditionally executed
+  const categoryValue = useMemo(() => {
+    const fields = caseRecord?.formFields || {};
+    const categoryFieldMap = [
+      { field: 'eng_followup1', optionsKey: 'sj0rz77' },
+      { field: 'law_followup3', optionsKey: 'sj0lw91' },
+      { field: 'law_followup4', optionsKey: 'sj0lw92' },
+      { field: 'law_followup5', optionsKey: 'sj0lw93' },
+    ];
+    for (const { field, optionsKey } of categoryFieldMap) {
+      const value = fields[field];
+      if (value && value !== '') {
+        return getOptionLabel(optionsKey, value);
+      }
+    }
+    return '—';
+  }, [caseRecord?.formFields]);
+
+  const staffOptions = useMemo(() => {
+    const existing = staffDirectory || [];
+    const options = [{ id: '', name: 'Unassigned' }, ...existing];
+    if (caseRecord?.assignedStaff && !existing.some((staff) => staff.name === caseRecord.assignedStaff)) {
+      options.push({ id: 'custom', name: caseRecord.assignedStaff });
+    }
+    return options;
+  }, [caseRecord?.assignedStaff, staffDirectory]);
+
   if (!caseRecord) {
     return (
       <Card className="card-panel">
@@ -165,37 +192,6 @@ const CaseDetails = () => {
     || caseRecord.raw?._submission_time;
 
   // Compute category from referral/followup fields
-  const categoryValue = useMemo(() => {
-    const fields = caseRecord.formFields || {};
-    
-    // Map of field names to their labels and optionsKeys
-    const categoryFieldMap = [
-      { field: 'eng_followup1', optionsKey: 'sj0rz77' },
-      { field: 'law_followup3', optionsKey: 'sj0lw91' },
-      { field: 'law_followup4', optionsKey: 'sj0lw92' },
-      { field: 'law_followup5', optionsKey: 'sj0lw93' },
-    ];
-    
-    // Find the first field with a value
-    for (const { field, optionsKey } of categoryFieldMap) {
-      const value = fields[field];
-      if (value && value !== '') {
-        // Get the option label for this value
-        return getOptionLabel(optionsKey, value);
-      }
-    }
-    
-    return '—';
-  }, [caseRecord.formFields]);
-
-  const staffOptions = useMemo(() => {
-    const existing = staffDirectory || [];
-    const options = [{ id: '', name: 'Unassigned' }, ...existing];
-    if (caseRecord.assignedStaff && !existing.some((staff) => staff.name === caseRecord.assignedStaff)) {
-      options.push({ id: 'custom', name: caseRecord.assignedStaff });
-    }
-    return options;
-  }, [caseRecord.assignedStaff, staffDirectory]);
 
   const normalizedFollowUp = followUpValue ? followUpValue.format('YYYY-MM-DD') : '';
   const originalFollowUp = formatDateDisplay(caseRecord.followUpDate) === '—'
@@ -243,7 +239,8 @@ const CaseDetails = () => {
       
       setCommentText('');
       message.success('Comment added successfully');
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to add comment', err);
       message.error('Failed to add comment');
     } finally {
       setAddingComment(false);
@@ -276,7 +273,8 @@ const CaseDetails = () => {
       setEditingCommentId(null);
       setEditCommentText('');
       message.success('Comment updated successfully');
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to update comment', err);
       message.error('Failed to update comment');
     }
   };

@@ -33,7 +33,8 @@ const AccountSettings = () => {
       updateUser(currentUser.id, updates);
       message.success('Account settings updated successfully');
       form.resetFields(['newPassword', 'confirmPassword']);
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to update account settings:', err);
       message.error('Failed to update account settings');
     } finally {
       setLoading(false);
@@ -75,14 +76,14 @@ const AccountSettings = () => {
                       rules={[
                         {
                           validator: (_, value) => {
-                            if (!value) return Promise.resolve();
-                            try {
-                              const u = new URL(value);
-                              return Promise.resolve();
-                            } catch {
-                              return Promise.reject(new Error('Please enter a valid URL'));
-                            }
-                          },
+                              if (!value) return Promise.resolve();
+                              try {
+                                new URL(value);
+                                return Promise.resolve();
+                              } catch {
+                                return Promise.reject(new Error('Please enter a valid URL'));
+                              }
+                            },
                         },
                       ]}
                     >

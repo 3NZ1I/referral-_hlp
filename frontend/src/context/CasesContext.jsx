@@ -1,8 +1,8 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -435,8 +435,11 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index) => {
 
 export const CasesProvider = ({ children }) => {
   const { users } = useAuth();
-  const [cases, setCases] = useState(initialCases);
-  const [datasets, setDatasets] = useState(initialDatasets);
+  const [cases, setCases] = useState(() => backfillCaseCollection(initialCases));
+  const [datasets, setDatasets] = useState(() => initialDatasets.map((dataset) => ({
+    ...dataset,
+    rows: backfillCaseCollection(dataset.rows || []),
+  })));
 
   // Create staffDirectory from users
   const staffDirectory = useMemo(() => 
@@ -446,14 +449,7 @@ export const CasesProvider = ({ children }) => {
     }))
   , [users]);
 
-  useEffect(() => {
-    setCases((prev) => backfillCaseCollection(prev));
-    setDatasets((prev) => prev.map((dataset) => {
-      if (!dataset.rows) return dataset;
-      const nextRows = backfillCaseCollection(dataset.rows);
-      return nextRows !== dataset.rows ? { ...dataset, rows: nextRows } : dataset;
-    }));
-  }, []);
+  // no first-run setState needed; initial state already backfilled
 
   const importDataset = useCallback((file) => new Promise((resolve, reject) => {
     // Validate file before processing
