@@ -513,6 +513,11 @@ docker compose logs -f db
 - Frontend: `http://localhost:8080/health` (or `https://hlp.bessar.work/health`)
 - Database: `docker compose ps` (should show "healthy")
 
+You can also use the provided script:
+```bash
+./scripts/healthcheck.sh # default checks: api-> localhost:8000/api/health, frontend-> localhost:8080/health
+``` 
+
 ## Security Notes
 
 - **Change default passwords** in `.env` file
