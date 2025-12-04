@@ -21,7 +21,7 @@ jobs:
           python -m pip install -r backend/requirements.txt
           python -m pip install flake8
       - name: Lint backend
-        run: flake8 backend || true
+        run: flake8 backend
       - name: Compile backend
         run: python -m compileall backend
 
@@ -37,10 +37,11 @@ jobs:
         run: |
           cd frontend
           npm ci --legacy-peer-deps
-      - name: Lint frontend (optional)
+      - name: Lint frontend
         run: |
           cd frontend
-          npm run lint || true
+          npm ci --silent
+          npm run lint
       - name: Build frontend
         run: |
           cd frontend
