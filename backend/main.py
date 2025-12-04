@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
-from api import app as api_app
+from backend.api import app as api_app
 from sqlalchemy import create_engine
 import os
 

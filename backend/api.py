@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from models import User, Case, Comment
+from backend.models import User, Case, Comment
 from .schemas import (
     CaseCreate,
     CaseRead,

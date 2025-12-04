@@ -6,10 +6,10 @@ from alembic import context
 import os
 import sys
 
-# Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+# Add project root to path so package `backend` can be imported
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from models import Base
+from backend.models import Base
 
 # this is the Alembic Config object
 config = context.config
