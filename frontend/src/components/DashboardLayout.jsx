@@ -19,7 +19,7 @@ const { Header, Sider, Content } = Layout;
 
 const DashboardLayout = ({ children, selectedKey = 'cases', onMenuClick, hideLayout = false }) => {
   const { isDarkMode, toggleTheme } = useTheme();
-  const { currentUser, logout, canAccessStatistics, canAccessData, canImportData } = useAuth();
+  const { currentUser, logout, canAccessStatistics, canAccessData } = useAuth();
 
   // If hideLayout is true, render children without sidebar
   if (hideLayout) {

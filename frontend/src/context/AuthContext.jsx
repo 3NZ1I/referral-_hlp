@@ -45,6 +45,25 @@ export const AuthProvider = ({ children }) => {
 
   const [users, setUsers] = useState([]);
 
+  // Fetch users list from backend
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const list = await request('/users');
+        if (Array.isArray(list)) {
+          setUsers(list.map(u => ({
+            ...u,
+            name: u.name || u.username,
+            avatar: u.avatar || generateAvatar(u.name || u.username),
+          })));
+        }
+      } catch (err) {
+        // Ignore silently - user list is optional
+      }
+    };
+    fetchUsers();
+  }, []);
+
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -124,7 +143,10 @@ export const AuthProvider = ({ children }) => {
         method: 'POST',
         body: userData,
       });
-      return response.user;
+      const u = response.user;
+      // update local list
+      setUsers(prev => prev ? [...prev, u] : [u]);
+      return u;
     } catch (error) {
       console.error('Add user error:', error);
       throw error;
@@ -134,11 +156,19 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (userId, updates) => {
     // Update current user if editing self
     setCurrentUser((cu) => (cu && cu.id === userId ? { ...cu, ...updates } : cu));
+    setUsers(prev => prev.map(u => (u.id === userId ? { ...u, ...updates } : u)));
   };
 
   const deleteUser = async (userId) => {
-    // Implement backend delete if needed
-    console.warn('Delete user not yet implemented in backend');
+    try {
+      await request(`/users/${userId}`, { method: 'DELETE' });
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      if (currentUser?.id === userId) logout();
+      return true;
+    } catch (err) {
+      console.warn('Delete user failed (backend may not implement):', err);
+      return false;
+    }
   };
 
   const isAdmin = currentUser?.role === ROLES.ADMIN || currentUser?.role === 'admin';

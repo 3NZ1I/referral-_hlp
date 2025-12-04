@@ -1,7 +1,7 @@
 // src/api/http.js
 // Secure HTTP client using fetch with best practices
 
-const BASE_URL = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL || 'https://api.bessar.work/api';
+const BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_REACT_APP_API_URL || 'https://api.bessar.work/api';
 
 function getAuthToken() {
   // Example: get token from localStorage or cookie

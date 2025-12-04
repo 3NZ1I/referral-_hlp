@@ -339,19 +339,8 @@ const pickValue = (normalizedRow, aliases, fallback = '') => {
   return fallback;
 };
 
-const resolveFieldValue = (normalizedRow, canonicalName, fallback = '') => {
-  const aliases = fieldAliasIndex[canonicalName] || [normalizeKey(canonicalName)];
-  const value = pickValue(normalizedRow, aliases, fallback);
-  if (value !== '' && value !== undefined) return value;
-  
-  // FALLBACK: Try the normalized version of the canonical name (without underscores)
-  const normalizedCanonical = normalizeKey(canonicalName);
-  if (normalizedRow[normalizedCanonical] !== undefined && normalizedRow[normalizedCanonical] !== '') {
-    return normalizedRow[normalizedCanonical];
-  }
-  
-  return fallback;
-};
+// NOTE: resolveFieldValue was removed - instead, using mapFieldsFromRow & direct alias lookup via
+// `caseFieldAliasIndex` / `fieldAliasIndex`. Keep the implementation here archived if needed.
 
 const resolveCaseFieldValue = (normalizedRow, target, fallback = '') => {
   const aliases = caseFieldAliasIndex[target] || [normalizeKey(target)];
@@ -637,7 +626,7 @@ export const CasesProvider = ({ children }) => {
     deleteDatasets,
     deleteCases,
     updateCase,
-  }), [cases, datasets, importDataset, deleteDatasets, deleteCases, updateCase]);
+  }), [cases, datasets, importDataset, deleteDatasets, deleteCases, updateCase, staffDirectory]);
 
   return (
     <CasesContext.Provider value={value}>
