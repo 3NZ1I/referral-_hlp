@@ -259,6 +259,11 @@ server {
 sudo ln -sf /etc/nginx/sites-available/hlp.bessar.work /etc/nginx/sites-enabled/hlp.bessar.work
 sudo rm /etc/nginx/sites-enabled/default
 ```
+If you previously used Caddy, stop and disable Caddy before starting nginx:
+```bash
+sudo systemctl stop caddy
+sudo systemctl disable caddy
+```
 
 ### 5. Set permissions for static files
 ```bash
