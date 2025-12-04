@@ -12,160 +12,138 @@ docker compose up
 # Backend:  http://localhost:8000/api
 ```
 
-## Production Deployment (Azure Ubuntu Docker)
+## Production Deployment
+
+**🚀 Live Application:**
+- **Frontend:** https://hlp.bessar.work
+- **Backend API:** https://api.bessar.work/api/health
+- **Server:** Azure VM (refsys2) at 135.220.73.22
+- **SSL/TLS:** Let's Encrypt (TLS 1.3, expires Mar 4, 2026)
 
 ### Prerequisites
-- Azure Ubuntu VM with Docker and Docker Compose installed
-- Domain names configured:
-  - `hlp.bessar.work` → Frontend
-  - `api.bessar.work` → Backend API
+- Azure Ubuntu VM (22.04+) with Docker and Docker Compose installed
+- Domain names configured (A records pointing to VM IP)
 - GitHub repository: `https://github.com/3NZ1I/referral-_hlp.git`
+- Pre-built Docker images on Docker Hub:
+  - `bessarf/referral-hlp-frontend:latest`
+  - `bessarf/referral-hlp-backend:latest`
 
-### Initial Setup on Azure VM
+### Quick Deployment (Recommended)
 
-1. **Clone repository**
 ```bash
+# 1. Clone repository
 git clone https://github.com/3NZ1I/referral-_hlp.git
 cd referral-_hlp
+
+# 2. Pull pre-built images from Docker Hub
+sudo docker pull bessarf/referral-hlp-frontend:latest
+sudo docker pull bessarf/referral-hlp-backend:latest
+
+# 3. Tag images locally (workaround for docker-compose issue)
+sudo docker tag bessarf/referral-hlp-frontend:latest referral-hlp-frontend:latest
+sudo docker tag bessarf/referral-hlp-backend:latest referral-hlp-backend:latest
+
+# 4. Start all services
+sudo docker compose up -d
+
+# 5. Verify deployment
+sudo docker compose ps
+# All containers should show "healthy" status
 ```
 
-2. **Create production environment file**
+### SSL/TLS Setup
+
 ```bash
-cp .env.example .env
-nano .env
+# Install certbot
+sudo apt install certbot nginx -y
+
+# Stop nginx temporarily
+sudo systemctl stop nginx
+
+# Obtain certificates
+sudo certbot certonly --standalone \
+  -d hlp.bessar.work \
+  -d api.bessar.work
+
+# Configure nginx reverse proxy (see DEPLOYMENT.md for full config)
+sudo systemctl start nginx
+
+# Verify HTTPS works
+curl https://hlp.bessar.work
+curl https://api.bessar.work/api/health
 ```
 
-Set the following variables:
-```env
-DATABASE_URL=postgresql+psycopg2://user:SecurePassword@db/referral_db
-POSTGRES_USER=user
-POSTGRES_PASSWORD=SecurePassword
-POSTGRES_DB=referral_db
-JWT_SECRET=your-secure-random-secret-key
-JWT_EXP_MINUTES=120
-REACT_APP_API_URL=https://api.bessar.work/api
-```
+### Full Deployment Guide
 
-3. **Run database migrations**
-```bash
-# Start only the database
-docker compose up -d db
+**📖 See [DEPLOYMENT.md](./DEPLOYMENT.md) for:**
+- Detailed step-by-step instructions
+- Common issues & solutions (DNS, vite build errors, docker-compose quirks)
+- SSL certificate configuration
+- Nginx reverse proxy setup
+- Database backup/restore procedures
+- Security best practices
+- Monitoring and maintenance
 
-# Wait for DB to be ready, then run migrations
-docker compose run --rm backend alembic upgrade head
-```
+### Updating the System
 
-4. **Start all services**
-```bash
-docker compose up -d
-```
-
-5. **Configure reverse proxy (Nginx/Caddy on host)**
-
-For `api.bessar.work`:
-```nginx
-server {
-    listen 80;
-    server_name api.bessar.work;
-    
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-For `hlp.bessar.work`:
-```nginx
-server {
-    listen 80;
-    server_name hlp.bessar.work;
-    
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-6. **Enable HTTPS with Let's Encrypt**
-```bash
-sudo certbot --nginx -d api.bessar.work -d hlp.bessar.work
-```
-
-### Updating the System (Zero Downtime)
-
-When you push changes to GitHub, CI/CD automatically builds new images. To deploy updates:
+When you push changes to GitHub:
 
 ```bash
 # SSH into your Azure VM
-ssh user@your-vm-ip
+ssh bessar@135.220.73.22
 
 # Navigate to project directory
-cd referral-_hlp
+cd ~/referral-_hlp
 
 # Pull latest code
 git pull origin main
 
-# Pull updated images from GitHub Container Registry
-docker compose pull
+# Pull updated Docker images from Docker Hub
+sudo docker pull bessarf/referral-hlp-frontend:latest
+sudo docker pull bessarf/referral-hlp-backend:latest
 
-# Run any new migrations
-docker compose run --rm backend alembic upgrade head
+# Tag locally
+sudo docker tag bessarf/referral-hlp-frontend:latest referral-hlp-frontend:latest
+sudo docker tag bessarf/referral-hlp-backend:latest referral-hlp-backend:latest
 
 # Restart services with new images
-docker compose up -d
+sudo docker compose up -d
 
 # View logs to verify
-docker compose logs -f
+sudo docker compose logs -f
 ```
 
-**Automated deployment option**: Add this to GitHub Actions to auto-deploy on push:
-```yaml
-- name: Deploy to Azure VM
-  uses: appleboy/ssh-action@master
-  with:
-    host: ${{ secrets.AZURE_VM_IP }}
-    username: ${{ secrets.AZURE_VM_USER }}
-    key: ${{ secrets.AZURE_VM_SSH_KEY }}
-    script: |
-      cd referral-_hlp
-      git pull origin main
-      docker compose pull
-      docker compose run --rm backend alembic upgrade head
-      docker compose up -d
-```
+**Note:** Pre-built images are hosted on Docker Hub to avoid DNS resolution issues during build.
 
 ### Database Backup Strategy
 
-**Automated daily backups**:
+**Automated daily backups** (configured on production VM):
 ```bash
 # Create backup script
-cat > /home/user/backup-db.sh << 'EOF'
+cat > ~/backup-db.sh << 'EOF'
 #!/bin/bash
-BACKUP_DIR="/home/user/backups"
+BACKUP_DIR="$HOME/db_backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 mkdir -p $BACKUP_DIR
-docker exec referral-_hlp-db-1 pg_dump -U user referral_db | gzip > $BACKUP_DIR/referral_db_$DATE.sql.gz
+cd ~/referral-_hlp
+sudo docker exec referral-_hlp-db-1 pg_dump -U user referral_db | gzip > $BACKUP_DIR/backup_$DATE.sql.gz
 find $BACKUP_DIR -name "*.sql.gz" -mtime +7 -delete
+echo "Backup completed: backup_$DATE.sql.gz"
 EOF
 
-chmod +x /home/user/backup-db.sh
+chmod +x ~/backup-db.sh
 
 # Add to crontab (daily at 2 AM)
-crontab -e
-# Add: 0 2 * * * /home/user/backup-db.sh
+(crontab -l 2>/dev/null; echo "0 2 * * * $HOME/backup-db.sh") | crontab -
 ```
 
 **Restore from backup**:
 ```bash
-gunzip < backup_file.sql.gz | docker exec -i referral-_hlp-db-1 psql -U user referral_db
+# From gzipped backup
+zcat backup_20251204.sql.gz | sudo docker exec -i referral-_hlp-db-1 psql -U user referral_db
+
+# From uncompressed backup
+cat backup_20251204.sql | sudo docker exec -i referral-_hlp-db-1 psql -U user referral_db
 ```
 
 ## Environment Variables
