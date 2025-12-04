@@ -169,6 +169,10 @@ Check browser dev tools for asset errors
   - For development, ensure the preview server is running and Caddy is proxying all requests to it.
 - If you see Node.js engine warnings, upgrade Node.js as above.
 
+### Security: XLSX library
+- The project uses `xlsx` (SheetJS) to parse spreadsheet uploads. As of this documentation, there are known vulnerabilities (Prototype Pollution, ReDoS) in certain versions of `xlsx`. If you accept files from untrusted sources, consider sandboxing the upload processor, scanning files, or using an alternative parser.
+
+
 ## Backend Startup
 - Start backend (API) on port 8000
 
