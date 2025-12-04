@@ -6,7 +6,7 @@ import jwt
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from models import Base, User, Case, Comment
-from schemas import (
+from .schemas import (
     CaseCreate,
     CaseRead,
     UserCreate,
