@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --logLevel info",
-    "lint": "eslint .",
+    "lint": "eslint 'src/**/*.{js,jsx,ts,tsx}' --ext .jsx,.js,.ts,.tsx",
     "preview": "vite preview"
   },
   "dependencies": {
