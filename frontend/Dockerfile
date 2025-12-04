@@ -1,5 +1,10 @@
 # Production Dockerfile for React frontend
 FROM node:20-alpine AS build
+
+# Add Google DNS to fix EAI_AGAIN errors
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
+    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+
 WORKDIR /app
 
 ARG VITE_API_URL
@@ -7,14 +12,13 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV NODE_OPTIONS=--max-old-space-size=2048
 
 COPY package.json package-lock.json ./
-# Force clean install - delete lock and regenerate to avoid integrity issues
+# Use npm ci with legacy peer deps to avoid conflicts
 RUN npm config set registry https://registry.npmjs.org/ \
-	&& npm config set fetch-retries 5 \
-	&& npm config set fetch-retry-factor 2 \
-	&& npm config set fetch-retry-maxtimeout 60000 \
-	&& npm config set fetch-timeout 60000 \
-	&& rm -f package-lock.json \
-	&& npm install --loglevel verbose \
+	&& npm config set fetch-retries 10 \
+	&& npm config set fetch-retry-factor 3 \
+	&& npm config set fetch-retry-maxtimeout 120000 \
+	&& npm config set fetch-timeout 120000 \
+	&& npm ci --legacy-peer-deps --prefer-offline \
 	&& echo "=== Verifying vite installation ===" \
 	&& ls -la node_modules/.bin/vite \
 	&& node_modules/.bin/vite --version
