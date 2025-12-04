@@ -1,10 +1,19 @@
 
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from models import Base, User, Case, Comment
+from schemas import (
+    CaseCreate,
+    CaseRead,
+    UserCreate,
+    UserRead,
+    CommentCreate,
+    CommentRead,
+)
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import os
@@ -21,6 +30,12 @@ app = FastAPI()
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.exception_handler(Exception)
+def general_exception_handler(request, exc):
+    # Avoid exposing internal errors; log locally and return safe message
+    return JSONResponse({"detail": "Internal server error"}, status_code=500)
 
 security = HTTPBearer()
 JWT_SECRET = os.getenv("SECRET_KEY", os.getenv("JWT_SECRET", "dev-secret"))
@@ -53,31 +68,31 @@ def get_db():
         db.close()
 
 # CASES CRUD
-@app.get("/cases")
+@app.get("/cases", response_model=list[CaseRead])
 def get_cases(db: Session = Depends(get_db)):
     return db.query(Case).all()
 
-@app.get("/cases/{case_id}")
+@app.get("/cases/{case_id}", response_model=CaseRead)
 def get_case(case_id: int, db: Session = Depends(get_db)):
-    case = db.query(Case).get(case_id)
+    case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     return case
 
-@app.post("/cases")
-def create_case(case: dict, db: Session = Depends(get_db), user=Depends(require_auth)):
-    new_case = Case(**case)
+@app.post("/cases", response_model=CaseRead, status_code=status.HTTP_201_CREATED)
+def create_case(case: CaseCreate, db: Session = Depends(get_db), user=Depends(require_auth)):
+    new_case = Case(**case.dict())
     db.add(new_case)
     db.commit()
     db.refresh(new_case)
     return new_case
 
-@app.put("/cases/{case_id}")
-def update_case(case_id: int, case: dict, db: Session = Depends(get_db), user=Depends(require_auth)):
-    db_case = db.query(Case).get(case_id)
+@app.put("/cases/{case_id}", response_model=CaseRead)
+def update_case(case_id: int, case: CaseCreate, db: Session = Depends(get_db), user=Depends(require_auth)):
+    db_case = db.get(Case, case_id)
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
-    for key, value in case.items():
+    for key, value in case.dict(exclude_unset=True).items():
         setattr(db_case, key, value)
     db.commit()
     db.refresh(db_case)
@@ -85,7 +100,7 @@ def update_case(case_id: int, case: dict, db: Session = Depends(get_db), user=De
 
 @app.delete("/cases/{case_id}")
 def delete_case(case_id: int, db: Session = Depends(get_db), user=Depends(require_auth)):
-    db_case = db.query(Case).get(case_id)
+    db_case = db.get(Case, case_id)
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
     db.delete(db_case)
@@ -93,29 +108,31 @@ def delete_case(case_id: int, db: Session = Depends(get_db), user=Depends(requir
     return {"detail": "Case deleted"}
 
 # USERS CRUD
-@app.get("/users")
+@app.get("/users", response_model=list[UserRead])
 def get_users(db: Session = Depends(get_db)):
     return db.query(User).all()
 
-@app.post("/users")
-def create_user(user: dict, db: Session = Depends(get_db), auth=Depends(require_auth)):
+@app.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def create_user(user: UserCreate, db: Session = Depends(get_db), auth=Depends(require_auth)):
     # Hash password if provided
-    if "password" in user:
-        user["password_hash"] = hash_password(user.pop("password"))
-    new_user = User(**user)
+    password = user.password
+    user_data = user.dict(exclude={"password"})
+    if password:
+        user_data["password_hash"] = hash_password(password)
+    new_user = User(**user_data)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
 
 # COMMENTS CRUD
-@app.get("/cases/{case_id}/comments")
+@app.get("/cases/{case_id}/comments", response_model=list[CommentRead])
 def get_comments(case_id: int, db: Session = Depends(get_db)):
     return db.query(Comment).filter(Comment.case_id == case_id).all()
 
-@app.post("/cases/{case_id}/comments")
-def add_comment(case_id: int, comment: dict, db: Session = Depends(get_db), user=Depends(require_auth)):
-    new_comment = Comment(case_id=case_id, **comment)
+@app.post("/cases/{case_id}/comments", response_model=CommentRead, status_code=status.HTTP_201_CREATED)
+def add_comment(case_id: int, comment: CommentCreate, db: Session = Depends(get_db), user=Depends(require_auth)):
+    new_comment = Comment(case_id=case_id, **comment.dict())
     db.add(new_comment)
     db.commit()
     db.refresh(new_comment)
@@ -128,7 +145,7 @@ def get_abilities(db: Session = Depends(get_db)):
     return [a[0] for a in abilities if a[0]]
 
 # ASSIGN CASE
-@app.post("/cases/{case_id}/assign")
+@app.post("/cases/{case_id}/assign", response_model=CaseRead)
 def assign_case(case_id: int, payload: dict, db: Session = Depends(get_db), user=Depends(require_auth)):
     case = db.query(Case).get(case_id)
     if not case:
