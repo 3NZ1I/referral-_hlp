@@ -125,6 +125,16 @@ def create_user(user: UserCreate, db: Session = Depends(get_db), auth=Depends(re
     db.refresh(new_user)
     return new_user
 
+
+@app.delete('/users/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(user_id: int, db: Session = Depends(get_db), auth=Depends(require_auth)):
+    db_user = db.get(User, user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail='User not found')
+    db.delete(db_user)
+    db.commit()
+    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
+
 # COMMENTS CRUD
 @app.get("/cases/{case_id}/comments", response_model=list[CommentRead])
 def get_comments(case_id: int, db: Session = Depends(get_db)):
