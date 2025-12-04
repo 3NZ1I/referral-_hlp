@@ -12,6 +12,39 @@ docker compose up
 # Backend:  http://localhost:8000/api
 ```
 
+## Database Migrations (Alembic)
+
+This project uses Alembic for automatic database schema management.
+
+### Initial Setup
+1. Ensure PostgreSQL is running and accessible (default: localhost, port 5432).
+2. Alembic config is in `backend/alembic.ini`.
+3. Models are in `backend/models.py`.
+
+### Create/Update Tables
+Activate your Python virtual environment, then run:
+```bash
+cd backend
+alembic revision --autogenerate -m "Initial tables"
+alembic upgrade head
+```
+
+### Troubleshooting Migration Errors
+- If you see errors like `Can't locate revision identified by 'XXX'`, reset Alembic:
+  1. Delete all files in `backend/alembic/versions/`.
+  2. Drop the `alembic_version` table from your database:
+     ```bash
+     psql -U user -d referral_db -h localhost
+     DROP TABLE IF EXISTS alembic_version;
+     \q
+     ```
+  3. Re-run the migration commands above.
+
+### Deployment
+After running migrations, all tables (`users`, `cases`, `comments`) will be created automatically on deployment.
+
+**Tip:** Always run Alembic migrations after pulling new code or updating models.
+
 ## Production Deployment
 
 **🚀 Live Application:**
