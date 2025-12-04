@@ -331,6 +331,32 @@ sudo certbot --nginx -d hlp.bessar.work
 
 ### Database Backup Strategy
 
+## CI / CD
+
+We provide two GitHub Actions workflows under `.github/workflows/`:
+
+- `ci.yml` — runs on push / pull_request to `main`; it builds backend requirements and runs lint/compile, and builds frontend with `npm run build` to validate the UI build.
+- `publish.yml` — runs on push to `main` to build and push Docker images for `frontend` and `backend` to a Docker registry (Docker Hub by default).
+
+To publish images, configure the following GitHub Repository secrets (Settings → Secrets):
+- `DOCKERHUB_USERNAME` — your Docker Hub username.
+- `DOCKERHUB_TOKEN` — your Docker Hub access token or password.
+- `VITE_API_URL` (optional) — embed API url into built frontend image.
+
+Quick CI commands to test locally:
+```bash
+# Backend
+cd backend
+python -m pip install -r requirements.txt
+python -m compileall backend
+
+# Frontend
+cd ../frontend
+npm ci --legacy-peer-deps
+npm run build
+```
+
+
 **Automated daily backups** (configured on production VM):
 ```bash
 # Create backup script
