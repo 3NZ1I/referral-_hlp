@@ -13,10 +13,10 @@ RUN npm config set registry https://registry.npmjs.org/ \
 	&& npm config set fetch-retry-factor 2 \
 	&& npm config set fetch-retry-maxtimeout 60000 \
 	&& npm config set fetch-timeout 60000 \
-	&& npm ci --prefer-offline --no-audit --progress=false
+	&& npm ci --omit=optional --prefer-offline --no-audit --progress=false
 
 COPY . .
-RUN npm run build
+RUN npx vite build --logLevel info
 
 FROM nginx:1.28-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
