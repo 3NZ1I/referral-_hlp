@@ -63,12 +63,12 @@ const mapCanonicalFields_ARCHIVED = (normalizedRow) => {
     let value = resolveFieldValue(normalizedRow, canonicalName, undefined);
 
     if ((value === undefined || value === '') && canonicalName === 'beneficiary_name') {
-      console.log('[DEBUG] beneficiary_name empty, checking direct key. normalizedRow.beneficiary_name:', normalizedRow.beneficiary_name);
+      // Debug: beneficiary_name fallback check
       const alt = normalizedRow.beneficiary_name;
       if (alt !== undefined && alt !== '') value = alt;
     }
     if ((value === undefined || value === '') && canonicalName === 'beneficiary_last_name') {
-      console.log('[DEBUG] beneficiary_last_name empty, checking direct key. normalizedRow.beneficiary_last_name:', normalizedRow.beneficiary_last_name);
+      // Debug: beneficiary_last_name fallback check
       const alt = normalizedRow.beneficiary_last_name;
       if (alt !== undefined && alt !== '') value = alt;
     }
@@ -78,12 +78,7 @@ const mapCanonicalFields_ARCHIVED = (normalizedRow) => {
     }
   });
   
-  console.log('[DEBUG] mapCanonicalFields result:', {
-    beneficiary_name: acc.beneficiary_name,
-    beneficiary_last_name: acc.beneficiary_last_name,
-    beneficiary_father: acc.beneficiary_father,
-    beneficiary_mother: acc.beneficiary_mother
-  });
+  // Debug: Canonical field mapping complete
   
   return acc;
 };
@@ -288,8 +283,7 @@ const mapFieldsFromRow = (rawRow) => {
     rowLookup[cleanKey] = typeof value === 'string' ? value.trim() : value;
   });
   
-  console.log('[NEW MAPPING] Total available keys:', Object.keys(rowLookup).length);
-  console.log('[NEW MAPPING] All keys (sample):', Object.keys(rowLookup).slice(0, 50));
+  // Available keys count: Object.keys(rowLookup).length
   
   // For each canonical field, try all possible aliases
   formSections.forEach((section) => {
@@ -312,22 +306,13 @@ const mapFieldsFromRow = (rawRow) => {
                'beneficiary_civil_status', 'id_question', 'id_kind', 'owner_id_get',
                'owner_id_get_reason', 'fam_docs', 'main_number', 'back_number',
                'last_visit_date', 'last_stay_date', 'can_access', 'idps', 'yes_idps'].includes(canonicalName)) {
-            console.log(`[MATCH] ${canonicalName} ← "${alias}" (cleaned: "${cleanAlias}")`);
+            // Match found for ${canonicalName}
           }
           
           break; // Stop after first match
         }
       }
     });
-  });
-  
-  console.log('[NEW MAPPING] Mapped fields:', {
-    staff_name: result.staff_name,
-    work_location: result.work_location,
-    beneficiary_birth_place: result.beneficiary_birth_place,
-    ben_gender: result.ben_gender,
-    beneficiary_civil_status: result.beneficiary_civil_status,
-    main_number: result.main_number
   });
   
   return result;
@@ -380,19 +365,13 @@ const mapCanonicalFields = (rawRow) => {
 
 const backfillFormFields = (caseItem) => {
   if (!caseItem || !caseItem.raw) {
-    console.log('[BACKFILL] No raw data for case:', caseItem?.caseNumber);
+    // No raw data available for backfill
     return caseItem;
   }
   
-  console.log('[BACKFILL] Starting backfill for case:', caseItem.caseNumber);
-  console.log('[BACKFILL] Raw data keys related to name:', Object.keys(caseItem.raw).filter(k => /name|last|اسم|لقب/i.test(k)));
+  // Backfilling missing fields from raw data
   
   const canonicalFields = mapCanonicalFields(caseItem.raw);
-  
-  console.log('[BACKFILL] After mapCanonicalFields:', {
-    beneficiary_name: canonicalFields.beneficiary_name,
-    beneficiary_last_name: canonicalFields.beneficiary_last_name
-  });
   
   // Always regenerate formFields from raw data to ensure consistency
   const mergedFields = { ...canonicalFields };
@@ -406,10 +385,7 @@ const backfillFormFields = (caseItem) => {
     });
   }
   
-  console.log('[BACKFILL] Final formFields:', {
-    beneficiary_name: mergedFields.beneficiary_name,
-    beneficiary_last_name: mergedFields.beneficiary_last_name
-  });
+  // Backfill complete
   
   return { ...caseItem, formFields: mergedFields };
 };
@@ -536,7 +512,7 @@ export const CasesProvider = ({ children }) => {
           const canonicalFromAlias = aliasToCanonicalIndex[normalized];
           
           // Debug ALL header mappings
-          console.log(`[${idx}] "${rawCell.substring(0,30)}" → "${canonicalFromAlias || normalized}"`);
+          // Header mapping: ${rawCell.substring(0,30)}
           
           if (canonicalFromAlias) return canonicalFromAlias;
           return normalized || `column${idx}`;
@@ -550,7 +526,7 @@ export const CasesProvider = ({ children }) => {
             
             // Debug name and title specifically
             if (idx === 16 || idx === 17) {
-              console.log(`Row data [${idx}]: "${value}" → key="${headerKey}"`);
+              // Row data mapped to key
             }
           });
           return normalizeRowObject(obj);

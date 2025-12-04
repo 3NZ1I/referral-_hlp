@@ -99,6 +99,9 @@ def get_users(db: Session = Depends(get_db)):
 
 @app.post("/users")
 def create_user(user: dict, db: Session = Depends(get_db), auth=Depends(require_auth)):
+    # Hash password if provided
+    if "password" in user:
+        user["password_hash"] = hash_password(user.pop("password"))
     new_user = User(**user)
     db.add(new_user)
     db.commit()

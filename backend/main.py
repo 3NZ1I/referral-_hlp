@@ -17,7 +17,12 @@ engine = create_engine(DATABASE_URL)
 app = FastAPI(title="HLP Referral System API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update with specific domains in production
+    allow_origins=[
+        "https://hlp.bessar.work",
+        "https://api.bessar.work",
+        "http://localhost:5173",  # For local development
+        "http://localhost:3000",  # Alternative dev port
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
