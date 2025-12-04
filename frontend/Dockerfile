@@ -1,10 +1,6 @@
 # Production Dockerfile for React frontend
 FROM node:20-alpine AS build
 
-# Add Google DNS to fix EAI_AGAIN errors
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
-    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-
 WORKDIR /app
 
 ARG VITE_API_URL
