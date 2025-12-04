@@ -1,9 +1,7 @@
 version: '3.8'
 services:
   backend:
-    image: ghcr.io/3nz1i/referral-_hlp/backend:latest
-    build:
-      context: ./backend
+    image: bessarf/referral-hlp-backend:latest
     ports:
       - "8000:8000"
     environment:
@@ -22,11 +20,7 @@ services:
       start_period: 60s
 
   frontend:
-    image: ghcr.io/3nz1i/referral-_hlp/frontend:latest
-    build:
-      context: ./frontend
-      args:
-        - REACT_APP_API_URL=${REACT_APP_API_URL:-https://api.bessar.work/api}
+    image: bessarf/referral-hlp-frontend:latest
     ports:
       - "8080:80"
     depends_on:
