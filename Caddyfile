@@ -1,6 +1,8 @@
 
 
 # Caddyfile for HLP Referral System
+# NOTE: This file is kept for documentation/roll-back only. We now use nginx in production; if you
+# wish to use Caddy again, review and enable this file and stop the nginx service on the server.
 
 hlp.bessar.work {
   root * /home/bessarf/referral-_hlp/frontend/dist
