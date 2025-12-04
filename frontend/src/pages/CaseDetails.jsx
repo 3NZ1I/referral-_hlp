@@ -232,7 +232,7 @@ const CaseDetails = () => {
       const newComment = {
         id: Date.now().toString(),
         text: commentText.trim(),
-        author: staffValue || 'System User',
+        author: currentUser?.username || 'Unknown User',
         timestamp: new Date().toISOString(),
       };
       
@@ -543,7 +543,7 @@ const CaseDetails = () => {
             renderItem={(comment) => (
               <List.Item
                 actions={
-                  comment.author === (staffValue || 'System User') && editingCommentId !== comment.id
+                  comment.author === (currentUser?.username || 'Unknown User') && editingCommentId !== comment.id
                     ? [
                         <Tooltip title="Edit comment">
                           <Button
