@@ -173,7 +173,10 @@ def assign_case(case_id: int, payload: dict, db: Session = Depends(get_db), user
 # XLSX IMPORT (n8n/file upload compatible)
 @app.post("/import")
 def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(require_auth)):
-    wb = openpyxl.load_workbook(file.file)
+    try:
+        wb = openpyxl.load_workbook(file.file)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid XLSX file: {e}")
     ws = wb.active
     headers = [cell.value for cell in ws[1]]
     imported = 0
@@ -189,6 +192,18 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
         imported += 1
     db.commit()
     return {"imported": imported}
+
+
+@app.on_event('startup')
+def on_startup():
+    # quick check for DB connectivity
+    try:
+        db = SessionLocal()
+        db.execute('SELECT 1')
+        db.close()
+    except Exception:
+        # Log here if desired, but keep startup non-fatal
+        pass
 
 # Simple auth: issue token for n8n or UI
 @app.post("/auth/token")
