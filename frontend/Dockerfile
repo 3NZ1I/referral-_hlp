@@ -8,7 +8,10 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV NODE_OPTIONS=--max-old-space-size=2048
 
 COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --loglevel verbose && \
+    echo "=== npm ci completed ===" && \
+    ls -la node_modules/.bin/ && \
+    test -f node_modules/.bin/vite && echo "vite binary found" || (echo "ERROR: vite not found" && exit 1)
 
 COPY . .
 ENV PATH=/app/node_modules/.bin:$PATH
