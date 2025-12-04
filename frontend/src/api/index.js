@@ -16,15 +16,9 @@ export const addComment = (caseId, text) => request(`/cases/${caseId}/comments`,
 export const importXLSX = (file) => {
   const formData = new FormData();
   formData.append('file', file);
-  return fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/import`, {
+  return request('/import', {
     method: 'POST',
     body: formData,
-    credentials: 'include',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`,
-    },
-  }).then(res => {
-    if (!res.ok) throw new Error('Import failed');
-    return res.json();
+    headers: {},
   });
 };

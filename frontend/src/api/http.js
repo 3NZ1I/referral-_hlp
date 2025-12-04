@@ -17,15 +17,18 @@ async function request(endpoint, { method = 'GET', body, headers = {}, params } 
 
   const token = getAuthToken();
   const fetchHeaders = {
-    'Content-Type': 'application/json',
     ...headers,
   };
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  if (!isFormData) {
+    fetchHeaders['Content-Type'] = 'application/json';
+  }
   if (token) fetchHeaders['Authorization'] = `Bearer ${token}`;
 
   const response = await fetch(url, {
     method,
     headers: fetchHeaders,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
     credentials: 'include', // send cookies if needed
   });
 
