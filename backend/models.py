@@ -8,22 +8,22 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    ability = Column(String, nullable=True)
+    name = Column(String(255), nullable=False)
+    ability = Column(String(255), nullable=True)
     # Authentication fields
-    username = Column(String, unique=True, nullable=True, index=True)
-    email = Column(String, unique=True, nullable=True, index=True)
-    password_hash = Column(String, nullable=True)
-    role = Column(String, default="user")
+    username = Column(String(255), unique=True, nullable=True, index=True)
+    email = Column(String(255), unique=True, nullable=True, index=True)
+    password_hash = Column(String(255), nullable=True)
+    role = Column(String(50), default="user")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     cases = relationship("Case", back_populates="assigned_to")
 
 class Case(Base):
     __tablename__ = "cases"
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
+    title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    status = Column(String, default="open")
+    status = Column(String(50), default="open")
     assigned_to_id = Column(Integer, ForeignKey("users.id"))
     assigned_to = relationship("User", back_populates="cases")
     comments = relationship("Comment", back_populates="case")
