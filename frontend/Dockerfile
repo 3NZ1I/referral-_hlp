@@ -8,19 +8,9 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV NODE_OPTIONS=--max-old-space-size=2048
 
 COPY package.json package-lock.json ./
-# Use npm ci with legacy peer deps to avoid conflicts
-RUN npm config set registry https://registry.npmjs.org/ \
-	&& npm config set fetch-retries 10 \
-	&& npm config set fetch-retry-factor 3 \
-	&& npm config set fetch-retry-maxtimeout 120000 \
-	&& npm config set fetch-timeout 120000 \
-	&& npm ci --legacy-peer-deps --prefer-offline \
-	&& echo "=== Verifying vite installation ===" \
-	&& ls -la node_modules/.bin/vite \
-	&& node_modules/.bin/vite --version
+RUN npm ci --legacy-peer-deps
 
 COPY . .
-# Ensure local binaries (like vite) are on PATH to avoid npx hitting registry
 ENV PATH=/app/node_modules/.bin:$PATH
 RUN npm run build
 
