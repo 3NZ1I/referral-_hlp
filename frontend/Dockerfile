@@ -5,7 +5,6 @@ WORKDIR /app
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 ENV NODE_OPTIONS=--max-old-space-size=2048
-ENV NODE_ENV=development
 
 COPY package.json package-lock.json ./
 # Harden npm networking to reduce DNS flakiness
@@ -14,7 +13,7 @@ RUN npm config set registry https://registry.npmjs.org/ \
 	&& npm config set fetch-retry-factor 2 \
 	&& npm config set fetch-retry-maxtimeout 60000 \
 	&& npm config set fetch-timeout 60000 \
-	&& npm ci --include=dev --prefer-offline --no-audit --progress=false
+	&& npm ci --prefer-offline --no-audit --progress=false
 
 COPY . .
 RUN npm run build
