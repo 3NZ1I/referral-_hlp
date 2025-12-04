@@ -7,17 +7,17 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV NODE_OPTIONS=--max-old-space-size=2048
 
 COPY package.json package-lock.json ./
-# Harden npm networking to reduce DNS flakiness
-# --include=dev ensures devDependencies are installed (where @vitejs/plugin-react lives)
+# Force clean install - delete lock and regenerate to avoid integrity issues
 RUN npm config set registry https://registry.npmjs.org/ \
 	&& npm config set fetch-retries 5 \
 	&& npm config set fetch-retry-factor 2 \
 	&& npm config set fetch-retry-maxtimeout 60000 \
 	&& npm config set fetch-timeout 60000 \
-	&& npm ci --include=dev --prefer-offline --no-audit --progress=false \
-	&& echo "=== Checking if vite was installed ===" \
-	&& ls -la node_modules/.bin/ | grep vite || echo "ERROR: vite binary NOT found" \
-	&& ls -la node_modules/vite/ || echo "ERROR: vite package NOT found"
+	&& rm -f package-lock.json \
+	&& npm install --loglevel verbose \
+	&& echo "=== Verifying vite installation ===" \
+	&& ls -la node_modules/.bin/vite \
+	&& node_modules/.bin/vite --version
 
 COPY . .
 # Ensure local binaries (like vite) are on PATH to avoid npx hitting registry
