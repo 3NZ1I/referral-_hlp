@@ -356,6 +356,30 @@ npm ci --legacy-peer-deps
 npm run build
 ```
 
+### Local pre-commit setup
+
+Install `pre-commit` and set up hooks locally to enforce code quality before you commit changes.
+
+```bash
+# Install Python dev dependencies (including pre-commit)
+cd backend
+python -m pip install -r requirements.txt
+
+# Install node dependencies for frontend (only once)
+cd ../frontend
+npm ci --legacy-peer-deps
+
+# Install pre-commit hooks (run at repo root)
+cd ..
+pre-commit install
+
+# Run pre-commit on all files (optional) to format + lint everything
+pre-commit run --all-files
+```
+
+Note: the repo's `.pre-commit-config.yaml` includes a local hook for frontend ESLint which will execute `npm ci` prior to running `npm run lint`; this ensures linting runs but may do npm installs on the commit hook's execution. If you want to avoid this, pre-install Node modules and update the hook's entry accordingly.
+
+
 
 **Automated daily backups** (configured on production VM):
 ```bash
