@@ -58,7 +58,7 @@ jobs:
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/referral-hlp-frontend
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-
