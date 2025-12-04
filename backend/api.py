@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from models import Base, User, Case, Comment
+from models import User, Case, Comment
 from .schemas import (
     CaseCreate,
     CaseRead,
@@ -32,6 +32,7 @@ def health():
     return {"status": "ok"}
 
 
+ 
 @app.exception_handler(Exception)
 def general_exception_handler(request, exc):
     # Avoid exposing internal errors; log locally and return safe message
@@ -44,13 +45,16 @@ JWT_EXP_MINUTES = int(os.getenv("JWT_EXP_MINUTES", "120"))
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
+
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
 
 def create_token(payload: dict):
     to_encode = payload.copy()
     to_encode.update({"exp": datetime.utcnow() + timedelta(minutes=JWT_EXP_MINUTES)})
     return jwt.encode(to_encode, JWT_SECRET, algorithm="HS256")
+
 
 def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -59,6 +63,8 @@ def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
         return decoded
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+ 
 
 def get_db():
     db = SessionLocal()

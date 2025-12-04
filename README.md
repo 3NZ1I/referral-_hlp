@@ -343,6 +343,8 @@ To publish images, configure the following GitHub Repository secrets (Settings �
 - `DOCKERHUB_TOKEN` — your Docker Hub access token or password.
 - `VITE_API_URL` (optional) — embed API url into built frontend image.
 
+Note: The `publish.yml` workflow will now build images for verification even if the above Docker Hub secrets are not set, but actual pushing to Docker Hub will be skipped unless `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` are configured. This avoids failing CI on repository forks or when secrets are not available.
+
 Quick CI commands to test locally:
 ```bash
 # Backend

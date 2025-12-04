@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from api import app as api_app
-from models import Base
 from sqlalchemy import create_engine
 import os
 
@@ -35,8 +34,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include all routes from api.py under /api
 from fastapi import APIRouter
+
+# Include all routes from api.py under /api
 router = APIRouter()
 router.include_router(api_app.router)
 app.include_router(router, prefix="/api")

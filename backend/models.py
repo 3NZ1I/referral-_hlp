@@ -18,6 +18,8 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     cases = relationship("Case", back_populates="assigned_to")
 
+
+
 class Case(Base):
     __tablename__ = "cases"
     id = Column(Integer, primary_key=True, index=True)
@@ -28,6 +30,8 @@ class Case(Base):
     assigned_to = relationship("User", back_populates="cases")
     comments = relationship("Comment", back_populates="case")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
 
 class Comment(Base):
     __tablename__ = "comments"

@@ -1,7 +1,7 @@
 """Initial schema with users, cases, comments
 
 Revision ID: 001
-Revises: 
+Revises:
 Create Date: 2025-12-03
 
 """
