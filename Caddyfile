@@ -3,7 +3,7 @@
 # Caddyfile for HLP Referral System
 
 hlp.bessar.work {
-  root * ./frontend/dist
+  root * /home/bessarf/referral-_hlp/frontend/dist
   file_server
 
   reverse_proxy /api/* https://api.bessar.work {

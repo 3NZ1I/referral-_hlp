@@ -88,6 +88,7 @@ hlp.bessar.work {
 ```
 Replace `/path/to/frontend/dist` with the actual path to your built frontend.
 
+
 ### Production: Serve Built Files (Static File Server)
 After running `npm run build`, serve the built files from `frontend/dist` using Caddy or nginx.
 
@@ -96,16 +97,27 @@ After running `npm run build`, serve the built files from `frontend/dist` using 
 hlp.bessar.work {
   root * /home/bessarf/referral-_hlp/frontend/dist
   file_server
-  header {
-    Content-Security-Policy "default-src 'self'; connect-src 'self' https://api.bessar.work; frame-ancestors 'none';"
-    X-Frame-Options "DENY"
-    X-Content-Type-Options "nosniff"
-    Referrer-Policy "strict-origin-when-cross-origin"
-    Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-  }
+  # ...headers and reverse_proxy config...
 }
 ```
-Replace `/home/bessarf/referral-_hlp/frontend/dist` with your actual path if different.
+**Important:** Use the absolute path for the `root` directive. Relative paths may not work when Caddy runs as a service.
+
+#### Permissions Fix for Static Files
+If you get a 403 error, ensure all parent directories are world-readable and executable:
+```bash
+sudo chmod 755 /home/bessarf
+```
+Set ownership and permissions for the build output:
+```bash
+sudo chown -R caddy:caddy /home/bessarf/referral-_hlp/frontend/dist
+sudo chmod -R 755 /home/bessarf/referral-_hlp/frontend/dist
+```
+Replace `caddy:caddy` with your Caddy service user if different.
+
+Reload Caddy after changes:
+```bash
+sudo systemctl reload caddy
+```
 
 #### nginx Example (Static Serving)
 ```
