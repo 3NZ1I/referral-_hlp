@@ -2,7 +2,7 @@
 
 Backend: FastAPI (Python) • Frontend: React • DB: PostgreSQL • Docker-ready • n8n automation
 
-## Quick Start (Local Development)
+## Quick Start (Local Development) 
 
 ```powershell
 # From project root
@@ -15,6 +15,91 @@ docker compose up
 ## Database Migrations (Alembic)
 
 This project uses Alembic for automatic database schema management.
+## Frontend Deployment (React/Vite)
+
+### Node.js Version
+Recommended: Node.js v20.19.0 or newer (required by some dependencies)
+Check your version:
+```bash
+node -v
+```
+If you need to upgrade:
+```bash
+sudo apt update
+sudo apt install nodejs npm
+# Or use nvm for version management
+```
+
+### Install Dependencies
+```bash
+cd frontend
+npm install
+```
+
+### Vite Config for External Access
+Edit `frontend/vite.config.js` and add:
+```js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  optimizeDeps: {
+    include: ['html2canvas', 'jspdf']
+  },
+  build: {
+    commonjsOptions: {
+      include: [/html2canvas/, /jspdf/, /node_modules/]
+    }
+  },
+  preview: {
+    allowedHosts: ['hlp.bessar.work']
+  }
+})
+```
+
+### Build Frontend
+```bash
+npm run build
+```
+
+### Development/Preview Mode
+To serve the frontend for development:
+```bash
+npm run preview -- --port 3000
+```
+If you see "Blocked request. This host ('hlp.bessar.work') is not allowed", ensure `allowedHosts` is set as above.
+
+### Production: Serve Built Files
+For production, serve the built files from `frontend/dist` using Caddy:
+Example Caddyfile block:
+```
+hlp.bessar.work {
+  root * /path/to/frontend/dist
+  file_server
+  header {
+    Content-Security-Policy "default-src 'self'; connect-src 'self' https://api.bessar.work; frame-ancestors 'none';"
+    X-Frame-Options "DENY"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+  }
+}
+```
+Replace `/path/to/frontend/dist` with the actual path to your built frontend.
+
+### Troubleshooting UI/Asset Issues
+- If the UI is broken or missing styles/assets:
+  - Make sure you are serving the built files (`dist/`) in production.
+  - Check browser dev tools for 404 errors on CSS/JS files.
+  - For development, ensure the preview server is running and Caddy is proxying all requests to it.
+- If you see Node.js engine warnings, upgrade Node.js as above.
+
+## Backend Startup
+- Start backend (API) on port 8000
+
+## DNS Setup
+- Ensure your domain's A/AAAA records point to your VM's public IP.
 # Deployment
 
 1. Ensure PostgreSQL is running and accessible (default: localhost, port 5432).
