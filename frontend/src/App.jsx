@@ -2,13 +2,14 @@ import './App.css';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/DashboardLayout';
 import CaseList from './pages/CaseList';
-import CaseDetails from './pages/CaseDetails';
-import Statistics from './pages/Statistics';
-import Search from './pages/Search';
-import Data from './pages/Data';
-import Admin from './pages/Admin';
-import AccountSettings from './pages/AccountSettings';
-import Login from './pages/Login';
+import React, { Suspense, lazy } from 'react';
+const CaseDetails = lazy(() => import('./pages/CaseDetails'));
+const Statistics = lazy(() => import('./pages/Statistics'));
+const Search = lazy(() => import('./pages/Search'));
+const Data = lazy(() => import('./pages/Data'));
+const Admin = lazy(() => import('./pages/Admin'));
+const AccountSettings = lazy(() => import('./pages/AccountSettings'));
+const Login = lazy(() => import('./pages/Login'));
 import { useAuth } from './context/AuthContext';
 
 function App() {
@@ -88,16 +89,16 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<CaseList />} />
           <Route path="/cases" element={<CaseList />} />
-          <Route path="/case/:id" element={<CaseDetails />} />
-          <Route path="/statistics" element={<Statistics />} />
-          <Route path="/search" element={<Search />} />
-          <Route path="/data" element={<Data />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/settings" element={<AccountSettings />} />
+          <Route path="/case/:id" element={<Suspense fallback={<div>Loading...</div>}><CaseDetails /></Suspense>} />
+          <Route path="/statistics" element={<Suspense fallback={<div>Loading...</div>}><Statistics /></Suspense>} />
+          <Route path="/search" element={<Suspense fallback={<div>Loading...</div>}><Search /></Suspense>} />
+          <Route path="/data" element={<Suspense fallback={<div>Loading...</div>}><Data /></Suspense>} />
+          <Route path="/admin" element={<Suspense fallback={<div>Loading...</div>}><Admin /></Suspense>} />
+          <Route path="/settings" element={<Suspense fallback={<div>Loading...</div>}><AccountSettings /></Suspense>} />
         </Routes>
       ) : (
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<Suspense fallback={<div>Loading...</div>}><Login /></Suspense>} />
         </Routes>
       )}
     </DashboardLayout>
