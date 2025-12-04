@@ -16,7 +16,9 @@ RUN npm config set registry https://registry.npmjs.org/ \
 	&& npm ci --omit=optional --prefer-offline --no-audit --progress=false
 
 COPY . .
-RUN npx vite build --logLevel info
+# Ensure local binaries (like vite) are on PATH to avoid npx hitting registry
+ENV PATH=/app/node_modules/.bin:$PATH
+RUN npm run build
 
 FROM nginx:1.28-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
