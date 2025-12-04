@@ -14,7 +14,10 @@ RUN npm config set registry https://registry.npmjs.org/ \
 	&& npm config set fetch-retry-factor 2 \
 	&& npm config set fetch-retry-maxtimeout 60000 \
 	&& npm config set fetch-timeout 60000 \
-	&& npm ci --include=dev --prefer-offline --no-audit --progress=false
+	&& npm ci --include=dev --prefer-offline --no-audit --progress=false \
+	&& echo "=== Checking if vite was installed ===" \
+	&& ls -la node_modules/.bin/ | grep vite || echo "ERROR: vite binary NOT found" \
+	&& ls -la node_modules/vite/ || echo "ERROR: vite package NOT found"
 
 COPY . .
 # Ensure local binaries (like vite) are on PATH to avoid npx hitting registry
