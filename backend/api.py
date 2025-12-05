@@ -208,19 +208,30 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
     ws = wb.active
     headers = [cell.value for cell in ws[1]]
     imported = 0
+    # Resolve uploader id if authentication provided
+    uploader_user = None
+    if isinstance(user, dict):
+        uploader_id = user.get('user_id') or user.get('sub')
+        if uploader_id:
+            uploader_user = db.get(User, int(uploader_id))
+
     for row in ws.iter_rows(min_row=2, values_only=True):
         case_data = dict(zip(headers, row))
         # Map XLSX columns to Case fields (customize as needed)
         # Store the raw row data to allow frontend mapping and backfill
         title = case_data.get('Title') or case_data.get('title') or case_data.get('case_id') or 'No Title'
         description = case_data.get('Description') or case_data.get('description') or ''
-        status = case_data.get('Status') or case_data.get('status') or 'Pending'
+        # Enforce system default status 'Pending' for imported cases
+        status = 'Pending'
         case = Case(
             title=title,
             description=description,
             status=status,
             raw=case_data,
         )
+        # Assign uploader user as assignee if present
+        if uploader_user:
+            case.assigned_to = uploader_user
         db.add(case)
         imported += 1
     db.commit()
