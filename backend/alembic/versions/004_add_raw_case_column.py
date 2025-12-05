@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '004_add_raw_case_column'
-down_revision = '003'
+down_revision = '003_update_string_lengths'
 branch_labels = None
 depends_on = None
 
