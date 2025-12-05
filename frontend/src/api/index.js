@@ -13,7 +13,7 @@ export const updateCaseApi = (id, data) => request(`/cases/${id}`, { method: 'PU
 export const fetchComments = (caseId) => request(`/cases/${caseId}/comments`);
 export const addComment = (caseId, text) => request(`/cases/${caseId}/comments`, {
   method: 'POST',
-  body: { text },
+  body: { content: text },
 });
 export const importXLSX = (file) => {
   const formData = new FormData();
