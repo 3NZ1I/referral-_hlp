@@ -8,6 +8,7 @@ import traceback
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from backend.models import User, Case, Comment
+from datetime import datetime
 from .schemas import (
     CaseCreate,
     CaseRead,
@@ -27,6 +28,15 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = FastAPI()
+MAINTENANCE_SCHEDULES = []
+_maintenance_seq = 1
+
+def is_admin_user(user):
+    if not isinstance(user, dict):
+        return False
+    role = user.get('role') or user.get('roles') or user.get('role')
+    return role == 'admin' or (role and role.lower() == 'admin')
+
 
 # Lightweight health endpoint for readiness checks
 @app.get("/health")
@@ -324,6 +334,50 @@ def login(payload: dict, db: Session = Depends(get_db)):
         
         token = create_token({"sub": user.username, "user_id": user.id, "role": user.role})
         return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role}}
+
+
+    # Maintenance schedule endpoints (simple in-memory store)
+    @app.get('/maintenance')
+    def get_maintenance():
+        return MAINTENANCE_SCHEDULES
+
+
+    @app.post('/maintenance')
+    def create_maintenance(payload: dict, user=Depends(require_auth)):
+        global _maintenance_seq
+        if not is_admin_user(user):
+            raise HTTPException(status_code=403, detail='Admin privileges required')
+        start = payload.get('start')
+        end = payload.get('end')
+        message = payload.get('message') or 'Scheduled maintenance'
+        if not start or not end:
+            raise HTTPException(status_code=400, detail='start and end datetime required')
+        try:
+            start_dt = datetime.fromisoformat(start)
+            end_dt = datetime.fromisoformat(end)
+        except Exception:
+            raise HTTPException(status_code=400, detail='Invalid datetime format - use isoformat')
+        if start_dt >= end_dt:
+            raise HTTPException(status_code=400, detail='start must be before end')
+        entry = {
+            'id': _maintenance_seq,
+            'start': start_dt.isoformat(),
+            'end': end_dt.isoformat(),
+            'message': message,
+            'created_by': user.get('user_id') if isinstance(user, dict) else None,
+        }
+        _maintenance_seq += 1
+        MAINTENANCE_SCHEDULES.append(entry)
+        return entry
+
+
+    @app.delete('/maintenance/{mid}')
+    def delete_maintenance(mid: int, user=Depends(require_auth)):
+        if not is_admin_user(user):
+            raise HTTPException(status_code=403, detail='Admin privileges required')
+        global MAINTENANCE_SCHEDULES
+        MAINTENANCE_SCHEDULES = [m for m in MAINTENANCE_SCHEDULES if m['id'] != mid]
+        return {'deleted': mid}
     except HTTPException:
         # Pass-through known HTTP exceptions
         raise
