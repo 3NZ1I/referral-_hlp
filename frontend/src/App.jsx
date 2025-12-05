@@ -112,7 +112,7 @@ function AppRoutes() {
             break;
           case 'settings':
             // Navigate to admin for admin users, settings for others
-            if (currentUser?.role === 'admin') {
+            if ((currentUser?.role || '').toLowerCase() === 'admin') {
               navigate('/admin');
             } else {
               navigate('/settings');

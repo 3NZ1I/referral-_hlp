@@ -173,9 +173,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const isAdmin = currentUser?.role === ROLES.ADMIN || currentUser?.role === 'admin';
-  const isInternal = currentUser?.role === ROLES.INTERNAL || currentUser?.role === 'internal';
-  const isExternal = currentUser?.role === ROLES.EXTERNAL || currentUser?.role === 'external';
+  const userRole = (currentUser?.role || '').toLowerCase();
+  const isAdmin = userRole === ROLES.ADMIN || userRole === 'admin';
+  const isInternal = userRole === ROLES.INTERNAL || userRole === 'internal';
+  const isExternal = userRole === ROLES.EXTERNAL || userRole === 'external';
 
   const canAccessStatistics = isAdmin;
   const canAccessData = isAdmin;

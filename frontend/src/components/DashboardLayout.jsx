@@ -86,15 +86,15 @@ const DashboardLayout = ({ children, selectedKey = 'cases', onMenuClick, hideLay
               </div>
             </div>
             <div style={{ fontSize: 12, marginLeft: 24 }} className="user-role">
-              {currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}
+              {(currentUser.role || '').charAt(0).toUpperCase() + (currentUser.role || '').slice(1)}
             </div>
           </div>
         )}
       </div>
       <div className="sider-section muted">
-        <p className="section-label">{currentUser?.role === 'admin' ? 'Admin' : 'User'}</p>
+        <p className="section-label">{(currentUser?.role || '').toLowerCase() === 'admin' ? 'Admin' : 'User'}</p>
         <p className="section-link" onClick={() => onMenuClick && onMenuClick('settings')} style={{ cursor: 'pointer' }}>
-          {currentUser?.role === 'admin' ? 'User Management' : 'Account Settings'}
+          {(currentUser?.role || '').toLowerCase() === 'admin' ? 'User Management' : 'Account Settings'}
         </p>
         <p className="section-link" onClick={logout} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
           <LogoutOutlined /> Logout

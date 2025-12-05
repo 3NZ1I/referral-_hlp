@@ -58,7 +58,7 @@ const CaseList = () => {
   const [followUpFilter, setFollowUpFilter] = useState('');
 
   // Filter cases: admin and internal users see all cases, external users only see their assigned cases
-  let filteredCases = currentUser?.role === 'admin' || currentUser?.role === 'internal'
+  let filteredCases = (currentUser?.role || '').toLowerCase() === 'admin' || (currentUser?.role || '').toLowerCase() === 'internal'
     ? cases
     : cases.filter(c => c.assignedStaff === currentUser?.name);
 

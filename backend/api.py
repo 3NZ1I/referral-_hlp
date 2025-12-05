@@ -240,9 +240,17 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
             raw=case_data,
         )
         # Do not assign uploader by default; keep system-unassigned when imported
-        db.add(case)
-        imported += 1
-    db.commit()
+        try:
+            db.add(case)
+            db.commit()
+            db.refresh(case)
+            imported += 1
+        except Exception as e:
+            logging.exception('Failed to import row: %s', e)
+            db.rollback()
+            # skip faulty row and continue importing
+            continue
+    # db.commit() already performed per-row
     return {"imported": imported}
 
 

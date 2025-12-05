@@ -14,8 +14,8 @@ const Admin = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [form] = Form.useForm();
 
-  // Redirect non-admin users
-  if (currentUser?.role !== 'admin') {
+  // Redirect non-admin users (case-insensitive check)
+  if (currentUser?.role?.toLowerCase() !== 'admin') {
     navigate('/cases');
     return null;
   }
