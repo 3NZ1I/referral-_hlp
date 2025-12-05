@@ -221,6 +221,25 @@ def on_startup():
         # Log here if desired, but keep startup non-fatal
         pass
 
+    # Seed default admin if no users exist (use env vars to override)
+    try:
+        db = SessionLocal()
+        users_count = db.query(User).count()
+        if users_count == 0:
+            admin_user = os.getenv('INITIAL_ADMIN_USERNAME', 'admin')
+            admin_email = os.getenv('INITIAL_ADMIN_EMAIL', 'admin@example.com')
+            admin_pass = os.getenv('INITIAL_ADMIN_PASSWORD', 'admin123')
+            hashed = hash_password(admin_pass)
+            new_admin = User(username=admin_user, email=admin_email, password_hash=hashed, role='admin', name='Administrator')
+            db.add(new_admin)
+            db.commit()
+            db.refresh(new_admin)
+            # Log to keep track; avoid exposing password in logs
+            print(f"[startup] created default admin user '{admin_user}' (email: {admin_email})")
+        db.close()
+    except Exception as e:
+        print('[startup] error seeding admin user:', e)
+
 # Simple auth: issue token for n8n or UI
 @app.post("/auth/token")
 def issue_token(payload: dict):
