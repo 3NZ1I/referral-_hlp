@@ -194,6 +194,76 @@ docker compose run --rm --entrypoint sh backend -c "cd /app/backend && python -m
   - Server-side cases are now backfilled in the UI to display categories using the above priority order.
 - Import errors & logging:
   - The import flow has improved error handling and more detailed console logs; when a server import fails, the UI provides a less alarming message and attempts per-row fallback automatically.
+  
+Import debugging & troubleshooting
+---------------------------------
+If you see a client message like "Server import failed; will attempt per-row create or fallback to local import.", it means:
+- The client attempted to POST the XLSX to `/api/import` but the server returned a non-2xx HTTP response (e.g. 401/403/413/500), so the frontend attempted per-row creates or a local-only import.
+
+Steps to diagnose an import error:
+1. Check the browser console for the import stack trace and a logged object. The client logs include a structured object with: `status`, `body`, and `message`. This will indicate whether the response is a 401/403/413 and may also contain server-side details.
+2. Tail backend logs for errors during import:
+
+```powershell
+docker compose logs --follow backend
+```
+
+3. Consult the import job records in the backend (if created):
+
+- List jobs: GET http://localhost:8000/api/import/jobs
+- Inspect details: GET http://localhost:8000/api/import/jobs/{job_id}
+- Retry: POST http://localhost:8000/api/import/jobs/{job_id}/retry
+
+Use curl or PowerShell's `Invoke-RestMethod` to inspect job rows and errors (replace {job_id}):
+
+```powershell
+# Example: query a job id
+Invoke-RestMethod -Uri "http://localhost:8000/api/import/jobs/{job_id}" -Method Get -ContentType "application/json" -Headers @{ Authorization = "Bearer $token" }
+```
+
+4. Re-run per-row retries for failed rows using the `POST /api/import/jobs/{job_id}/retry` endpoint — this will attempt to create cases for each failed row and mark their status as `success` or `failed`.
+
+5. If the server returns 401/403 — check your session token and server-side auth; confirm the logged-in user is allowed to import or reattempt rows.
+
+6. If the server returns 413 — file too large — reduce XLSX size or change server config.
+
+7. If the server returned 500 with stack trace: review backend logs and the full stack trace to identify the cause (e.g. missing table, schema mismatch). Re-run migrations if necessary.
+
+Quick import test via PowerShell (PowerShell example using `Invoke-RestMethod`):
+
+```powershell
+$token = (Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/auth/login -Body (@{username='admin'; password='admin123'} | ConvertTo-Json) -ContentType 'application/json').token
+Invoke-RestMethod -Uri http://localhost:8000/api/import -Method Post -Headers @{ Authorization = "Bearer $token" } -Form @{ file = Get-Item "C:\path\to\tmp_import_test.xlsx" }
+```
+
+Client-side fallback explanation
+--------------------------------
+- The UI attempts to import the entire file as a single job by calling `/api/import` for efficiency and to capture server-side row processing.
+- If the server fails for the file, the UI attempts to create each row individually (one API call per row). This fallback is attempted only if the client is authenticated and has permission.
+- If per-row creation fails (e.g., due to auth or server errors), the UI will import data to local state only (so it is visible to the current user in the app), and the user will see a helpful message telling them how to proceed. The UI will also mark `serverImportSummary` and `failedRows` in the dataset record.
+
+Developer: where to look in code
+--------------------------------
+- Frontend import & fallback logic: `frontend/src/context/CasesContext.jsx` — `importDataset` function implements server import, per-row create fallback, and local fallback.
+- Server import endpoints and models: `backend/api.py` — `/import`, `/import/jobs/*`, `ImportJob`/`ImportRow` models in `backend/models.py`.
+- HTTP client: `frontend/src/api/http.js` — handles forming `FormData` and error parsing.
+
+How to verify categories and mapping
+-----------------------------------
+- Category priority is checked in this order (first non-empty wins): `law_followup5`, `law_followup4`, `law_followup3`, `law_followup1`, then `eng_followup1`.
+- To verify manually, create a test case via the API and populate `raw` with the fields in question; then verify that the UI reflects the expected category.
+
+Example (quick API test):
+```powershell
+#$token => your admin token
+Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/cases -Headers @{ Authorization = "Bearer $token" } -Body (@{
+  title = 'Category Test Case';
+  description = 'Testing category field mapping';
+  raw = @{ law_followup5 = 'External Guidance A'; law_followup4 = 'External Referral A'; law_followup3 = 'Internal Referral A'; law_followup1 = 'Type A'; eng_followup1 = 'Engineering A' }
+} | ConvertTo-Json) -ContentType 'application/json'
+```
+
+Then visit the Case List or Search UI and confirm the category display.
 
 ### Production: Serve Built Files
 For production, serve the built files from `frontend/dist` using Caddy:
