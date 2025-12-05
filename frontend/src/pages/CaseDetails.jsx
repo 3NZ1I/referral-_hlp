@@ -548,14 +548,14 @@ const CaseDetails = () => {
   return (
     <Space direction="vertical" size={24} style={{ width: '100%' }}>
       <Card className="card-panel" bodyStyle={{ padding: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <div className="panel-header">
           <div style={{ flex: '1 1 200px', minWidth: 0 }}>
             <Title level={4} style={{ margin: 0 }}>Case {caseRecord.caseNumber}</Title>
             <Paragraph type="secondary" style={{ marginTop: 4 }}>
               Detailed capture of the intake form using the latest metadata schema.
             </Paragraph>
           </div>
-          <Space wrap style={{ flexShrink: 0 }}>
+          <Space className="panel-actions" wrap style={{ flexShrink: 0 }}>
             <button className="ghost-btn" onClick={() => navigate('/cases')}>Back to list</button>
             <Button type="primary" disabled={!isDirty} loading={saving} onClick={handleSave}>Save</Button>
             <Tag color={(statusValue || '').toLowerCase().includes('complete') ? 'cyan' : 'blue'}>{statusValue}</Tag>

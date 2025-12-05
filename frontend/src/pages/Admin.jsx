@@ -169,21 +169,22 @@ const Admin = () => {
   return (
     <div>
       <div className="card-panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+        <div className="panel-header">
           <div style={{ flex: '1 1 250px', minWidth: 0 }}>
             <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap' }}>User Management</Title>
             <Paragraph type="secondary" style={{ marginTop: 4 }}>
               Manage system users, roles, and permissions
             </Paragraph>
           </div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-            style={{ flexShrink: 0 }}
-          >
-            Add User
-          </Button>
+          <div className="panel-actions">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAdd}
+            >
+              Add User
+            </Button>
+          </div>
         </div>
 
         <div style={{ marginTop: 24 }}>

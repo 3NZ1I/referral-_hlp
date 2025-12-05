@@ -72,14 +72,16 @@ const CaseList = () => {
   return (
   <div>
     <div className="card-panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+      <div className="panel-header">
         <div style={{ flex: '1 1 250px', minWidth: 0 }}>
           <Title level={4} style={{ margin: 0 }}>Cases &gt; Case List</Title>
           <Paragraph type="secondary" style={{ marginTop: 4 }}>
             Review and update safe beneficiary case records with the newly captured survey.
           </Paragraph>
         </div>
-        <Button type="primary" shape="round" style={{ flexShrink: 0 }}>Add record</Button>
+        <div className="panel-actions">
+          <Button type="primary" shape="round">Add record</Button>
+        </div>
       </div>
       <div className="filters-bar">
         <Space wrap>
