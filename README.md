@@ -93,6 +93,10 @@ curl -i -H "Origin: https://hlp.bessar.work" http://localhost:8000/api/cases
 ```
 You should receive `Access-Control-Allow-Origin: *` or the configured value in `CORS_ORIGINS`.
 
+Important: If your frontend requests are made with the fetch option `credentials: 'include'` (used to send cookies or include credentials), you MUST NOT use a wildcard `*` value for `Access-Control-Allow-Origin`. The response must echo the exact origin. To fix:
+- Configure `CORS_ORIGINS` to the list of allowed domains (e.g. `https://hlp.bessar.work`) and do not leave it as the default `*`.
+- Alternatively, your backend or reverse proxy may dynamically echo back the request origin when it's an allowed origin. Our server middleware will now echo origin, making the header match the request origin and allowing credentials.
+
 If the client shows "Server import returned: Failed to fetch. Attempting per-row fallback." this most often indicates:
 - CORS is not configured for the frontend origin (missing or wrong `CORS_ORIGINS`), or
 - The backend is unreachable (down/incorrect URL), or

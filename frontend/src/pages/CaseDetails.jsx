@@ -280,7 +280,14 @@ const CaseDetails = () => {
           console.warn('Failed to persist case update to backend', err);
         }
         try {
-          await apiAssignCase(caseRecord.id, staffValue || null, null);
+          const assignResp = await apiAssignCase(caseRecord.id, staffValue || null, null);
+          // Update local state with assigned staff returned by backend
+          if (assignResp && assignResp.assigned_to) {
+            await updateCase(caseRecord.key, { assignedStaff: assignResp.assigned_to.name });
+          } else if (assignResp && assignResp.assigned_to_id && staffValue) {
+            // fallback: update with selected staffName
+            await updateCase(caseRecord.key, { assignedStaff: staffValue || 'Unassigned' });
+          }
         } catch (err) {
           console.warn('Failed to persist assignment to backend', err);
         }
@@ -610,6 +617,101 @@ const CaseDetails = () => {
         </div>
       </Card>
 
+      {/* Comments moved below the top metadata card (main par / table) */}
+      <Card className="card-panel" bodyStyle={{ padding: 24 }}>
+        <Title level={5} style={{ marginTop: 0 }}>Comments</Title>
+        <Paragraph type="secondary" style={{ marginTop: 4 }}>
+          Add notes and comments about this case
+        </Paragraph>
+        {caseRecord.comments && caseRecord.comments.length > 0 && (
+          <List
+            itemLayout="horizontal"
+            dataSource={caseRecord.comments}
+            style={{ marginBottom: 24 }}
+            renderItem={(comment) => (
+              <List.Item
+                actions={
+                  comment.author === (currentUser?.username || 'Unknown User') && editingCommentId !== comment.id
+                    ? [
+                        <Tooltip title="Edit comment">
+                          <Button
+                            type="text"
+                            icon={<EditOutlined />}
+                            size="small"
+                            onClick={() => handleEditComment(comment)}
+                          />
+                        </Tooltip>,
+                      ]
+                    : editingCommentId === comment.id
+                    ? [
+                        <Tooltip title="Save">
+                          <Button
+                            type="text"
+                            icon={<SaveOutlined />}
+                            size="small"
+                            onClick={() => handleSaveEdit(comment.id)}
+                          />
+                        </Tooltip>,
+                        <Tooltip title="Cancel">
+                          <Button
+                            type="text"
+                            icon={<CloseOutlined />}
+                            size="small"
+                            onClick={handleCancelEdit}
+                          />
+                        </Tooltip>,
+                      ]
+                    : []
+                }
+              >
+                <List.Item.Meta
+                  avatar={<Avatar style={{ backgroundColor: '#1890ff' }}>{comment.author.charAt(0).toUpperCase()}</Avatar>}
+                  title={
+                    <Space>
+                      <Text strong>{comment.author}</Text>
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        {new Date(comment.timestamp).toLocaleString()}
+                        {comment.edited && ' (edited)'}
+                      </Text>
+                    </Space>
+                  }
+                  description={
+                    editingCommentId === comment.id ? (
+                      <TextArea
+                        rows={3}
+                        value={editCommentText}
+                        onChange={(e) => setEditCommentText(e.target.value)}
+                        autoFocus
+                      />
+                    ) : (
+                      comment.text
+                    )
+                  }
+                />
+              </List.Item>
+            )}
+          />
+        )}
+        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <TextArea
+            rows={4}
+            placeholder="Enter your comment..."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              type="primary"
+              onClick={handleAddComment}
+              loading={addingComment}
+              disabled={!commentText.trim()}
+            >
+              Add Comment
+            </Button>
+          </div>
+        </Space>
+      </Card>
+
       {formSections.length > 0 && (
         <>
           {/* Render the first section */}
@@ -619,101 +721,7 @@ const CaseDetails = () => {
             {formSections[0].id === 'familyRoster' ? renderFamilyRosterSection(formSections[0]) : renderDefaultSection(formSections[0])}
           </Card>
 
-          {/* Comments moved up under the first section per request */}
-          <Card className="card-panel" bodyStyle={{ padding: 24 }}>
-            <Title level={5} style={{ marginTop: 0 }}>Comments</Title>
-            <Paragraph type="secondary" style={{ marginTop: 4 }}>
-              Add notes and comments about this case
-            </Paragraph>
-            {caseRecord.comments && caseRecord.comments.length > 0 && (
-              <List
-                itemLayout="horizontal"
-                dataSource={caseRecord.comments}
-                style={{ marginBottom: 24 }}
-                renderItem={(comment) => (
-                  <List.Item
-                    actions={
-                      comment.author === (currentUser?.username || 'Unknown User') && editingCommentId !== comment.id
-                        ? [
-                            <Tooltip title="Edit comment">
-                              <Button
-                                type="text"
-                                icon={<EditOutlined />}
-                                size="small"
-                                onClick={() => handleEditComment(comment)}
-                              />
-                            </Tooltip>,
-                          ]
-                        : editingCommentId === comment.id
-                        ? [
-                            <Tooltip title="Save">
-                              <Button
-                                type="text"
-                                icon={<SaveOutlined />}
-                                size="small"
-                                onClick={() => handleSaveEdit(comment.id)}
-                              />
-                            </Tooltip>,
-                            <Tooltip title="Cancel">
-                              <Button
-                                type="text"
-                                icon={<CloseOutlined />}
-                                size="small"
-                                onClick={handleCancelEdit}
-                              />
-                            </Tooltip>,
-                          ]
-                        : []
-                    }
-                  >
-                    <List.Item.Meta
-                      avatar={<Avatar style={{ backgroundColor: '#1890ff' }}>{comment.author.charAt(0).toUpperCase()}</Avatar>}
-                      title={
-                        <Space>
-                          <Text strong>{comment.author}</Text>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {new Date(comment.timestamp).toLocaleString()}
-                            {comment.edited && ' (edited)'}
-                          </Text>
-                        </Space>
-                      }
-                      description={
-                        editingCommentId === comment.id ? (
-                          <TextArea
-                            rows={3}
-                            value={editCommentText}
-                            onChange={(e) => setEditCommentText(e.target.value)}
-                            autoFocus
-                          />
-                        ) : (
-                          comment.text
-                        )
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            )}
-
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              <TextArea
-                rows={4}
-                placeholder="Enter your comment..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-              />
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  type="primary"
-                  onClick={handleAddComment}
-                  loading={addingComment}
-                  disabled={!commentText.trim()}
-                >
-                  Add Comment
-                </Button>
-              </div>
-            </Space>
-          </Card>
+          {/* comments moved earlier below top metadata card; removed here */}
 
           {/* Render the remaining sections (skip the first, we already rendered it above) */}
           {formSections.slice(1).map((section) => (

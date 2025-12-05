@@ -56,6 +56,9 @@ if _allowed_origins and _allowed_origins != '*':
 else:
     _origins_list = ['*']
 
+# Track whether we allow credentials (this matters for Access-Control-Allow-Origin header)
+_cors_allow_credentials = True
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins_list,
@@ -67,10 +70,34 @@ app.add_middleware(
 
 @app.middleware("http")
 async def ensure_cors_headers(request: Request, call_next):
-    # Ensure we always include a CORS header so browsers/tests can inspect
+    """Ensure Access-Control headers are set and if allow_credentials=True we echo the request origin
+    to avoid sending wildcard '*' which is invalid when credentials are included by the browser.
+    """
     response = await call_next(request)
-    if 'Access-Control-Allow-Origin' not in response.headers:
-        response.headers['Access-Control-Allow-Origin'] = '*'
+    origin = request.headers.get('origin')
+    try:
+        if origin:
+            if ('*' in _origins_list) or (origin in _origins_list):
+                # If credentials are allowed, echo the origin explicitly
+                if _cors_allow_credentials:
+                    response.headers['Access-Control-Allow-Origin'] = origin
+                else:
+                    # Non-credentialed responses may use a wildcard if allowed
+                    if '*' in _origins_list:
+                        response.headers['Access-Control-Allow-Origin'] = '*'
+                    else:
+                        response.headers['Access-Control-Allow-Origin'] = origin
+            else:
+                # If origin not in allowed list, don't add header
+                pass
+        else:
+            # no origin provided; ensure a fallback if missing
+            if 'Access-Control-Allow-Origin' not in response.headers:
+                response.headers['Access-Control-Allow-Origin'] = '*'
+    except Exception:
+        # Be defensive if something goes wrong while setting headers
+        if 'Access-Control-Allow-Origin' not in response.headers:
+            response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 MAINTENANCE_SCHEDULES = []
 _maintenance_seq = 1
@@ -94,10 +121,19 @@ def general_exception_handler(request, exc):
     # Log full stack trace locally for diagnostics, avoid exposing details in response
     logging.exception("Unhandled exception in API request: %s", exc)
     # Ensure CORS header presence on error responses so browser can receive the error
-    headers = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": "true",
-    }
+    # If request includes an Origin, echo it to avoid wildcard when credentials are used
+    origin = None
+    try:
+        origin = request.headers.get('origin')
+    except Exception:
+        origin = None
+    headers = {}
+    if origin:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    else:
+        headers["Access-Control-Allow-Origin"] = "*"
+        headers["Access-Control-Allow-Credentials"] = "true"
     return JSONResponse({"detail": "Internal server error"}, status_code=500, headers=headers)
 
 
@@ -365,7 +401,9 @@ def assign_case(case_id: int, payload: dict, db: Session = Depends(get_db), user
             assigned_user = User(name=f"auto-{ability}", ability=ability)
             db.add(assigned_user)
             db.flush()
+    # Prefer to set assigned_to_id explicitly to ensure DB-level FK sync
     case.assigned_to = assigned_user
+    case.assigned_to_id = assigned_user.id if assigned_user else None
     db.commit()
     db.refresh(case)
     return case

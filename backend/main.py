@@ -59,14 +59,40 @@ async def ensure_cors_headers_root(request: Request, call_next):
     except Exception as e:
         # If the call_next raised, return a JSONResponse with CORS headers too
         logging.exception("Unhandled exception while handling request: %s", e)
-        return JSONResponse({"detail": "Internal server error"}, status_code=500, headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": "true"})
+        origin = request.headers.get('origin')
+        headers = {}
+        if origin:
+            headers['Access-Control-Allow-Origin'] = origin
+            headers['Access-Control-Allow-Credentials'] = 'true'
+        else:
+            headers['Access-Control-Allow-Origin'] = '*'
+            headers['Access-Control-Allow-Credentials'] = 'true'
+        return JSONResponse({"detail": "Internal server error"}, status_code=500, headers=headers)
+    origin = request.headers.get('origin')
     if 'Access-Control-Allow-Origin' not in response.headers:
-        response.headers['Access-Control-Allow-Origin'] = '*'
+        if origin and (origin in allow_origins or '*' in allow_origins):
+            # echo origin if allowed to avoid wildcard with credentials
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+        else:
+            response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
     return response
 
 
 @app.exception_handler(Exception)
 def general_exception_handler_root(request: Request, exc: Exception):
     logging.exception("Unhandled exception in API request: %s", exc)
-    headers = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": "true"}
+    origin = None
+    try:
+        origin = request.headers.get('origin')
+    except Exception:
+        origin = None
+    headers = {}
+    if origin and (origin in allow_origins or '*' in allow_origins):
+        headers['Access-Control-Allow-Origin'] = origin
+        headers['Access-Control-Allow-Credentials'] = 'true'
+    else:
+        headers['Access-Control-Allow-Origin'] = '*'
+        headers['Access-Control-Allow-Credentials'] = 'true'
     return JSONResponse({"detail": "Internal server error"}, status_code=500, headers=headers)
