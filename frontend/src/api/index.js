@@ -25,3 +25,7 @@ export const importXLSX = (file) => {
     headers: {},
   });
 };
+
+export const getMaintenance = () => request('/maintenance');
+export const createMaintenance = (data) => request('/maintenance', { method: 'POST', body: data });
+export const deleteMaintenance = (id) => request(`/maintenance/${id}`, { method: 'DELETE' });

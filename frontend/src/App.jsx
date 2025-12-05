@@ -11,6 +11,8 @@ const Admin = lazy(() => import('./pages/Admin'));
 const AccountSettings = lazy(() => import('./pages/AccountSettings'));
 const Login = lazy(() => import('./pages/Login'));
 import { useAuth } from './context/AuthContext';
+import { getMaintenance } from './api';
+import { Modal } from 'antd';
 
 function App() {
   return (
@@ -24,6 +26,43 @@ function AppRoutes() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
+  const [maintenance, setMaintenance] = React.useState(null);
+  const [dismissedMaintenance, setDismissedMaintenance] = React.useState(() => (sessionStorage.getItem('dismissedMaintenance') || null));
+
+  React.useEffect(() => {
+    const fetchMaintenance = async () => {
+      try {
+        const list = await getMaintenance();
+        if (Array.isArray(list) && list.length) {
+          const now = new Date();
+          const active = list.find((m) => new Date(m.start) <= now && new Date(m.end) >= now);
+          if (active && String(active.id) !== dismissedMaintenance) {
+            setMaintenance(active);
+          } else {
+            setMaintenance(null);
+          }
+        }
+      } catch (err) {
+        // ignore; not fatal
+      }
+    };
+    // Only check if user is logged in
+    if (currentUser) fetchMaintenance();
+  }, [currentUser, dismissedMaintenance]);
+
+  React.useEffect(() => {
+    if (maintenance) {
+      Modal.info({
+        title: 'Scheduled Maintenance',
+        content: maintenance.message || 'Scheduled maintenance is active',
+        okText: 'Understand',
+        onOk: () => {
+          sessionStorage.setItem('dismissedMaintenance', String(maintenance.id));
+          setDismissedMaintenance(String(maintenance.id));
+        },
+      });
+    }
+  }, [maintenance]);
   // Map route to sidebar key
   const routeKeyMap = {
     '/': 'cases',

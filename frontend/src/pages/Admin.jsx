@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, Select, message, Space, Popconfirm, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
+import { createMaintenance, getMaintenance, deleteMaintenance } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -166,6 +167,48 @@ const Admin = () => {
     },
   ];
 
+  // Maintenance schedule controls
+  const [showMaintModal, setShowMaintModal] = React.useState(false);
+  const [maintMessage, setMaintMessage] = React.useState('');
+  const [maintRange, setMaintRange] = React.useState([]);
+  const [schedules, setSchedules] = React.useState([]);
+
+  React.useEffect(() => {
+    const fetch = async () => {
+      try {
+        const list = await getMaintenance();
+        setSchedules(list || []);
+      } catch (err) {
+        // ignore
+      }
+    };
+    fetch();
+  }, []);
+
+  const handleCreateMaintenance = async () => {
+    if (!maintRange || maintRange.length !== 2) {
+      return;
+    }
+    const [start, end] = maintRange;
+    try {
+      const payload = { start: start.toISOString(), end: end.toISOString(), message: maintMessage };
+      const created = await createMaintenance(payload);
+      setSchedules((prev) => [...prev, created]);
+      setShowMaintModal(false);
+    } catch (err) {
+      console.error('Failed to create maintenance', err);
+    }
+  };
+
+  const handleDeleteSchedule = async (id) => {
+    try {
+      await deleteMaintenance(id);
+      setSchedules((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      console.error('Failed to delete maintenance schedule', err);
+    }
+  };
+
   return (
     <div>
       <div className="card-panel">
@@ -197,6 +240,28 @@ const Admin = () => {
             scroll={{ x: 900 }}
           />
         </div>
+      </div>
+      <div style={{ marginTop: 24 }}>
+        <Card className="card-panel" bodyStyle={{ padding: 24 }}>
+          <Title level={5} style={{ marginTop: 0 }}>Maintenance</Title>
+          <Paragraph type="secondary" style={{ marginTop: 4 }}>Schedule maintenance messages that will be shown to users during login.</Paragraph>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 12 }}>
+            <DatePicker.RangePicker showTime onChange={(vals) => setMaintRange(vals ? vals.map(v => v.toDate()) : [])} />
+            <Input placeholder="Maintenance message" value={maintMessage} onChange={(e) => setMaintMessage(e.target.value)} />
+            <Button type="primary" onClick={handleCreateMaintenance}>Schedule</Button>
+          </div>
+          {schedules.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <Title level={6}>Existing Schedules</Title>
+              {schedules.map((s) => (
+                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                  <div>{new Date(s.start).toLocaleString()} → {new Date(s.end).toLocaleString()} — {s.message}</div>
+                  <Button danger onClick={() => handleDeleteSchedule(s.id)}>Delete</Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
 
       <Modal
