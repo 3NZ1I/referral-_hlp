@@ -100,11 +100,19 @@ pip install psycopg2-binary
 
 Running tests
 -------------
-Install test dependencies and run pytest:
+Install test dependencies and run pytest. Recommended approach is to run tests in the backend container to avoid native build toolchain (Rust/build tools) requirements on the host:
 
-```bash
+Docker (recommended - avoids host-native builds):
+```powershell
+Set-Location -Path "C:\Users\Bessar Farac\OneDrive\Documents\HLP\ref_system"
+docker compose build --pull --no-cache backend
+docker compose run --rm backend pytest -q
+```
+
+Host (local) - requires dev toolchain and Python/native deps:
+```powershell
 python -m venv .venv
-source .venv/bin/activate
+.\.venv\Scripts\Activate
 pip install -r backend/requirements-test.txt
 pytest backend/tests -q
 ```
@@ -174,6 +182,13 @@ docker compose logs --tail 200 backend
 ```powershell
 docker compose run --rm --entrypoint sh backend -c "cd /app/backend && python -m uvicorn backend.api:app --reload --host 0.0.0.0 --port 8000"
 ```
+
+### Notable fixes & changes (recent)
+- Case schema update: `CaseUpdate` now allows partial updates (title optional for updates), while `CaseCreate` requires `title`.
+- XLSX import flow: resolved uploader user first before creating `ImportJob`, so `uploader_id` / `uploader_name` are properly recorded.
+- Use `db.get(Case, case_id)` to retrieve cases by PK (SQLAlchemy 2.0 style) — fixed `assign_case` to avoid .query(...).get deprecation issues.
+- CORS header: an additional middleware ensures `Access-Control-Allow-Origin` header is present on all responses to help debugging and API clients during development.
+- Frontend: `AuthContext` normalizes the users list and re-fetches from the server after admin-created users to keep the UI in-sync.
 
 ### Production: Serve Built Files
 For production, serve the built files from `frontend/dist` using Caddy:

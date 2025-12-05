@@ -4,10 +4,10 @@ from datetime import datetime
 
 
 class UserBase(BaseModel):
-    username: Optional[str]
-    email: Optional[EmailStr]
-    name: Optional[str]
-    ability: Optional[str]
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    ability: Optional[str] = None
     role: Optional[str] = "user"
     must_change_password: Optional[bool] = False
 
@@ -26,15 +26,15 @@ class UserRead(UserBase):
 
 
 class CaseBase(BaseModel):
-    title: str
+    title: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = "open"
-    assigned_to_id: Optional[int]
+    assigned_to_id: Optional[int] = None
     raw: Optional[dict] = None
 
 
 class CaseCreate(CaseBase):
-    pass
+    title: str
 
 
 class CaseUpdate(CaseBase):

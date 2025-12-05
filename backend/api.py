@@ -63,6 +63,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def ensure_cors_headers(request: Request, call_next):
+    # Ensure we always include a CORS header so browsers/tests can inspect
+    response = await call_next(request)
+    if 'Access-Control-Allow-Origin' not in response.headers:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 MAINTENANCE_SCHEDULES = []
 _maintenance_seq = 1
 
@@ -214,7 +223,13 @@ def delete_case(case_id: int, db: Session = Depends(get_db), user=Depends(requir
 # USERS CRUD
 @app.get("/users", response_model=list[UserRead])
 def get_users(db: Session = Depends(get_db)):
-    return db.query(User).all()
+    try:
+        users = db.query(User).all()
+        logging.info('GET /users returned %s users', len(users))
+        return users
+    except Exception as e:
+        logging.exception('Failed to fetch users: %s', e)
+        raise HTTPException(status_code=500, detail='Internal server error (could not fetch users)')
 
 @app.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db), auth=Depends(require_auth)):
@@ -229,10 +244,16 @@ def create_user(user: UserCreate, db: Session = Depends(get_db), auth=Depends(re
     if 'must_change_password' in user.dict():
         user_data['must_change_password'] = user.dict().get('must_change_password')
     new_user = User(**user_data)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        logging.info('Created user id=%s username=%s', new_user.id, new_user.username)
+        return new_user
+    except Exception as e:
+        logging.exception('Failed to create user: %s', e)
+        db.rollback()
+        raise HTTPException(status_code=500, detail='Internal server error while creating user')
 
 
 @app.delete('/users/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
@@ -295,7 +316,7 @@ def get_abilities(db: Session = Depends(get_db)):
 # ASSIGN CASE
 @app.post("/cases/{case_id}/assign", response_model=CaseRead)
 def assign_case(case_id: int, payload: dict, db: Session = Depends(get_db), user=Depends(require_auth)):
-    case = db.query(Case).get(case_id)
+    case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     user_name = payload.get("user")
@@ -330,6 +351,16 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
     imported = 0
     created_ids = []
     failed_rows = []
+    # Resolve uploader id if authentication provided (ensure uploader_user is known before creating Job)
+    uploader_user = None
+    if isinstance(user, dict):
+        uploader_id = user.get('user_id') or user.get('sub')
+        if uploader_id:
+            try:
+                uploader_user = db.get(User, int(uploader_id))
+            except Exception:
+                uploader_user = None
+
     # create an import job record
     job = ImportJob(
         uploader_id=uploader_user.id if uploader_user else None,
@@ -339,12 +370,7 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
     db.add(job)
     db.commit()
     db.refresh(job)
-    # Resolve uploader id if authentication provided
-    uploader_user = None
-    if isinstance(user, dict):
-        uploader_id = user.get('user_id') or user.get('sub')
-        if uploader_id:
-            uploader_user = db.get(User, int(uploader_id))
+    # (moved above) uploader_user already resolved so proceed
 
     for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         case_data = dict(zip(headers, row))

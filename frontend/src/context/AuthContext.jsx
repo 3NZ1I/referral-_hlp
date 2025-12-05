@@ -47,26 +47,37 @@ export const AuthProvider = ({ children }) => {
 
   const [users, setUsers] = useState([]);
 
+  // helper to normalize raw users returned from backend
+  const normalizeUsers = (list = []) => (Array.isArray(list) ? list.map(u => ({
+    ...u,
+    name: u.name || u.username,
+    avatar: u.avatar || generateAvatar(u.name || u.username),
+    must_change_password: u.must_change_password || false,
+  })) : []);
+
   // Fetch users list from backend
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const list = await request('/users');
-        if (Array.isArray(list)) {
-          setUsers(list.map(u => ({
-            ...u,
-            name: u.name || u.username,
-            avatar: u.avatar || generateAvatar(u.name || u.username),
-            must_change_password: u.must_change_password || false,
-          })));
-        }
-      } catch (err) {
-        // Ignore silently - user list is optional
-        console.warn('Failed to fetch users list:', err);
+  const refreshUsers = async () => {
+    try {
+      const list = await request('/users');
+      if (Array.isArray(list)) {
+        setUsers(normalizeUsers(list));
       }
-    };
-    fetchUsers();
+    } catch (err) {
+      // Ignore silently - user list is optional
+      console.warn('Failed to fetch users list:', err);
+    }
+  };
+
+  useEffect(() => {
+    refreshUsers();
   }, []);
+
+  // Re-fetch users when an admin logs in to ensure UI list matches server
+  useEffect(() => {
+    if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'Admin')) {
+      refreshUsers();
+    }
+  }, [currentUser?.role]);
 
   useEffect(() => {
     if (currentUser) {
@@ -149,6 +160,8 @@ export const AuthProvider = ({ children }) => {
       // Prefer admin endpoint when creating a user from the admin UI
       if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'Admin')) {
         response = await request('/users', { method: 'POST', body: userData });
+        // ensure local cache is consistent with server; re-fetch list when allowed
+        await refreshUsers();
       } else {
         response = await request('/auth/register', {
           method: 'POST',
@@ -156,8 +169,16 @@ export const AuthProvider = ({ children }) => {
         });
       }
       const u = response.user;
-      // update local list
-      setUsers(prev => prev ? [...prev, u] : [u]);
+      const normalizedUser = u ? ({
+        ...u,
+        name: u.name || u.username,
+        avatar: u.avatar || generateAvatar(u.name || u.username),
+        must_change_password: u.must_change_password || false,
+      }) : null;
+      // For non-admin self-register, append to local list so UI stays responsive
+      if (!currentUser || !(currentUser.role === 'admin' || currentUser.role === 'Admin')) {
+        if (normalizedUser) setUsers(prev => prev ? [...prev, normalizedUser] : [normalizedUser]);
+      }
       return u;
     } catch (error) {
       console.error('Add user error:', error);
