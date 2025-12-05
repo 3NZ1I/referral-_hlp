@@ -109,6 +109,7 @@ def create_case(case: CaseCreate, db: Session = Depends(get_db), user=Depends(re
     db.add(new_case)
     db.commit()
     db.refresh(new_case)
+    logging.info('Created case via API: id=%s title=%s', new_case.id, new_case.title)
     return new_case
 
 @app.put("/cases/{case_id}", response_model=CaseRead)
@@ -218,6 +219,8 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
     ws = wb.active
     headers = [cell.value for cell in ws[1]]
     imported = 0
+    created_ids = []
+    failed_rows = []
     # Resolve uploader id if authentication provided
     uploader_user = None
     if isinstance(user, dict):
@@ -233,6 +236,12 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
         description = case_data.get('Description') or case_data.get('description') or ''
         # Enforce system default status 'Pending' for imported cases
         status = 'Pending'
+        # Store uploader info in raw so frontend can display who uploaded the record when available
+        if isinstance(case_data, dict):
+            case_data = dict(case_data)
+        if uploader_user and isinstance(case_data, dict):
+            # Avoid overwriting a raw uploaded_by if already present
+            case_data.setdefault('uploaded_by', uploader_user.name)
         case = Case(
             title=title,
             description=description,
@@ -245,13 +254,17 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
             db.commit()
             db.refresh(case)
             imported += 1
+            created_ids.append(case.id)
         except Exception as e:
             logging.exception('Failed to import row: %s', e)
             db.rollback()
+            # record the failure so the client can show and reattempt
+            failed_rows.append({'row': len(created_ids) + len(failed_rows) + 1, 'error': str(e)})
             # skip faulty row and continue importing
             continue
     # db.commit() already performed per-row
-    return {"imported": imported}
+    logging.info('Import summary: imported=%s created=%s failed=%s', imported, len(created_ids), len(failed_rows))
+    return {"imported": imported, "created_ids": created_ids, "failed_rows": failed_rows}
 
 
 @app.on_event('startup')
@@ -354,6 +367,18 @@ def login(payload: dict, db: Session = Depends(get_db)):
 @app.get('/maintenance')
 def get_maintenance():
     return MAINTENANCE_SCHEDULES
+
+
+@app.get('/cases/by-uploader/{uploader}')
+def get_cases_by_uploader(uploader: str, db: Session = Depends(get_db)):
+    # Return cases where `raw.uploaded_by` matches the uploader name (convenience for debugging/import verification)
+    try:
+        # Using JSON path query for uploaded_by
+        results = db.query(Case).filter(Case.raw['uploaded_by'].astext == uploader).all()
+        return results
+    except Exception as e:
+        logging.exception('Failed to query cases by uploader: %s', e)
+        raise HTTPException(status_code=500, detail='Query failed')
 
 
 @app.post('/maintenance')

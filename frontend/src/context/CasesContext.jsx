@@ -463,6 +463,7 @@ export const CasesProvider = ({ children }) => {
         title: c.title || c.raw?.beneficiary_name || '',
         id: c.id,
         raw: c.raw || c,
+        uploadedBy: c.raw?.uploaded_by || c.raw?.uploadedBy || null,
       }));
       setCases(backfillCaseCollection(mapped));
     } catch (err) {
@@ -484,31 +485,8 @@ export const CasesProvider = ({ children }) => {
   }, [loadCasesFromBackend]);
 
   const importDataset = useCallback((file) => new Promise(async (resolve, reject) => {
-    // If the backend supports import, use it and reload cases
-    try {
-      if (file && apiImportXLSX) {
-        await apiImportXLSX(file);
-        await loadCasesFromBackend();
-        message.success(`${file.name || 'File'} imported to server and refreshed.`);
-        resolve([]);
-        return;
-      }
-    } catch (err) {
-      console.warn('Backend import failed, falling back to client-side import', err);
-      // Show user-friendly error based on status
-      if (err && err.status === 401) {
-        message.error('Server import failed: please login or refresh your session.');
-      } else if (err && err.status === 403) {
-        message.error('Server import failed: permission denied (admin required).');
-      } else if (err && err.status === 413) {
-        message.error('Server import failed: file too large. Try a smaller file.');
-      } else if (err && err.body && err.body.detail) {
-        message.error(`Server import failed: ${err.body.detail}`);
-      } else {
-        message.error('Server import failed; fallback to local import. Check network/auth.');
-      }
-      // fall-through to client-side import if backend import fails
-    }
+    let importResult = null;
+    let perRowFailedRows = [];
     // Validate file before processing
     try {
       validateXlsxFile(file);
@@ -600,11 +578,51 @@ export const CasesProvider = ({ children }) => {
           resolve();
           return;
         }
+        // Try server import now that we have parsed rows - this gives us a mapping to mark failed rows
+        try {
+          if (file && apiImportXLSX) {
+            importResult = await apiImportXLSX(file);
+            const createdCount = (importResult && importResult.created_ids && importResult.created_ids.length) || importResult?.imported || 0;
+            const failedCount = (importResult && importResult.failed_rows && importResult.failed_rows.length) || 0;
+            if (createdCount) {
+              await loadCasesFromBackend();
+              if (failedCount) {
+                message.warning(`${createdCount} rows created on server; ${failedCount} rows failed to import. They will be available for retry.`);
+              } else {
+                message.success(`${file.name || 'File'} imported to server and refreshed.`);
+                resolve(importResult?.created_ids || []);
+                return;
+              }
+            } else if (failedCount && failedCount > 0 && !createdCount) {
+              message.warning(`No rows created on server; ${failedCount} rows failed to import.`);
+            } else {
+              await loadCasesFromBackend();
+              message.success(`${file.name || 'File'} imported to server and refreshed.`);
+              resolve(importResult?.created_ids || []);
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn('Server import attempt failed, will try per-row create if allowed (or fallback to local)', err);
+          if (err && err.status === 401) {
+            message.error('Server import failed: please login or refresh your session.');
+          } else if (err && err.status === 403) {
+            message.error('Server import failed: permission denied (admin required).');
+          } else if (err && err.status === 413) {
+            message.error('Server import failed: file too large. Try a smaller file.');
+          } else if (err && err.body && err.body.detail) {
+            message.error(`Server import failed: ${err.body.detail}`);
+          } else {
+            message.error('Server import failed; will attempt per-row create or fallback to local import.');
+          }
+        }
         // If backend import failed, try to create records on the server (if allowed/authenticated)
         try {
           // Attempt to create server-side records for deduped rows. If the call fails due to missing auth, fall back to client-only import
+          // Only attempt server-side per-row creation when the user is authenticated
+          if (!currentUser) throw new Error('not-authenticated');
           const created = [];
-          const failedRows = [];
+          perRowFailedRows = [];
           for (const row of dedupedRows) {
             try {
               const payload = {
@@ -615,7 +633,7 @@ export const CasesProvider = ({ children }) => {
               };
               const srv = await apiCreateCase(payload);
               if (srv && srv.id) created.push(srv);
-              else failedRows.push(row);
+              else perRowFailedRows.push(row);
             } catch (e) {
               // If unauthorized or forbidden, stop attempting further server creates and fall back to local import
               if (e && (e.status === 401 || e.status === 403)) {
@@ -623,14 +641,14 @@ export const CasesProvider = ({ children }) => {
                 throw e; // caught by outer catch to fallback entirely
               }
               console.warn('Failed to create case on server for row, skipping and continuing', e);
-              failedRows.push(row);
+              perRowFailedRows.push(row);
             }
           }
           if (created.length) {
             // If we created records, reload from server so mapping uses `raw` persisted
             await loadCasesFromBackend();
-            if (failedRows.length) {
-              message.warning(`${created.length} rows created on server; ${failedRows.length} failed and were imported locally.`);
+            if (perRowFailedRows.length) {
+              message.warning(`${created.length} rows created on server; ${perRowFailedRows.length} failed and were imported locally.`);
             } else {
               message.success(`${created.length} rows created on server and refreshed`);
               resolve(created);
@@ -639,7 +657,7 @@ export const CasesProvider = ({ children }) => {
           }
         } catch (err) {
           console.warn('Server create fallback failed or not authenticated; using in-memory import', err);
-          if (err && err.status === 401) {
+          if ((err && err.status === 401) || err.message === 'not-authenticated') {
             message.error('Server import or create failed: please login again or refresh your session.');
           } else if (err && err.status === 403) {
             message.error('Server import or create failed: permission denied (admin required).');
@@ -658,10 +676,12 @@ export const CasesProvider = ({ children }) => {
           recordId: `UPL-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`,
           fileName: file.name,
           entries: dedupedRows.length,
-          uploadedBy: 'You',
+          uploadedBy: currentUser ? (currentUser.name || currentUser.username) : 'You',
           uploadedOn: new Date().toLocaleDateString(),
           status: 'Validated',
           rows: dedupedRows,
+          serverImportSummary: importResult || null,
+          failedRows: perRowFailedRows || [],
         };
         setDatasets((prev) => [datasetRecord, ...prev]);
         const summarySuffix = skippedDuplicates
@@ -715,6 +735,51 @@ export const CasesProvider = ({ children }) => {
     await loadCasesFromBackend();
   }, []);
 
+  const retryFailedRows = useCallback(async (datasetKey) => {
+    if (!datasetKey) return;
+    const dataset = datasets.find((d) => d.key === datasetKey);
+    if (!dataset || !dataset.rows || !dataset.rows.length) {
+      message.info('No rows to retry for this dataset');
+      return;
+    }
+    // Determine rows that likely failed on server import or per-row fallback
+    const retryRows = dataset.failedRows && dataset.failedRows.length ? dataset.failedRows : dataset.rows;
+    if (!retryRows.length) {
+      message.info('No failed rows to retry');
+      return;
+    }
+    let createdCount = 0;
+    let failedCount = 0;
+    for (const row of retryRows) {
+      try {
+        const payload = {
+          title: row.title || row.formFields?.beneficiary_name || row.caseNumber || 'Case',
+          description: row.notes || row.formFields?.extra_note || row.raw?.description || '',
+          status: 'Pending',
+          raw: row.raw || row,
+        };
+        const created = await apiCreateCase(payload);
+        if (created && created.id) {
+          createdCount += 1;
+          // Mark row as created in dataset
+          row.serverCreated = true;
+          row.id = created.id;
+        } else {
+          failedCount += 1;
+        }
+      } catch (err) {
+        failedCount += 1;
+        console.warn('Retry failed for row', err);
+      }
+    }
+    if (createdCount) {
+      await loadCasesFromBackend();
+    }
+    message.success(`Retry finished: ${createdCount} created, ${failedCount} failed.`);
+    // update the stored dataset
+    setDatasets((prev) => prev.map((d) => d.key === datasetKey ? ({ ...d, rows: dataset.rows, failedRows: [] }) : d));
+  }, [datasets, loadCasesFromBackend]);
+
   const mergeCaseUpdates = useCallback((caseItem, updates = {}) => {
     if (!updates || !Object.keys(updates).length) return caseItem;
     const next = { ...caseItem, ...updates };
@@ -749,6 +814,7 @@ export const CasesProvider = ({ children }) => {
     deleteCases,
     updateCase,
     reloadCases,
+    retryFailedRows,
   }), [cases, datasets, importDataset, deleteDatasets, deleteCases, updateCase, staffDirectory]);
 
   return (

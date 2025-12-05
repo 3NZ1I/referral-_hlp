@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Table, Typography, Tag, Space, message, Divider, Dropdown } from 'antd';
+import { Button } from 'antd';
 import { useCases } from '../context/CasesContext';
+import { useAuth } from '../context/AuthContext';
 import { exportCasesToXLSX } from '../utils/export';
 
 const { Title, Paragraph } = Typography;
@@ -39,10 +41,28 @@ const datasetColumns = [
     width: 140,
     render: (status) => <Tag color={status === 'Validated' ? 'cyan' : 'gold'}>{status}</Tag>,
   },
+  {
+    title: 'Actions',
+    key: 'actions',
+    width: 220,
+    render: (_, record) => (
+      <Space>
+        {record.failedRows && record.failedRows.length > 0 && currentUser && (currentUser.name === record.uploadedBy || currentUser.username === record.uploadedBy || (currentUser.role && currentUser.role.toLowerCase() === 'admin')) && (
+          <Button size="small" type="primary" onClick={() => retryFailedRows(record.key)}>
+            Retry Failed Rows
+          </Button>
+        )}
+        <Button size="small" onClick={() => exportCasesToXLSX(record.rows || [], `${record.fileName || 'dataset'}.xlsx`)}>
+          Download Rows
+        </Button>
+      </Space>
+    ),
+  }
 ];
 
 const Data = () => {
-  const { cases, datasets, importDataset, deleteCases, reloadCases } = useCases();
+  const { cases, datasets, importDataset, deleteCases, reloadCases, retryFailedRows } = useCases();
+  const { currentUser } = useAuth();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const uploadInputRef = useRef(null);
 
@@ -55,7 +75,11 @@ const Data = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      await importDataset(file);
+      const results = await importDataset(file);
+      // If results are an array or similar, optionally show how many server-created rows vs local rows
+      if (Array.isArray(results) && results.length) {
+        message.success(`Imported ${results.length} cases.`);
+      }
       // Ensure we refresh cases after server import
       // importDataset now ensures refreshing by default
     } finally {

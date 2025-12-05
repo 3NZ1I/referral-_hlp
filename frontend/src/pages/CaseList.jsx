@@ -62,8 +62,10 @@ const CaseList = () => {
     ? cases
     : cases.filter(c => {
       if (c.assignedStaff === currentUser?.name) return true;
-      // Allow uploader to see cases they uploaded locally (dataset.uploadedBy === 'You')
-      if (c.datasetKey && datasets && datasets.some(d => d.key === c.datasetKey && d.uploadedBy === 'You')) {
+      // If server imported case has an uploader, allow the uploader to see it
+      if ((c.raw && (c.raw.uploaded_by === currentUser?.name || c.raw.uploaded_by === currentUser?.username)) || (c.uploadedBy && (c.uploadedBy === currentUser?.name || c.uploadedBy === currentUser?.username))) return true;
+      // Allow uploader to see cases they uploaded locally (dataset.uploadedBy === currentUser.name)
+      if (c.datasetKey && datasets && datasets.some(d => d.key === c.datasetKey && d.uploadedBy === (currentUser?.name || currentUser?.username || 'You'))) {
         return true;
       }
       return false;
