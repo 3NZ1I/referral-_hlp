@@ -8,10 +8,11 @@ import logging
 import traceback
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from backend.models import User, Case, Comment
+from backend.models import User, Case, Comment, ImportJob, ImportRow
 from datetime import datetime
 from .schemas import (
     CaseCreate,
+    CaseUpdate,
     CaseRead,
     UserCreate,
     UserRead,
@@ -136,11 +137,33 @@ def create_case(case: CaseCreate, db: Session = Depends(get_db), user=Depends(re
     return new_case
 
 @app.put("/cases/{case_id}", response_model=CaseRead)
-def update_case(case_id: int, case: CaseCreate, db: Session = Depends(get_db), user=Depends(require_auth)):
+def update_case(case_id: int, case: CaseUpdate, db: Session = Depends(get_db), user=Depends(require_auth)):
     db_case = db.get(Case, case_id)
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
-    for key, value in case.dict(exclude_unset=True).items():
+    # enforce resolve comment when changing status to resolved states
+    payload = case.dict(exclude_unset=True)
+    new_status = payload.get('status')
+    resolved_states = ['Completed', 'Closed']
+    if new_status and new_status in resolved_states and new_status != (db_case.status or ''):
+        resolve_comment = payload.get('resolve_comment')
+        if not resolve_comment or not resolve_comment.strip():
+            raise HTTPException(status_code=400, detail='Resolve comment is required when changing status to a resolved state')
+        # create a comment for the resolve action
+        try:
+            user_id = None
+            if isinstance(user, dict):
+                user_id = user.get('user_id') or user.get('sub')
+            cmt = Comment(case_id=case_id, user_id=user_id, content=resolve_comment)
+            db.add(cmt)
+            db.commit()
+        except Exception as e:
+            logging.exception('Failed to persist resolve comment: %s', e)
+            db.rollback()
+    # apply updates to case
+    for key, value in payload.items():
+        if key == 'resolve_comment':
+            continue
         setattr(db_case, key, value)
     db.commit()
     db.refresh(db_case)
@@ -274,6 +297,15 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
     imported = 0
     created_ids = []
     failed_rows = []
+    # create an import job record
+    job = ImportJob(
+        uploader_id=uploader_user.id if uploader_user else None,
+        uploader_name=(uploader_user.name if uploader_user else None),
+        filename=getattr(file, 'filename', None)
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
     # Resolve uploader id if authentication provided
     uploader_user = None
     if isinstance(user, dict):
@@ -281,7 +313,7 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
         if uploader_id:
             uploader_user = db.get(User, int(uploader_id))
 
-    for row in ws.iter_rows(min_row=2, values_only=True):
+    for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         case_data = dict(zip(headers, row))
         # Map XLSX columns to Case fields (customize as needed)
         # Store the raw row data to allow frontend mapping and backfill
@@ -295,6 +327,11 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
         if uploader_user and isinstance(case_data, dict):
             # Avoid overwriting a raw uploaded_by if already present
             case_data.setdefault('uploaded_by', uploader_user.name)
+        # create an import row record for tracking
+        import_row = ImportRow(job_id=job.id, row_number=row_idx, raw=case_data, status='pending')
+        db.add(import_row)
+        db.flush()
+
         case = Case(
             title=title,
             description=description,
@@ -308,16 +345,81 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
             db.refresh(case)
             imported += 1
             created_ids.append(case.id)
+            # update the import row
+            import_row.case_id = case.id
+            import_row.status = 'success'
+            db.add(import_row)
+            db.commit()
         except Exception as e:
             logging.exception('Failed to import row: %s', e)
             db.rollback()
+            # Update import_row to failed
+            try:
+                import_row.error = str(e)
+                import_row.status = 'failed'
+                db.add(import_row)
+                db.commit()
+            except Exception:
+                db.rollback()
             # record the failure so the client can show and reattempt
-            failed_rows.append({'row': len(created_ids) + len(failed_rows) + 1, 'error': str(e)})
+            failed_rows.append({'row': row_idx, 'error': str(e)})
             # skip faulty row and continue importing
             continue
     # db.commit() already performed per-row
     logging.info('Import summary: imported=%s created=%s failed=%s', imported, len(created_ids), len(failed_rows))
-    return {"imported": imported, "created_ids": created_ids, "failed_rows": failed_rows}
+    return {"imported": imported, "created_ids": created_ids, "failed_rows": failed_rows, 'job_id': job.id}
+
+
+@app.get('/import/jobs')
+def list_import_jobs(db: Session = Depends(get_db)):
+    jobs = db.query(ImportJob).order_by(ImportJob.created_at.desc()).all()
+    results = []
+    for j in jobs:
+        total = len(j.rows)
+        success = len([r for r in j.rows if r.status == 'success'])
+        failed = len([r for r in j.rows if r.status == 'failed'])
+        results.append({'id': j.id, 'uploader_name': j.uploader_name, 'filename': j.filename, 'created_at': j.created_at.isoformat(), 'total_rows': total, 'success': success, 'failed': failed})
+    return results
+
+
+@app.get('/import/jobs/{job_id}')
+def get_import_job(job_id: int, db: Session = Depends(get_db)):
+    job = db.get(ImportJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail='Job not found')
+    rows = [{'row_number': r.row_number, 'status': r.status, 'error': r.error, 'case_id': r.case_id} for r in job.rows]
+    return {'id': job.id, 'uploader_name': job.uploader_name, 'filename': job.filename, 'created_at': job.created_at.isoformat(), 'rows': rows}
+
+
+@app.post('/import/jobs/{job_id}/retry')
+def retry_import_job(job_id: int, db: Session = Depends(get_db), user=Depends(require_auth)):
+    job = db.get(ImportJob, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail='Job not found')
+    retry_count = 0
+    for row in job.rows:
+        if row.status == 'failed':
+            try:
+                row_data = row.raw or {}
+                title = row_data.get('Title') or row_data.get('title') or row_data.get('case_id') or 'No Title'
+                description = row_data.get('Description') or row_data.get('description') or ''
+                new_case = Case(title=title, description=description, status='Pending', raw=row_data)
+                db.add(new_case)
+                db.commit()
+                db.refresh(new_case)
+                row.case_id = new_case.id
+                row.status = 'success'
+                db.add(row)
+                db.commit()
+                retry_count += 1
+            except Exception as e:
+                db.rollback()
+                row.error = str(e)
+                row.status = 'failed'
+                db.add(row)
+                db.commit()
+                continue
+    return {'job_id': job.id, 'retried': retry_count}
 
 
 @app.on_event('startup')

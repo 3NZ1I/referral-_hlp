@@ -45,3 +45,26 @@ class Comment(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     case = relationship("Case", back_populates="comments")
     user = relationship("User")
+
+
+class ImportJob(Base):
+    __tablename__ = 'import_jobs'
+    id = Column(Integer, primary_key=True, index=True)
+    uploader_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    uploader_name = Column(String(255), nullable=True)
+    filename = Column(String(512), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    rows = relationship('ImportRow', back_populates='job')
+
+
+class ImportRow(Base):
+    __tablename__ = 'import_rows'
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey('import_jobs.id'))
+    job = relationship('ImportJob', back_populates='rows')
+    row_number = Column(Integer, nullable=True)
+    raw = Column(JSON, nullable=True)
+    status = Column(String(32), default='pending')
+    error = Column(Text, nullable=True)
+    case_id = Column(Integer, ForeignKey('cases.id'), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)

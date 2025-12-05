@@ -37,6 +37,10 @@ class CaseCreate(CaseBase):
     pass
 
 
+class CaseUpdate(CaseBase):
+    resolve_comment: Optional[str] = None
+
+
 class CaseRead(CaseBase):
     id: int
     created_at: Optional[datetime]
