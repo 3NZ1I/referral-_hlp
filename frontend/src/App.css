@@ -118,7 +118,7 @@ body {
   white-space: normal !important;
   word-break: break-word !important;
   overflow-wrap: break-word !important;
-  min-height: 56px; /* maintain a consistent card height when text is short */
+  min-height: 82px; /* maintain a consistent card height when text is short */
 }
 .metadata-grid > div .ant-typography {
   white-space: normal !important;
