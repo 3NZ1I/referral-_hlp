@@ -491,14 +491,27 @@ export const CasesProvider = ({ children }) => {
         try {
           workbook = XLSX.read(array, { type: 'array' });
         } catch (err) {
-          // Fallback to binary string read if array variant fails; try to preserve decoding
-          console.warn('Primary XLSX parse failed; attempting binary fallback', err);
+          console.warn('Primary XLSX.parse(array) failed; attempting fallbacks', err);
           try {
-            const binary = new TextDecoder('utf-8').decode(array);
+            // Try utf-8 text decoding into a binary string
+            const binary = typeof TextDecoder !== 'undefined'
+              ? new TextDecoder('utf-8').decode(array)
+              : String.fromCharCode.apply(null, Array.from(array));
             workbook = XLSX.read(binary, { type: 'binary' });
           } catch (err2) {
-            console.error('Both XLSX read attempts failed', err, err2);
-            throw err; // propagate original error to outer catch
+            console.warn('Text decoding fallback failed', err2);
+            try {
+              // As a last resort, try building a binary string via char codes
+              let binary2 = '';
+              for (let i = 0; i < array.length; i += 1) {
+                binary2 += String.fromCharCode(array[i]);
+                if (i > 16384) break; // don't build huge strings for safety
+              }
+              workbook = XLSX.read(binary2, { type: 'binary' });
+            } catch (err3) {
+              console.error('All XLSX parsing fallbacks failed', err, err2, err3);
+              throw err; // propagate original error to outer catch
+            }
           }
         }
         const sheetName = (workbook && Array.isArray(workbook.SheetNames) && workbook.SheetNames[0]) || null;
@@ -705,7 +718,9 @@ export const CasesProvider = ({ children }) => {
         console.error('Import failed', error);
         // Provide a user-friendly message and include details in console
         const errorMsg = (error && error.message) ? error.message : String(error);
-        message.error(`Could not parse XLSX file: ${errorMsg}`);
+        // If error contains stack or nested errors, append additional messages for help
+        const extra = error && error.stack ? `; stack: ${error.stack.split('\n')[0]}` : '';
+        message.error(`Could not parse XLSX file: ${errorMsg}${extra}`);
         reject(error);
       }
     };
