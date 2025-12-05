@@ -176,6 +176,21 @@ Check browser dev tools for asset errors
 ## Backend Startup
 - Start backend (API) on port 8000
 
+### Default admin seeding
+The backend will auto-create a default admin user at startup when no users exist in the database. Set these environment variables to override the defaults before starting the backend service in production or development:
+
+- `INITIAL_ADMIN_USERNAME` (default: admin)
+- `INITIAL_ADMIN_PASSWORD` (default: admin123)
+- `INITIAL_ADMIN_EMAIL` (default: admin@example.com)
+
+Example (Linux / macOS):
+```bash
+export INITIAL_ADMIN_USERNAME=admin
+export INITIAL_ADMIN_PASSWORD=secret
+export INITIAL_ADMIN_EMAIL=admin@example.com
+docker compose up -d --build backend
+```
+
 ## DNS Setup
 - Ensure your domain's A/AAAA records point to your VM's public IP.
 # Deployment
@@ -246,7 +261,9 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    add_header Content-Security-Policy "default-src 'self'; connect-src 'self' http://localhost:8000; frame-ancestors 'none';";
+    # IMPORTANT: Update this Content Security Policy to allow connections to your API host and inline styles if required
+    # The sample below adds the API host and allows inline styles to support libraries like Ant Design.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.bessar.work http://localhost:8000; frame-ancestors 'none';";
     add_header X-Frame-Options "DENY";
     add_header X-Content-Type-Options "nosniff";
     add_header Referrer-Policy "strict-origin-when-cross-origin";
