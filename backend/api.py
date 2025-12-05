@@ -292,15 +292,23 @@ def register(payload: dict, db: Session = Depends(get_db)):
 # Login endpoint
 @app.post("/auth/login")
 def login(payload: dict, db: Session = Depends(get_db)):
-    username = payload.get("username")
-    password = payload.get("password")
-    
-    if not username or not password:
-        raise HTTPException(status_code=400, detail="username and password required")
-    
-    user = db.query(User).filter(User.username == username).first()
-    if not user or not user.password_hash or not verify_password(password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    token = create_token({"sub": user.username, "user_id": user.id, "role": user.role})
-    return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role}}
+    try:
+        username = payload.get("username")
+        password = payload.get("password")
+        
+        if not username or not password:
+            raise HTTPException(status_code=400, detail="username and password required")
+        
+        user = db.query(User).filter(User.username == username).first()
+        if not user or not user.password_hash or not verify_password(password, user.password_hash):
+            # Don't reveal which part failed (user exists vs password), just return unauthorized
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        token = create_token({"sub": user.username, "user_id": user.id, "role": user.role})
+        return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role}}
+    except HTTPException:
+        # Pass-through known HTTP exceptions
+        raise
+    except Exception as e:
+        logging.exception("Unhandled error in login for user '%s': %s", payload.get('username'), e)
+        raise HTTPException(status_code=500, detail="Internal server error")
