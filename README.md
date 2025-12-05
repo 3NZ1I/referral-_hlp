@@ -388,6 +388,30 @@ sudo docker compose logs frontend --tail=200 -f
 
 Important: Avoid running `docker compose down -v` or pruning volumes unless you intend to reset the DB. Always backup the DB first if you're concerned about losing production data.
 
+## Verifying cases and assignment features after update
+After pulling changes, rebuilding and restarting the backend and frontend containers, follow these checks:
+
+1. Verify server-side cases are returned by the API:
+```bash
+curl -s http://127.0.0.1:8000/api/cases | jq '.'
+```
+
+2. Upload an XLSX file using the frontend UI (Data -> Upload XLSX). The upload will now call the backend and persist cases; the UI will refresh after import.
+
+3. Confirm the cases persist after a page refresh:
+ - Visit the Cases list (UI) and confirm the newly uploaded cases are still present.
+ - Or repeat `curl` to `/api/cases` to ensure server records exist.
+
+4. Confirm assignment works and users are visible in the Assign dropdown:
+ - Ensure you are logged-in (admin or internal role) and open Assignment or Case Details.
+ - The Assign dropdown now pulls users and abilities from the backend (`/api/users` and `/api/abilities`).
+ - Save an assignment; it should persist and show in the Case details and backend.
+
+5. If assignment does not persist or users are still missing:
+ - Check `docker compose logs backend` for errors.
+ - Confirm `/api/users` returns a list and `/api/abilities` returns the unique abilities.
+
+
 ### Confirm the CSP header
 After updating and reloading host nginx, verify the `Content-Security-Policy` returned by the site. This helps detect conflicting headers coming from the frontend container and the host proxy.
 
