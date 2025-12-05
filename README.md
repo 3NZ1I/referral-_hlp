@@ -207,6 +207,12 @@ Verify the migrations were applied and that the `users` table now exists:
 
 ```bash
 docker compose exec db psql -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-referral_db} -c "select tablename from pg_tables where tablename='users';"
+
+If you encounter the error "No config file 'alembic.ini' found" while running alembic from the host, try running the command inside the backend working directory inside the container:
+
+```bash
+docker compose run --rm backend sh -lc "cd backend && alembic upgrade head"
+```
 ```
 
 If `users` is listed, restart the backend so the startup seed runs and creates the admin user if the table was empty:

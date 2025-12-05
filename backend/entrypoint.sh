@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# Ensure we operate inside the backend code directory so alembic and relative paths work
+cd /app/backend || exit 1
+
 # If a command is passed to the container, run it directly (useful for 'alembic' tasks via docker compose run)
 if [ "${#}" -gt 0 ]; then
   exec "$@"
