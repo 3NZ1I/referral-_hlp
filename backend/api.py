@@ -229,9 +229,7 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
             status=status,
             raw=case_data,
         )
-        # Assign uploader user as assignee if present
-        if uploader_user:
-            case.assigned_to = uploader_user
+        # Do not assign uploader by default; keep system-unassigned when imported
         db.add(case)
         imported += 1
     db.commit()
