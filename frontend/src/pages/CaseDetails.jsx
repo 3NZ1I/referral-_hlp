@@ -18,6 +18,7 @@ import { EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCases } from '../context/CasesContext';
 import { useAuth } from '../context/AuthContext';
+import { assignCase as apiAssignCase } from '../api';
 import { formSections, selectOptions } from '../data/formMetadata';
 import dayjs from 'dayjs';
 
@@ -211,6 +212,14 @@ const CaseDetails = () => {
         assignedStaff: staffValue || 'Unassigned',
         followUpDate: normalizedFollowUp,
       });
+      // Persist assignment to backend if this case exists on server
+      if (caseRecord.id) {
+        try {
+          await apiAssignCase(caseRecord.id, staffValue || null, null);
+        } catch (err) {
+          console.warn('Failed to persist assignment to backend', err);
+        }
+      }
       message.success('Case details updated');
     } finally {
       setSaving(false);
