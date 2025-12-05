@@ -2,52 +2,16 @@
 import React, {
   createContext,
   useCallback,
-        try {
-          const created = [];
-          const failedRows = [];
-          for (const row of dedupedRows) {
-            try {
-              const payload = {
-                title: row.title || row.formFields?.beneficiary_name || row.caseNumber || 'Case',
-                description: row.notes || row.formFields?.extra_note || row.raw?.description || '',
-                status: 'Pending',
-                raw: row.raw || row,
-              };
-              const srv = await apiCreateCase(payload);
-              if (srv && srv.id) created.push(srv);
-              else failedRows.push(row);
-            } catch (e) {
-              // If unauthorized or forbidden, stop attempting further server creates and fall back to local import
-              if (e && (e.status === 401 || e.status === 403)) {
-                console.warn('Server create aborted due to auth/permission error', e);
-                throw e; // caught by outer catch to fallback entirely
-              }
-              console.warn('Failed to create case on server for row, skipping it and continuing', e);
-              failedRows.push(row);
-            }
-          }
-          if (created.length) {
-            // If we created records, reload from server so mapping uses `raw` persisted
-            await loadCasesFromBackend();
-            if (failedRows.length) {
-              message.warning(`${created.length} rows created on server; ${failedRows.length} failed and were imported locally.`);
-            } else {
-              message.success(`${created.length} rows created on server and refreshed`);
-              resolve(created);
-              return;
-            }
-          }
-        } catch (err) {
-          console.warn('Server create fallback failed or not authenticated; using in-memory import', err);
-          if (err && err.status === 401) {
-            message.error('Server import or create failed: please login again or refresh your session.');
-          } else if (err && err.status === 403) {
-            message.error('Server import or create failed: permission denied (admin required).');
-          }
-        }
-  });
-  return normalized;
-};
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
+import * as XLSX from 'xlsx';
+import { fetchCases as apiFetchCases, importXLSX as apiImportXLSX, createCase as apiCreateCase, deleteCaseApi as apiDeleteCase } from '../api';
+import { message } from 'antd';
+import { formSections, caseFieldMapping } from '../data/formMetadata';
+import { useAuth } from './AuthContext';
+import { validateXlsxFile } from '../utils/xlsxGuard';
 
 const pickValue_ARCHIVED = (normalizedRow, aliases, fallback = '') => {
   for (const alias of aliases) {
@@ -96,7 +60,6 @@ const mapCanonicalFields_ARCHIVED = (normalizedRow) => {
   
   return acc;
 };
-*/
 // ========================================================================
 // END OF ARCHIVED CODE
 // ========================================================================
@@ -537,6 +500,8 @@ export const CasesProvider = ({ children }) => {
         message.error('Server import failed: please login or refresh your session.');
       } else if (err && err.status === 403) {
         message.error('Server import failed: permission denied (admin required).');
+      } else if (err && err.status === 413) {
+        message.error('Server import failed: file too large. Try a smaller file.');
       } else if (err && err.body && err.body.detail) {
         message.error(`Server import failed: ${err.body.detail}`);
       } else {
@@ -639,33 +604,46 @@ export const CasesProvider = ({ children }) => {
         try {
           // Attempt to create server-side records for deduped rows. If the call fails due to missing auth, fall back to client-only import
           const created = [];
+          const failedRows = [];
           for (const row of dedupedRows) {
             try {
               const payload = {
                 title: row.title || row.formFields?.beneficiary_name || row.caseNumber || 'Case',
                 description: row.notes || row.formFields?.extra_note || row.raw?.description || '',
-                // Enforce system default status for newly created cases
                 status: 'Pending',
                 raw: row.raw || row,
               };
-                    // Do not set assigned_to_id from XLSX staff values; default to Unassigned unless assignment is explicit
               const srv = await apiCreateCase(payload);
               if (srv && srv.id) created.push(srv);
+              else failedRows.push(row);
             } catch (e) {
-              console.warn('Failed to create case on server for row, falling back to local import', e);
-              // If a single row creation fails due to auth, break and fall back to local import for all
-              throw e;
+              // If unauthorized or forbidden, stop attempting further server creates and fall back to local import
+              if (e && (e.status === 401 || e.status === 403)) {
+                console.warn('Server create aborted due to auth/permission error', e);
+                throw e; // caught by outer catch to fallback entirely
+              }
+              console.warn('Failed to create case on server for row, skipping and continuing', e);
+              failedRows.push(row);
             }
           }
           if (created.length) {
             // If we created records, reload from server so mapping uses `raw` persisted
             await loadCasesFromBackend();
-            message.success(`${created.length} rows created on server and refreshed`);
-            resolve(created);
-            return;
+            if (failedRows.length) {
+              message.warning(`${created.length} rows created on server; ${failedRows.length} failed and were imported locally.`);
+            } else {
+              message.success(`${created.length} rows created on server and refreshed`);
+              resolve(created);
+              return;
+            }
           }
         } catch (err) {
           console.warn('Server create fallback failed or not authenticated; using in-memory import', err);
+          if (err && err.status === 401) {
+            message.error('Server import or create failed: please login again or refresh your session.');
+          } else if (err && err.status === 403) {
+            message.error('Server import or create failed: permission denied (admin required).');
+          }
         }
 
         // Fallback to in-memory import only for local development or unauthenticated sessions
