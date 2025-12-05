@@ -434,7 +434,7 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
   // defaultAssigned (typically currentUser.name) should be used unless case has server-assigned user
   const computedStatus = defaultStatus;
   // If case has an actual server-assigned user, prefer it; otherwise use the default assigned value passed by the caller
-  const computedAssigned = canonicalFields.assignedStaff || canonicalFields.staff_name || defaultAssigned || 'Unassigned';
+  const computedAssigned = defaultAssigned || canonicalFields.assignedStaff || canonicalFields.staff_name || 'Unassigned';
 
   return {
     key: `${datasetKey}-${index + 1}-${Math.random().toString(16).slice(2, 6)}`,
