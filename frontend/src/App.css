@@ -85,8 +85,8 @@ body {
 }
 
 .card-panel h4 {
-  /* Prevent headers from stacking single letters on narrow screens */
-  white-space: nowrap;
+  /* Allow headers to wrap instead of maintaining a single line */
+  white-space: normal;
   text-overflow: ellipsis;
   overflow: hidden;
 }
@@ -129,7 +129,7 @@ body {
 .dashboard-content .card-panel .ant-typography, .dashboard-content .card-panel h4 {
   writing-mode: horizontal-tb !important;
   transform: none !important;
-  white-space: nowrap !important;
+  white-space: normal !important;
 }
 
 /* Reduce heading size on narrow screens to avoid forced vertical stacking */
@@ -211,6 +211,9 @@ body.dark-mode .ant-table-tbody > tr:hover > td {
 .roster-table thead tr:first-child th {
   background: #f5f6fa;
   border-bottom: 1px solid #dcdfe6;
+.metadata-grid {
+  grid-auto-rows: minmax(82px, auto);
+}
   font-weight: 600;
 }
 

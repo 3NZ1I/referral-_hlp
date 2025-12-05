@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react';
 import * as XLSX from 'xlsx';
-import { fetchCases as apiFetchCases, importXLSX as apiImportXLSX, createCase as apiCreateCase } from '../api';
+import { fetchCases as apiFetchCases, importXLSX as apiImportXLSX, createCase as apiCreateCase, deleteCaseApi as apiDeleteCase } from '../api';
 import { message } from 'antd';
 import { formSections, caseFieldMapping } from '../data/formMetadata';
 import { useAuth } from './AuthContext';
@@ -499,6 +499,14 @@ export const CasesProvider = ({ children }) => {
     loadCasesFromBackend();
   }, [loadCasesFromBackend]);
 
+  const reloadCases = useCallback(async () => {
+    try {
+      await loadCasesFromBackend();
+    } catch (err) {
+      console.warn('reloadCases failed', err);
+    }
+  }, [loadCasesFromBackend]);
+
   const importDataset = useCallback((file) => new Promise(async (resolve, reject) => {
     // If the backend supports import, use it and reload cases
     try {
@@ -683,12 +691,28 @@ export const CasesProvider = ({ children }) => {
     setCases((prev) => prev.filter((row) => !keysToDelete.includes(row.datasetKey)));
   }, []);
 
-  const deleteCases = useCallback((caseKeys) => {
+  const deleteCases = useCallback(async (caseKeys) => {
     if (!caseKeys.length) return;
-    setCases((prev) => prev.filter((row) => !caseKeys.includes(row.key)));
+    const serverIds = [];
+    // Optimistic update for local UI
+    setCases((prev) => prev.filter((row) => {
+      if (!caseKeys.includes(row.key)) return true;
+      if (row.id) serverIds.push(row.id);
+      return false;
+    }));
     setDatasets((prev) => prev.map((dataset) => {
+      if (!dataset.rows) return dataset;
       const filteredRows = (dataset.rows || []).filter((row) => !caseKeys.includes(row.key));
       return { ...dataset, rows: filteredRows, entries: filteredRows.length };
+    }));
+
+    // Delete server-backed cases (best-effort)
+    await Promise.all(serverIds.map(async (id) => {
+      try {
+        await apiDeleteCase(id);
+      } catch (err) {
+        console.warn('Failed to delete server case', id, err);
+      }
     }));
   }, []);
 
@@ -725,6 +749,7 @@ export const CasesProvider = ({ children }) => {
     deleteDatasets,
     deleteCases,
     updateCase,
+    reloadCases,
   }), [cases, datasets, importDataset, deleteDatasets, deleteCases, updateCase, staffDirectory]);
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Table, Typography, Tag, Space, message, Divider, Dropdown } from 'antd';
 import { useCases } from '../context/CasesContext';
 import { exportCasesToXLSX } from '../utils/export';
@@ -42,9 +42,14 @@ const datasetColumns = [
 ];
 
 const Data = () => {
-  const { cases, datasets, importDataset, deleteCases } = useCases();
+  const { cases, datasets, importDataset, deleteCases, reloadCases } = useCases();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const uploadInputRef = useRef(null);
+
+  useEffect(() => {
+    // Auto-refresh cases when navigating to the Data page
+    reloadCases();
+  }, [reloadCases]);
 
   const handleUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -126,7 +131,7 @@ const Data = () => {
       <div className="card-panel">
         <div className="panel-header">
           <div>
-            <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap' }}>Data &gt; Uploads</Title>
+            <Title level={4} style={{ margin: 0 }}>Data &gt; Uploads</Title>
             <Paragraph type="secondary" style={{ marginTop: 4 }}>
               Overview of XLSX uploads processed into the case workspace. Use this view to confirm row counts and review validation status.
             </Paragraph>
@@ -182,7 +187,7 @@ const Data = () => {
       <Divider style={{ margin: '32px 0' }} />
 
       <div className="card-panel">
-        <Title level={5} style={{ marginTop: 0, whiteSpace: 'nowrap' }}>Upload History</Title>
+        <Title level={5} style={{ marginTop: 0 }}>Upload History</Title>
         <Paragraph type="secondary" style={{ marginTop: 4 }}>
           Reference log of files added to the workspace with their processed counts.
         </Paragraph>

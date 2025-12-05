@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Table, Tag, Button, Space, Typography } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useCases } from '../context/CasesContext';
@@ -60,7 +60,7 @@ const columns = [
 ];
 
 const CaseList = () => {
-  const { cases } = useCases();
+  const { cases, reloadCases } = useCases();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
@@ -69,11 +69,13 @@ const CaseList = () => {
     ? cases 
     : cases.filter(c => c.assignedStaff === currentUser?.name);
 
+  useEffect(() => { reloadCases(); }, [reloadCases]);
+
   return (
   <div>
     <div className="card-panel">
       <div className="panel-header">
-        <div style={{ flex: '1 1 250px', minWidth: 0 }}>
+          <div style={{ flex: '1 1 250px', minWidth: 0 }}>
           <Title level={4} style={{ margin: 0 }}>Cases &gt; Case List</Title>
           <Paragraph type="secondary" style={{ marginTop: 4 }}>
             Review and update safe beneficiary case records with the newly captured survey.

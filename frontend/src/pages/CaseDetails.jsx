@@ -130,6 +130,7 @@ const CaseDetails = () => {
     cases,
     updateCase,
     staffDirectory = [],
+    reloadCases,
   } = useCases();
   const { currentUser, canSeeHiddenFields } = useAuth();
 
@@ -149,6 +150,11 @@ const CaseDetails = () => {
     setStaffValue(caseRecord.assignedStaff || '');
     setFollowUpValue(toDayjs(caseRecord.followUpDate));
   }, [caseRecord]);
+
+  useEffect(() => {
+    // When navigating to a case or reloading case details, ensure freshest data
+    reloadCases();
+  }, [id, reloadCases]);
 
   // Load comments for server-backed cases
   useEffect(() => {

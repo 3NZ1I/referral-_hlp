@@ -10,6 +10,7 @@ export const assignCase = (id, user, ability) => request(`/cases/${id}/assign`, 
 });
 export const createCase = (data) => request('/cases', { method: 'POST', body: data });
 export const updateCaseApi = (id, data) => request(`/cases/${id}`, { method: 'PUT', body: data });
+export const deleteCaseApi = (id) => request(`/cases/${id}`, { method: 'DELETE' });
 export const fetchComments = (caseId) => request(`/cases/${caseId}/comments`);
 export const addComment = (caseId, text) => request(`/cases/${caseId}/comments`, {
   method: 'POST',
