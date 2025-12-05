@@ -191,6 +191,32 @@ export INITIAL_ADMIN_EMAIL=admin@example.com
 docker compose up -d --build backend
 ```
 
+### Verify seeding and login (quick checks)
+- Check the backend startup logs for a seeding message. After starting the backend, run:
+
+```bash
+docker compose logs backend --tail=200 | grep "created default admin user"
+```
+
+- If the seeding did not occur or you prefer to manually register a user, the registration endpoint requires `username`, `email`, and `password` JSON fields. Example `curl` to register an account:
+
+```bash
+curl -v -X POST -H "Content-Type: application/json" \
+  -d '{"username":"admin","email":"admin@example.com","password":"admin123"}' \
+  http://127.0.0.1:8000/api/auth/register
+```
+
+- To login (get token), use the following `curl` against the login endpoint (POST) and this should return a token JSON on success:
+
+```bash
+curl -v -X POST -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}' \
+  http://127.0.0.1:8000/api/auth/login
+```
+
+- If the `curl` login succeeds but the UI still cannot log in, this is often due to the Content Security Policy blocking requests; proceed below.
+
+
 ## DNS Setup
 - Ensure your domain's A/AAAA records point to your VM's public IP.
 # Deployment
@@ -298,6 +324,40 @@ sudo nginx -t
 ### 7. Restart nginx
 ```bash
 sudo systemctl restart nginx
+
+### Confirm the CSP header
+After updating and reloading host nginx, verify the `Content-Security-Policy` returned by the site. This helps detect conflicting headers coming from the frontend container and the host proxy.
+
+```bash
+curl -I https://hlp.bessar.work | grep -i content-security-policy
+```
+
+- If the header is not present or appears more restrictive than your `deploy/nginx/hlp.bessar.work.conf`, check other active site files in `/etc/nginx/sites-enabled` or any Caddy site that may be running. Remember that multiple CSP headers are combined (the browser enforces the intersection), so **both** host and container CSP headers must permit the desired actions.
+
+### Important: Align container CSP with the host
+- The frontend container (`frontend/nginx.conf`) includes a default CSP. If your host proxy adds a CSP header, the browser applies the intersection; if the container's header is more restrictive, it will still block inline styles and API connections even if the host permits them.
+- The repo includes a sample host nginx config (`deploy/nginx/hlp.bessar.work.conf`) with a permissive policy and the container `frontend/nginx.conf` is aligned with the host; ensure both are installed on your host and then reload the proxy.
+
+### Troubleshooting: If UI shows style or API blocked
+1. Confirm both the host and container CSP headers allow `style-src 'unsafe-inline'` (or implement nonces/hashes). Example:
+
+```bash
+curl -I http://127.0.0.1:8080 | grep -i content-security-policy # checks the frontend container's header
+curl -I https://hlp.bessar.work | grep -i content-security-policy # checks the host proxy header
+```
+
+2. If any header doesn't include the required rules, update the host or container config accordingly and reload the service:
+
+```bash
+# Host nginx (on the VM)
+sudo nginx -t
+sudo systemctl reload nginx
+
+# Frontend container - restart docker-compose
+docker compose up -d --no-deps --build frontend
+```
+
+3. Check the browser console and network panel to confirm there are no CSP violations and that the frontend can successfully call your API endpoints.
 sudo systemctl status nginx
 ```
 
