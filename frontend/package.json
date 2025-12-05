@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --logLevel info",
+    "build:clean": "rm -rf dist && vite build --logLevel info",
+    "check-react-versions": "npm ls react react-dom --depth=0 || true",
     "lint": "eslint 'src/**/*.{js,jsx,ts,tsx}' --ext .jsx,.js,.ts,.tsx",
     "preview": "vite preview"
   },

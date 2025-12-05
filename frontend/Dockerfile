@@ -15,7 +15,7 @@ RUN npm ci --legacy-peer-deps --loglevel verbose && \
 
 COPY . .
 ENV PATH=/app/node_modules/.bin:$PATH
-RUN VITE_API_URL=${VITE_API_URL} npm run build
+RUN VITE_API_URL=${VITE_API_URL} npm run build:clean
 
 FROM nginx:1.28-alpine
 COPY --from=build /app/dist /usr/share/nginx/html

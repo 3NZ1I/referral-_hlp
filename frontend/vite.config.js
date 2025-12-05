@@ -17,8 +17,8 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) return 'vendor.react';
-            if (id.includes('antd')) return 'vendor.antd';
+            // group react, react-dom and antd together into a single vendor chunk
+            if (id.includes('react') || id.includes('react-dom') || id.includes('antd')) return 'vendor.react';
             if (id.includes('html2canvas')) return 'vendor.html2canvas';
             if (id.includes('jspdf')) return 'vendor.jspdf';
             if (id.includes('xlsx')) return 'vendor.xlsx';
