@@ -42,13 +42,75 @@ const columns = [
     render: (category) => category || 'N/A',
   },
   {
-    title: 'Notes',
-    dataIndex: 'notes',
-    key: 'notes',
+    title: 'Age (days)',
+    dataIndex: 'submissionDate',
+    key: 'age',
+    width: 140,
+    render: (submissionDate, record) => {
+      // Calculate age in days
+      let dateVal = submissionDate || (record && record.raw && (record.raw._submission_time || record.raw.submissiontime || record.created_at));
+      if (!dateVal) return '—';
+      const parsedDate = new Date(dateVal);
+      if (isNaN(parsedDate.getTime())) return '—';
+      const diffMs = Date.now() - parsedDate.getTime();
+      const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
+      // Determine SLA bar fraction and color range
+      let fraction = 0;
+      let fromColor = '#2ecc71'; // green
+      let toColor = '#f39c12'; // orange
+      if (days <= 5) {
+        fraction = days / 5;
+        fromColor = '#2ecc71';
+        toColor = '#f39c12';
+      } else if (days <= 10) {
+        fraction = (days - 5) / 5;
+        fromColor = '#f39c12';
+        toColor = '#ff4d4f';
+      } else {
+        fraction = Math.min((days - 10) / 10, 1);
+        fromColor = '#ff4d4f';
+        toColor = '#000000';
+      }
+
+      const pct = Math.round(fraction * 100);
+
+      const barStyle = {
+        height: 8,
+        width: '100%',
+        background: '#f0f0f0',
+        borderRadius: 4,
+        overflow: 'hidden',
+        marginTop: 6,
+      };
+      const fillStyle = {
+        height: '100%',
+        width: `${pct}%`,
+        background: `linear-gradient(90deg, ${fromColor}, ${toColor})`,
+      };
+
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontWeight: 700 }}>{days}</div>
+            <div style={{ fontSize: 12, color: '#888' }}>days</div>
+          </div>
+          <div style={barStyle}>
+            <div style={fillStyle} />
+          </div>
+        </div>
+      );
+    },
+  },
+  { title: 'Dataset', dataIndex: 'datasetName', key: 'datasetName', width: 220 },
+  {
+    title: 'Submission Date',
+    dataIndex: 'submissionDate',
+    key: 'submissionDate',
+    width: 180,
+    render: (date) => date || 'N/A',
   },
 ];
-
-const CaseList = () => {
   const navigate = useNavigate();
   const { cases, reloadCases, staffDirectory, datasets } = useCases();
   const { currentUser } = useAuth();

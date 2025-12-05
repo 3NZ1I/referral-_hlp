@@ -47,6 +47,7 @@ The HLP (Housing, Land and Property) Referral Case Management System is a compre
 - **Case Filtering**: Role-based case visibility
 - **Search Functionality**: Search by case ID, beneficiary name, father/mother name, birth date
 - **Comments System**: Add notes and updates to cases
+  - **Age (days) + SLA**: The case list now shows an 'Age (days)' column which displays the number of days since submission and a small SLA progress bar below it (green->orange->red->black color thresholds).
 
 ### 📊 Data & Analytics
 - **Statistics Dashboard**: Visual charts and metrics
