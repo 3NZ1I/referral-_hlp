@@ -15,6 +15,20 @@ docker compose up
 ## Database Migrations (Alembic)
 
 This project uses Alembic for automatic database schema management.
+## Developer notes
+To apply DB schema changes (must-change password and import tables), run Alembic migrations:
+
+```powershell
+Set-Location -Path "C:\Users\Bessar Farac\OneDrive\Documents\HLP\ref_system\backend"
+alembic upgrade head
+```
+
+To run backend tests (pytest) locally, ensure you have test-dependencies installed (pytest), then run:
+
+```powershell
+pip install -r backend/requirements.txt
+pytest backend/tests
+```
 ## Frontend Deployment (React/Vite)
 
 ### Node.js Version
