@@ -355,6 +355,39 @@ sudo nginx -t
 ```bash
 sudo systemctl restart nginx
 
+## Updating without losing data
+To pull the latest code and update the containers on your VM without destroying the database volume or losing data:
+
+1. Pull updates from the repo:
+```bash
+cd /home/bessarf/referral-_hlp
+git pull origin main
+```
+
+2. (Optional) Backup your DB before updating:
+```bash
+docker compose exec db pg_dump -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-referral_db} > ~/referral_db_backup.sql
+```
+
+3. Rebuild and restart services (do not use `down -v`):
+```bash
+sudo docker compose build --pull --no-cache
+sudo docker compose up -d --no-deps --build backend frontend
+```
+
+4. Run the migrations (if any):
+```bash
+sudo docker compose run --rm backend alembic upgrade head
+```
+
+5. Tail logs and confirm services are healthy:
+```bash
+sudo docker compose logs backend --tail=200 -f
+sudo docker compose logs frontend --tail=200 -f
+```
+
+Important: Avoid running `docker compose down -v` or pruning volumes unless you intend to reset the DB. Always backup the DB first if you're concerned about losing production data.
+
 ### Confirm the CSP header
 After updating and reloading host nginx, verify the `Content-Security-Policy` returned by the site. This helps detect conflicting headers coming from the frontend container and the host proxy.
 
