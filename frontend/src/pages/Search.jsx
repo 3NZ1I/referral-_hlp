@@ -3,11 +3,13 @@ import { Card, Input, Radio, Table, Tag, Typography, Space, Button } from 'antd'
 import { SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useCases } from '../context/CasesContext';
+import { useAuth } from '../context/AuthContext';
 
 const { Title, Paragraph, Text } = Typography;
 
 const Search = () => {
   const { cases } = useCases();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [searchType, setSearchType] = useState('caseId');
   const [caseIdValue, setCaseIdValue] = useState('');
@@ -18,13 +20,23 @@ const Search = () => {
   const [beneficiaryBirthDate, setBeneficiaryBirthDate] = useState('');
 
   const searchResults = useMemo(() => {
+    const lowerName = (currentUser?.name || '').toLowerCase();
+    const currentUserId = (currentUser && (currentUser.id || currentUser.user_id)) || null;
     if (searchType === 'caseId') {
       if (!caseIdValue.trim()) return [];
       const searchTerm = caseIdValue.toLowerCase().trim();
       return cases.filter((c) => 
         c.caseNumber?.toLowerCase().includes(searchTerm) ||
         c.formFields?.case_id?.toLowerCase().includes(searchTerm)
-      );
+      ).filter((c) => {
+        // Role-based visibility similar to CaseList: admin/internal see all; else only assigned/uploader
+        const role = (currentUser?.role || '').toLowerCase();
+        if (role === 'admin' || role === 'internal') return true;
+        if (c.assignedToId && currentUserId && String(c.assignedToId) === String(currentUserId)) return true;
+        if (c.assignedStaff && c.assignedStaff.toLowerCase() === lowerName) return true;
+        if ((c.raw && (c.raw.uploaded_by === currentUser?.name || c.raw.uploaded_by === currentUser?.username)) || (c.uploadedBy && (c.uploadedBy === currentUser?.name || c.uploadedBy === currentUser?.username))) return true;
+        return false;
+      });
     } else {
       // Beneficiary search
       const hasAnyInput = beneficiaryName || beneficiaryLastName || beneficiaryFather || beneficiaryMother || beneficiaryBirthDate;
@@ -45,7 +57,13 @@ const Search = () => {
         if (beneficiaryMother && !mother.includes(beneficiaryMother.toLowerCase().trim())) matches = false;
         if (beneficiaryBirthDate && !birthDate.includes(beneficiaryBirthDate.trim())) matches = false;
 
-        return matches;
+        // Additionally filter by role-based visibility
+        const role = (currentUser?.role || '').toLowerCase();
+        if (role === 'admin' || role === 'internal') return matches;
+        if (c.assignedToId && currentUserId && String(c.assignedToId) === String(currentUserId)) return matches;
+        if (c.assignedStaff && c.assignedStaff.toLowerCase() === lowerName) return matches;
+        if ((c.raw && (c.raw.uploaded_by === currentUser?.name || c.raw.uploaded_by === currentUser?.username)) || (c.uploadedBy && (c.uploadedBy === currentUser?.name || c.uploadedBy === currentUser?.username))) return matches;
+        return false;
       });
     }
   }, [cases, searchType, caseIdValue, beneficiaryName, beneficiaryLastName, beneficiaryFather, beneficiaryMother, beneficiaryBirthDate]);

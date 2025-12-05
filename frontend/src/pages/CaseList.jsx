@@ -120,10 +120,14 @@ const columns = [
   const [followUpFilter, setFollowUpFilter] = useState('');
 
   // Filter cases: admin and internal users see all cases, external users only see their assigned cases
+  const lowerName = (currentUser?.name || '').toLowerCase();
+  const currentUserId = (currentUser && (currentUser.id || currentUser.user_id)) || null;
   let filteredCases = (currentUser?.role || '').toLowerCase() === 'admin' || (currentUser?.role || '').toLowerCase() === 'internal'
     ? cases
     : cases.filter(c => {
-      if (c.assignedStaff === currentUser?.name) return true;
+      // Allow match by assignedToId or by name (case-insensitive)
+      if (c.assignedToId && currentUserId && String(c.assignedToId) === String(currentUserId)) return true;
+      if (c.assignedStaff && c.assignedStaff.toLowerCase() === lowerName) return true;
       // If server imported case has an uploader, allow the uploader to see it
       if ((c.raw && (c.raw.uploaded_by === currentUser?.name || c.raw.uploaded_by === currentUser?.username)) || (c.uploadedBy && (c.uploadedBy === currentUser?.name || c.uploadedBy === currentUser?.username))) return true;
       // Allow uploader to see cases they uploaded locally (dataset.uploadedBy === currentUser.name)

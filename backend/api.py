@@ -25,6 +25,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 import openpyxl
 import bcrypt
+import json
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://user:password@localhost/referral_db")
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://user:password@localhost/referral_db")
@@ -447,8 +448,29 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
     db.refresh(job)
     # (moved above) uploader_user already resolved so proceed
 
+    def sanitize_value(v):
+        # Ensure JSON serializable; convert datetime to ISO strings, bytes to str.
+        try:
+            json.dumps(v)
+            return v
+        except Exception:
+            if isinstance(v, (datetime,)):
+                return v.isoformat()
+            return str(v)
+
+    def sanitize_obj(obj):
+        if obj is None:
+            return obj
+        if isinstance(obj, dict):
+            return {k: sanitize_obj(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [sanitize_obj(v) for v in obj]
+        return sanitize_value(obj)
+
     for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         case_data = dict(zip(headers, row))
+        # Sanitize raw data to be JSON stored safely
+        case_data = sanitize_obj(case_data)
         # Map XLSX columns to Case fields (customize as needed)
         # Store the raw row data to allow frontend mapping and backfill
         title = case_data.get('Title') or case_data.get('title') or case_data.get('case_id') or 'No Title'

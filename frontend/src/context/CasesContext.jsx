@@ -466,6 +466,8 @@ export const CasesProvider = ({ children }) => {
         id: c.id,
         raw: c.raw || c,
         uploadedBy: c.raw?.uploaded_by || c.raw?.uploadedBy || null,
+        assignedToId: (c.assigned_to && c.assigned_to.id) || null,
+        assignedStaffNormalized: ((c.assigned_to && c.assigned_to.name) || c.assignedStaff || '').toLowerCase(),
       }));
       // After mapping, backfill category from raw/formFields if present
       mapped.forEach((m) => {
