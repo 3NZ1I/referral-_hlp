@@ -18,7 +18,7 @@ import { EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCases } from '../context/CasesContext';
 import { useAuth } from '../context/AuthContext';
-import { assignCase as apiAssignCase, updateCaseApi } from '../api';
+import { assignCase as apiAssignCase, updateCaseApi, addComment as apiAddComment, fetchComments as apiFetchComments } from '../api';
 import { formSections, selectOptions } from '../data/formMetadata';
 import dayjs from 'dayjs';
 
@@ -150,6 +150,26 @@ const CaseDetails = () => {
     setFollowUpValue(toDayjs(caseRecord.followUpDate));
   }, [caseRecord]);
 
+  // Load comments for server-backed cases
+  useEffect(() => {
+    const loadComments = async () => {
+      if (!caseRecord || !caseRecord.id) return;
+      try {
+        const c = await apiFetchComments(caseRecord.id);
+        const mapped = (c || []).map((cm) => ({
+          id: String(cm.id),
+          text: cm.content,
+          author: cm.user?.name || cm.user_id || 'Unknown User',
+          timestamp: cm.created_at,
+        }));
+        await updateCase(caseRecord.key, { comments: mapped });
+      } catch (err) {
+        console.warn('Failed to load comments for case', err);
+      }
+    };
+    loadComments();
+  }, [caseRecord?.id]);
+
   // compute category & staff options early so hooks are not conditionally executed
   const categoryValue = useMemo(() => {
     const fields = caseRecord?.formFields || {};
@@ -244,18 +264,33 @@ const CaseDetails = () => {
     
     try {
       setAddingComment(true);
-      const newComment = {
-        id: Date.now().toString(),
-        text: commentText.trim(),
-        author: currentUser?.username || 'Unknown User',
-        timestamp: new Date().toISOString(),
-      };
-      
-      const existingComments = caseRecord.comments || [];
-      await updateCase(caseRecord.key, {
-        comments: [...existingComments, newComment],
-      });
-      
+      // Persist comment to backend when case exists on server
+      if (caseRecord.id) {
+        const srv = await apiAddComment(caseRecord.id, commentText.trim());
+        const author = srv.user?.name || srv.user_id || currentUser?.username || 'Unknown User';
+        const serverComment = {
+          id: String(srv.id),
+          text: srv.content,
+          author,
+          timestamp: srv.created_at,
+        };
+        const existingComments = caseRecord.comments || [];
+        await updateCase(caseRecord.key, {
+          comments: [...existingComments, serverComment],
+        });
+      } else {
+        // Local-only fallback
+        const newComment = {
+          id: Date.now().toString(),
+          text: commentText.trim(),
+          author: currentUser?.username || 'Unknown User',
+          timestamp: new Date().toISOString(),
+        };
+        const existingComments = caseRecord.comments || [];
+        await updateCase(caseRecord.key, {
+          comments: [...existingComments, newComment],
+        });
+      }
       setCommentText('');
       message.success('Comment added successfully');
     } catch (err) {

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import datetime
@@ -30,6 +30,8 @@ class Case(Base):
     assigned_to = relationship("User", back_populates="cases")
     comments = relationship("Comment", back_populates="case")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    # Raw form data (incoming XLSX JSON) — used by frontend to backfill formFields
+    raw = Column(JSON, nullable=True)
 
 
 

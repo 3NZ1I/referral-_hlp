@@ -28,6 +28,7 @@ class CaseBase(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = "open"
     assigned_to_id: Optional[int]
+    raw: Optional[dict] = None
 
 
 class CaseCreate(CaseBase):
@@ -38,6 +39,7 @@ class CaseRead(CaseBase):
     id: int
     created_at: Optional[datetime]
     assigned_to: Optional[UserRead]
+    raw: Optional[dict]
 
     class Config:
         orm_mode = True
@@ -53,6 +55,7 @@ class CommentRead(BaseModel):
     user_id: Optional[int]
     content: str
     created_at: Optional[datetime]
+    user: Optional[UserRead]
 
     class Config:
         orm_mode = True

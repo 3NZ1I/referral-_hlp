@@ -156,7 +156,11 @@ def get_comments(case_id: int, db: Session = Depends(get_db)):
 
 @app.post("/cases/{case_id}/comments", response_model=CommentRead, status_code=status.HTTP_201_CREATED)
 def add_comment(case_id: int, comment: CommentCreate, db: Session = Depends(get_db), user=Depends(require_auth)):
-    new_comment = Comment(case_id=case_id, **comment.dict())
+    # Use the authenticated user id for comment ownership when possible
+    user_id = None
+    if isinstance(user, dict):
+        user_id = user.get('user_id') or user.get('sub')
+    new_comment = Comment(case_id=case_id, user_id=user_id, **comment.dict())
     db.add(new_comment)
     db.commit()
     db.refresh(new_comment)
@@ -207,10 +211,15 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
     for row in ws.iter_rows(min_row=2, values_only=True):
         case_data = dict(zip(headers, row))
         # Map XLSX columns to Case fields (customize as needed)
+        # Store the raw row data to allow frontend mapping and backfill
+        title = case_data.get('Title') or case_data.get('title') or case_data.get('case_id') or 'No Title'
+        description = case_data.get('Description') or case_data.get('description') or ''
+        status = case_data.get('Status') or case_data.get('status') or 'Pending'
         case = Case(
-            title=case_data.get("Title", "No Title"),
-            description=case_data.get("Description", ""),
-            status=case_data.get("Status", "open")
+            title=title,
+            description=description,
+            status=status,
+            raw=case_data,
         )
         db.add(case)
         imported += 1
