@@ -8,7 +8,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '005_add_must_change_password_and_import_job'
+revision = '005_import_job'
 down_revision = '004_add_raw_case_column'
 branch_labels = None
 depends_on = None
