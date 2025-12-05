@@ -525,13 +525,16 @@ export const CasesProvider = ({ children }) => {
           return;
         }
         const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        console.debug('XLSX parse: matrix size', matrix.length, 'first row preview', matrix[0] && matrix[0].slice ? matrix[0].slice(0, 8) : matrix[0]);
         const nonEmptyRows = matrix.filter((row) => row.some((cell) => cell !== '' && cell !== null));
+        console.debug('XLSX parse: nonEmptyRows count', nonEmptyRows.length);
         if (nonEmptyRows.length <= 1) {
           message.warning('Uploaded file does not contain data rows.');
           resolve();
           return;
         }
         const headerRowIndex = detectHeaderRowIndex(nonEmptyRows);
+        console.debug('XLSX parse: headerRowIndex:', headerRowIndex, 'header preview:', nonEmptyRows[headerRowIndex]);
         const headerRow = nonEmptyRows[headerRowIndex];
         const dataRows = nonEmptyRows.slice(headerRowIndex + 1);
         if (!headerRow || !dataRows.length) {
