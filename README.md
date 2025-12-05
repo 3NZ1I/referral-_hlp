@@ -277,6 +277,29 @@ alembic upgrade head
 ### Deployment
 After running migrations, all tables (`users`, `cases`, `comments`) will be created automatically on deployment.
 
+Note: When upgrading the server (pulling new commits that modify the DB schema, e.g. adding a `raw` column to cases), follow these safe update steps to avoid data loss:
+
+1. Backup DB (Postgres example):
+```powershell
+# On the VM or host, run pg_dump
+pg_dump -U <dbuser> -h <dbhost> -p <port> -d <dbname> -F c -b -v -f backup_before_migration.dump
+```
+2. Pull changes and apply migrations:
+```powershell
+git pull origin main
+cd frontend
+npm run build # if serving static assets from /frontend/dist
+cd ..
+docker compose build --pull --no-cache backend frontend
+docker compose run --rm backend alembic upgrade head
+docker compose up -d --no-deps --build backend frontend
+```
+3. Verify results:
+```powershell
+docker compose logs backend --tail 100
+curl -s -X GET http://localhost:8000/api/cases | jq '.[0]' # verify raw payload exists in created cases
+```
+
 **Tip:** Always run Alembic migrations after pulling new code or updating models.
 
 ## Production Deployment
