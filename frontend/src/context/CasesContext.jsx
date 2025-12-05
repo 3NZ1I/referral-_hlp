@@ -613,7 +613,8 @@ export const CasesProvider = ({ children }) => {
               const payload = {
                 title: row.title || row.formFields?.beneficiary_name || row.caseNumber || 'Case',
                 description: row.notes || row.formFields?.extra_note || row.raw?.description || '',
-                status: row.status || row.formFields?.survey_off_diss || row.formFields?.survey_off_diss || 'Pending',
+                // Enforce system default status for newly created cases
+                status: 'Pending',
                 raw: row.raw || row,
               };
               // If we can map an assigned staff name to a known user id, attach assigned_to_id
