@@ -404,7 +404,7 @@ const backfillCaseCollection = (collection = []) => {
   return mutated ? next : collection;
 };
 
-const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index) => {
+const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultAssigned = 'Unassigned', defaultStatus = 'Pending') => {
   const canonicalFields = mapCanonicalFields(normalizedRow);
   const caseNumber = canonicalFields.case_id
     || resolveCaseFieldValue(normalizedRow, 'caseNumber', `AUTO-${datasetKey}-${index + 1}`)
@@ -431,8 +431,10 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index) => {
     }
   }
   
-  const computedStatus = canonicalFields.status || resolveCaseFieldValue(normalizedRow, 'status', 'Pending');
-  const computedAssigned = canonicalFields.assignedStaff || canonicalFields.staff_name || resolveCaseFieldValue(normalizedRow, 'assignedStaff', 'Unassigned');
+  // defaultAssigned (typically currentUser.name) should be used unless case has server-assigned user
+  const computedStatus = defaultStatus;
+  // If case has an actual server-assigned user, prefer it; otherwise use the default assigned value passed by the caller
+  const computedAssigned = canonicalFields.assignedStaff || canonicalFields.staff_name || defaultAssigned || 'Unassigned';
 
   return {
     key: `${datasetKey}-${index + 1}-${Math.random().toString(16).slice(2, 6)}`,
@@ -583,7 +585,7 @@ export const CasesProvider = ({ children }) => {
         }
 
         const datasetKey = `${Date.now()}`;
-        const normalizedRows = rawObjects.map((row, index) => buildCaseRecord(row, datasetKey, file.name, index));
+        const normalizedRows = rawObjects.map((row, index) => buildCaseRecord(row, datasetKey, file.name, index, currentUser?.name || 'Unassigned', 'Pending'));
 
         const dedupedRows = [];
         let skippedDuplicates = 0;
@@ -615,10 +617,9 @@ export const CasesProvider = ({ children }) => {
                 raw: row.raw || row,
               };
               // If we can map an assigned staff name to a known user id, attach assigned_to_id
-              const assignedCandidate = row.assignedStaff || row.formFields?.staff_name || '';
-              if (assignedCandidate && users) {
-                const match = users.find((u) => u.name === assignedCandidate || u.username === assignedCandidate);
-                if (match && match.id) payload.assigned_to_id = match.id;
+              // Attach uploader as assigned_to by default (system behavior) and ignore staff_name collected in XLSX
+              if (currentUser && currentUser.id) {
+                payload.assigned_to_id = currentUser.id;
               }
               const srv = await apiCreateCase(payload);
               if (srv && srv.id) created.push(srv);

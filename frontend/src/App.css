@@ -110,6 +110,19 @@ body {
   gap: 12px;
   align-items: center;
   flex-wrap: wrap; /* keep buttons from overflowing horizontally */
+  justify-content: flex-end; /* keep actions aligned to the right */
+}
+
+/* Ensure metadata grid card contents wrap correctly and avoid overflow/overlap */
+.metadata-grid > div {
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  min-height: 56px; /* maintain a consistent card height when text is short */
+}
+.metadata-grid > div .ant-typography {
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
 }
 
 /* Make sure .ant-typography elements in card content remain horizontal even when nested elements apply transform */
