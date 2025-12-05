@@ -467,7 +467,7 @@ export const CasesProvider = ({ children }) => {
         notes: c.description || '',
         title: c.title || '',
         id: c.id,
-        raw: c,
+        raw: c.raw || c,
       }));
       setCases(backfillCaseCollection(mapped));
     } catch (err) {
