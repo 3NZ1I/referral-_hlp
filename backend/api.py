@@ -1,5 +1,6 @@
 
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
@@ -55,6 +56,17 @@ def general_exception_handler(request, exc):
         "Access-Control-Allow-Credentials": "true",
     }
     return JSONResponse({"detail": "Internal server error"}, status_code=500, headers=headers)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    try:
+        body = await request.body()
+    except Exception:
+        body = None
+    logging.warning('Request validation failed: url=%s errors=%s body=%s', request.url, exc.errors(), body)
+    # Mirror the default 422 response but ensure we log body for diagnostics
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 security = HTTPBearer()
 JWT_SECRET = os.getenv("SECRET_KEY", os.getenv("JWT_SECRET", "dev-secret"))
