@@ -26,7 +26,7 @@ alembic upgrade head
 To run backend tests (pytest) locally, ensure you have test-dependencies installed (pytest), then run:
 
 ```powershell
-pip install -r backend/requirements.txt
+pip install -r backend/requirements-test.txt
 pytest backend/tests
 ```
 ## Frontend Deployment (React/Vite)
