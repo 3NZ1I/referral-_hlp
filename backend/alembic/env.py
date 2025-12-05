@@ -20,6 +20,16 @@ if config.config_file_name is not None:
 
 # Use DATABASE_URL from environment if available
 database_url = os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))
+# Provide a better message if the selected DB driver is not installed and explain how to run Alembic locally
+if database_url and database_url.startswith('postgresql'):
+    try:
+        import psycopg2  # noqa: F401
+    except ModuleNotFoundError:
+        print('\nError: psycopg2 is not installed in this Python environment.\n')
+        print('If you need to use Postgres for migrations, install psycopg2-binary:')
+        print('  pip install psycopg2-binary')
+        print('Or for local development you may set DATABASE_URL to an sqlite URL e.g. sqlite:///dev.db')
+        raise
 config.set_main_option("sqlalchemy.url", database_url)
 
 target_metadata = Base.metadata

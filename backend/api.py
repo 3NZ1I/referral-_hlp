@@ -1,5 +1,6 @@
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -26,10 +27,42 @@ import openpyxl
 import bcrypt
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://user:password@localhost/referral_db")
-engine = create_engine(DATABASE_URL)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://user:password@localhost/referral_db")
+try:
+    # Provide an explicit, more helpful error if the DB driver is missing
+    if DATABASE_URL.startswith('postgresql'):
+        try:
+            import psycopg2  # noqa: F401
+        except ModuleNotFoundError:
+            logging.error('psycopg2 driver not found in Python environment. Install via: pip install psycopg2-binary')
+            raise RuntimeError('psycopg2 driver not found; please install psycopg2-binary or set DATABASE_URL to use sqlite for local testing')
+    engine = create_engine(DATABASE_URL)
+except Exception as e:
+    logging.exception('Failed to create database engine: %s', e)
+    # Re-raise so startup fails explicitly with a clearer message
+    raise
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = FastAPI()
+
+# Configure CORS
+_allowed_origins = os.getenv('CORS_ORIGINS', '*')
+if _allowed_origins and _allowed_origins != '*':
+    try:
+        # split comma-separated origins
+        _origins_list = [o.strip() for o in _allowed_origins.split(',') if o.strip()]
+    except Exception:
+        _origins_list = [_allowed_origins]
+else:
+    _origins_list = ['*']
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_origins_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 MAINTENANCE_SCHEDULES = []
 _maintenance_seq = 1
 
