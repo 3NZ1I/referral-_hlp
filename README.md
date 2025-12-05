@@ -191,6 +191,30 @@ export INITIAL_ADMIN_EMAIL=admin@example.com
 docker compose up -d --build backend
 ```
 
+If you prefer the backend to run migrations automatically on container startup, set the `RUN_MIGRATIONS` env var to `true` (useful for dev/test environments):
+
+```bash
+RUN_MIGRATIONS=true docker compose up -d --build backend
+```
+
+You can also run migrations explicitly using:
+
+```bash
+docker compose run --rm backend alembic upgrade head
+```
+
+Verify the migrations were applied and that the `users` table now exists:
+
+```bash
+docker compose exec db psql -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-referral_db} -c "select tablename from pg_tables where tablename='users';"
+```
+
+If `users` is listed, restart the backend so the startup seed runs and creates the admin user if the table was empty:
+
+```bash
+docker compose up -d --no-deps --build backend
+```
+
 ### Verify seeding and login (quick checks)
 - Check the backend startup logs for a seeding message. After starting the backend, run:
 
