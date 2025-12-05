@@ -487,8 +487,25 @@ export const CasesProvider = ({ children }) => {
     reader.onload = async (event) => {
       try {
         const array = new Uint8Array(event.target.result);
-        const workbook = XLSX.read(array, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        let workbook;
+        try {
+          workbook = XLSX.read(array, { type: 'array' });
+        } catch (err) {
+          // Fallback to binary string read if array variant fails; try to preserve decoding
+          console.warn('Primary XLSX parse failed; attempting binary fallback', err);
+          try {
+            const binary = new TextDecoder('utf-8').decode(array);
+            workbook = XLSX.read(binary, { type: 'binary' });
+          } catch (err2) {
+            console.error('Both XLSX read attempts failed', err, err2);
+            throw err; // propagate original error to outer catch
+          }
+        }
+        const sheetName = (workbook && Array.isArray(workbook.SheetNames) && workbook.SheetNames[0]) || null;
+        const sheet = sheetName ? workbook.Sheets[sheetName] : null;
+        if (!sheet) {
+          throw new Error('No sheet found in XLSX workbook (Workbook sheet names: ' + JSON.stringify(workbook?.SheetNames || []) + ')');
+        }
         if (!sheet) {
           message.warning('Unable to read sheet in file');
           resolve();
@@ -686,7 +703,9 @@ export const CasesProvider = ({ children }) => {
         resolve(dedupedRows);
       } catch (error) {
         console.error('Import failed', error);
-        message.error('Could not parse XLSX file');
+        // Provide a user-friendly message and include details in console
+        const errorMsg = (error && error.message) ? error.message : String(error);
+        message.error(`Could not parse XLSX file: ${errorMsg}`);
         reject(error);
       }
     };
