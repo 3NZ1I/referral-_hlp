@@ -39,10 +39,11 @@ const Statistics = () => {
     cases.forEach((c) => {
       const fields = c.formFields || {};
       const categoryFields = [
-        fields.eng_followup1,
-        fields.law_followup3,
-        fields.law_followup4,
         fields.law_followup5,
+        fields.law_followup4,
+        fields.law_followup3,
+        fields.law_followup1,
+        fields.eng_followup1,
       ];
       
       categoryFields.forEach((value) => {

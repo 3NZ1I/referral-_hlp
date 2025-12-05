@@ -391,11 +391,14 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
   
   // Calculate category from referral fields
   let category = '';
+  // Category priority: External legal guidance, External legal referral,
+  // Internal legal referral, Type of legal case, then Engineering referral type.
   const categoryFields = [
-    { field: 'eng_followup1', optionsKey: 'sj0rz77' },
-    { field: 'law_followup3', optionsKey: 'sj0lw91' },
-    { field: 'law_followup4', optionsKey: 'sj0lw92' },
-    { field: 'law_followup5', optionsKey: 'sj0lw93' },
+    { field: 'law_followup5', optionsKey: 'sj0lw93' }, // External legal guidance
+    { field: 'law_followup4', optionsKey: 'sj0lw92' }, // External legal referral
+    { field: 'law_followup3', optionsKey: 'sj0lw91' }, // Internal legal referral
+    { field: 'law_followup1', optionsKey: 'sj0rz88' }, // Type of legal case
+    { field: 'eng_followup1', optionsKey: 'sj0rz77' }, // Engineering referral type
   ];
   
   for (const { field } of categoryFields) {
@@ -464,6 +467,22 @@ export const CasesProvider = ({ children }) => {
         raw: c.raw || c,
         uploadedBy: c.raw?.uploaded_by || c.raw?.uploadedBy || null,
       }));
+      // After mapping, backfill category from raw/formFields if present
+      mapped.forEach((m) => {
+        try {
+          const canonicalFields = mapCanonicalFields(m.raw || {});
+          const categoryFields = ['law_followup5', 'law_followup4', 'law_followup3', 'law_followup1', 'eng_followup1'];
+          let category = '';
+          for (const f of categoryFields) {
+            const val = canonicalFields[f];
+            if (val && val !== '') { category = val; break; }
+          }
+          if (category) m.category = category;
+        } catch (err) {
+          // don't crash on backfill
+          console.warn('Backfill category error', m.id, err);
+        }
+      });
       setCases(backfillCaseCollection(mapped));
     } catch (err) {
       console.warn('Failed to load cases from backend', err);
@@ -499,7 +518,15 @@ export const CasesProvider = ({ children }) => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
-        const array = new Uint8Array(event.target.result);
+        const resultData = event?.target?.result;
+        if (!resultData) {
+          const errMsg = 'File read returned empty content; cannot parse XLSX';
+          console.error(errMsg, event);
+          message.error(errMsg);
+          reject(new Error(errMsg));
+          return;
+        }
+        const array = new Uint8Array(resultData);
         try {
           console.debug('Import file info', { name: file.name, size: file.size, type: file.type });
         } catch (infoErr) {
@@ -647,17 +674,29 @@ export const CasesProvider = ({ children }) => {
             }
           }
         } catch (err) {
-          console.warn('Server import attempt failed, will try per-row create if allowed (or fallback to local)', err);
-          if (err && err.status === 401) {
+          // Log detailed error info for debugging (status, body, stack)
+          try {
+            console.warn('Server import attempt failed -- error details:', {
+              message: err?.message,
+              status: err?.status,
+              body: err?.body,
+              stack: err?.stack,
+            });
+          } catch (logErr) {
+            console.warn('Server import attempt failed; error logged (toString):', String(err));
+          }
+          // More informative and less alarming messages for the user
+          const detail = err && (err.body?.detail || err.body?.message || err.message);
+          if (err && (err.status === 401 || err?.message === 'not-authenticated')) {
             message.error('Server import failed: please login or refresh your session.');
           } else if (err && err.status === 403) {
             message.error('Server import failed: permission denied (admin required).');
           } else if (err && err.status === 413) {
             message.error('Server import failed: file too large. Try a smaller file.');
-          } else if (err && err.body && err.body.detail) {
-            message.error(`Server import failed: ${err.body.detail}`);
+          } else if (detail) {
+            message.warning(`Server import returned: ${detail}. Attempting per-row fallback.`);
           } else {
-            message.error('Server import failed; will attempt per-row create or fallback to local import.');
+            message.warning('Server import failed (see console for details); attempting per-row create or fallback to local import.');
           }
         }
         // If backend import failed, try to create records on the server (if allowed/authenticated)

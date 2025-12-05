@@ -184,11 +184,16 @@ docker compose run --rm --entrypoint sh backend -c "cd /app/backend && python -m
 ```
 
 ### Notable fixes & changes (recent)
-- Case schema update: `CaseUpdate` now allows partial updates (title optional for updates), while `CaseCreate` requires `title`.
-- XLSX import flow: resolved uploader user first before creating `ImportJob`, so `uploader_id` / `uploader_name` are properly recorded.
-- Use `db.get(Case, case_id)` to retrieve cases by PK (SQLAlchemy 2.0 style) — fixed `assign_case` to avoid .query(...).get deprecation issues.
-- CORS header: an additional middleware ensures `Access-Control-Allow-Origin` header is present on all responses to help debugging and API clients during development.
-- Frontend: `AuthContext` normalizes the users list and re-fetches from the server after admin-created users to keep the UI in-sync.
+- Categories:
+  - The 'Category' shown in case lists now uses these fields (priority order):
+    1. `law_followup5` — External legal guidance
+    2. `law_followup4` — External legal referral
+    3. `law_followup3` — Internal legal referral
+    4. `law_followup1` — Type of legal case
+    5. `eng_followup1` — Engineering referral type
+  - Server-side cases are now backfilled in the UI to display categories using the above priority order.
+- Import errors & logging:
+  - The import flow has improved error handling and more detailed console logs; when a server import fails, the UI provides a less alarming message and attempts per-row fallback automatically.
 
 ### Production: Serve Built Files
 For production, serve the built files from `frontend/dist` using Caddy:
