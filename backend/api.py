@@ -292,9 +292,26 @@ def delete_case(case_id: int, db: Session = Depends(get_db), user=Depends(requir
     db_case = db.get(Case, case_id)
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
-    db.delete(db_case)
-    db.commit()
-    return {"detail": "Case deleted"}
+    print(f'DEBUG: Attempt delete case {case_id} by user {user}')
+    logging.info('Attempt delete case %s by user %s', case_id, user)
+    logging.info('is_admin_user=%s, role=%s', is_admin_user(user), (user.get('role') if isinstance(user, dict) else None))
+    # permission check: only admin or owner? For now require auth and allow admin/internal
+    # Only allow admin or internal role to delete cases
+    if not (is_admin_user(user) or (isinstance(user, dict) and (user.get('role') or '').lower() == 'internal')):
+        raise HTTPException(status_code=403, detail='Insufficient permissions to delete case')
+    try:
+        # Delete comments related to this case to avoid FK constraint issues
+        deleted_comments = db.query(Comment).filter(Comment.case_id == case_id).delete(synchronize_session=False)
+        # Nullify import rows referencing this case
+        updated_import_rows = db.query(ImportRow).filter(ImportRow.case_id == case_id).update({ImportRow.case_id: None}, synchronize_session=False)
+        db.add(db_case)
+        db.delete(db_case)
+        db.commit()
+        return {"detail": "Case deleted", 'deleted_comments': deleted_comments, 'updated_import_rows': updated_import_rows}
+    except Exception as e:
+        db.rollback()
+        logging.exception('Failed to delete case %s: %s', case_id, e)
+        raise HTTPException(status_code=500, detail='Internal server error')
 
 # USERS CRUD
 @app.get("/users", response_model=list[UserRead])
