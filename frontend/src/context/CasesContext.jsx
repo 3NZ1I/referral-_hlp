@@ -487,6 +487,11 @@ export const CasesProvider = ({ children }) => {
     reader.onload = async (event) => {
       try {
         const array = new Uint8Array(event.target.result);
+        try {
+          console.debug('Import file info', { name: file.name, size: file.size, type: file.type });
+        } catch (infoErr) {
+          // ignore
+        }
         let workbook;
         try {
           workbook = XLSX.read(array, { type: 'array' });
@@ -508,10 +513,17 @@ export const CasesProvider = ({ children }) => {
                 if (i > 16384) break; // don't build huge strings for safety
               }
               workbook = XLSX.read(binary2, { type: 'binary' });
-            } catch (err3) {
-              console.error('All XLSX parsing fallbacks failed', err, err2, err3);
-              throw err; // propagate original error to outer catch
-            }
+                } catch (err3) {
+                  console.error('All XLSX parsing fallbacks failed', err, err2, err3);
+                  // attempt to detect signature
+                  try {
+                    const signature = String.fromCharCode(array[0], array[1], array[2], array[3]);
+                    console.warn('File signature (first 4 chars):', signature);
+                  } catch (sigErr) {
+                    console.warn('Signature detection failed', sigErr);
+                  }
+                  throw err; // propagate original error to outer catch
+                }
           }
         }
         const sheetName = (workbook && Array.isArray(workbook.SheetNames) && workbook.SheetNames[0]) || null;
