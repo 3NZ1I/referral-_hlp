@@ -435,7 +435,7 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index) => {
 };
 
 export const CasesProvider = ({ children }) => {
-  const { users } = useAuth();
+  const { users, currentUser } = useAuth();
   const [cases, setCases] = useState(() => backfillCaseCollection(initialCases));
   const [datasets, setDatasets] = useState(() => initialDatasets.map((dataset) => ({
     ...dataset,
@@ -618,6 +618,11 @@ export const CasesProvider = ({ children }) => {
 
         // Fallback to in-memory import only for local development or unauthenticated sessions
         setCases((prev) => [...dedupedRows, ...prev]);
+        if (!currentUser) {
+          message.info('Imported to local workspace only. Sign in to persist to the server.');
+        } else {
+          message.info('Imported locally (server persistence failed); check network/auth).');
+        }
         const datasetRecord = {
           key: datasetKey,
           recordId: `UPL-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`,
