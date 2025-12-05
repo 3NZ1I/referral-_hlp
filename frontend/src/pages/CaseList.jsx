@@ -50,7 +50,7 @@ const columns = [
 
 const CaseList = () => {
   const navigate = useNavigate();
-  const { cases, reloadCases, staffDirectory } = useCases();
+  const { cases, reloadCases, staffDirectory, datasets } = useCases();
   const { currentUser } = useAuth();
 
   const [statusFilter, setStatusFilter] = useState('');
@@ -60,7 +60,14 @@ const CaseList = () => {
   // Filter cases: admin and internal users see all cases, external users only see their assigned cases
   let filteredCases = (currentUser?.role || '').toLowerCase() === 'admin' || (currentUser?.role || '').toLowerCase() === 'internal'
     ? cases
-    : cases.filter(c => c.assignedStaff === currentUser?.name);
+    : cases.filter(c => {
+      if (c.assignedStaff === currentUser?.name) return true;
+      // Allow uploader to see cases they uploaded locally (dataset.uploadedBy === 'You')
+      if (c.datasetKey && datasets && datasets.some(d => d.key === c.datasetKey && d.uploadedBy === 'You')) {
+        return true;
+      }
+      return false;
+    });
 
   if (statusFilter) {
     filteredCases = filteredCases.filter(c => (c.status || '').toLowerCase().includes(statusFilter.toLowerCase()));
