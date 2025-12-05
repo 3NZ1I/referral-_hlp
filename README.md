@@ -80,12 +80,29 @@ If the browser shows:
 `Access to fetch at 'https://api.bessar.work/api/users' from origin 'https://hlp.bessar.work' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource`, then:
 
 - Check backend logs for errors — CORS headers may not be present if the server crashes on startup due to a 500 error.
+
+UI & Security Changes
+---------------------
+- 'Notes' type fields are now hidden from the case detail cards but remain visible as the column header 'Notes' in lists and tables. If you rely on 'note' type fields, they can still be accessed via the API if you are an admin.
+- Sensitive fields such as `id_card_nu`, `family_card_nu`, and `passport_nu_001` are only visible to admin users. These fields are marked `hidden` in the form metadata and are sanitized from API responses when requested by non-admin users.
+- The case view UI now shows the 'Comments' panel directly under the first form section for improved visibility.
 - Ensure `CORS_ORIGINS` is set to include your frontend origin. Example in Docker: set `CORS_ORIGINS: "https://hlp.bessar.work"` in your environment or `.env` file.
 - For debugging, run:
 ```bash
 curl -i -H "Origin: https://hlp.bessar.work" http://localhost:8000/api/cases
 ```
 You should receive `Access-Control-Allow-Origin: *` or the configured value in `CORS_ORIGINS`.
+
+If the client shows "Server import returned: Failed to fetch. Attempting per-row fallback." this most often indicates:
+- CORS is not configured for the frontend origin (missing or wrong `CORS_ORIGINS`), or
+- The backend is unreachable (down/incorrect URL), or
+- Reverse proxy (nginx) does not forward responses or strip headers when returning 5xx errors.
+
+Useful steps to diagnose:
+- Check your browser devtools console for the exact error and request/response headers.
+- Check backend logs (docker-compose logs backend) for the stack trace or error; if a 500 occurs before FastAPI handles the request, a CORS header might not get added.
+- For a quick check against CORS: `curl -i -H "Origin: https://hlp.bessar.work" https://api.bessar.work/api/import -F "file=@my.xlsx"` and observe the response headers.
+- If your environment uses nginx, make sure `add_header 'Access-Control-Allow-Origin' 'https://hlp.bessar.work' always;` is set in the server config so error responses include headers, or make sure the app sets these headers itself (the backend has middleware to ensure this on errors).
 
 Database driver and build issues
 -------------------------------

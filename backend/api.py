@@ -112,6 +112,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 JWT_SECRET = os.getenv("SECRET_KEY", os.getenv("JWT_SECRET", "dev-secret"))
 JWT_EXP_MINUTES = int(os.getenv("JWT_EXP_MINUTES", "120"))
 
@@ -148,6 +149,17 @@ def require_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
+
+def optional_auth(credentials: HTTPAuthorizationCredentials = Depends(optional_security)):
+    if not credentials:
+        return None
+    try:
+        token = credentials.credentials
+        decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return decoded
+    except Exception:
+        return None
+
  
 
 def get_db():
@@ -159,14 +171,33 @@ def get_db():
 
 # CASES CRUD
 @app.get("/cases", response_model=list[CaseRead])
-def get_cases(db: Session = Depends(get_db)):
-    return db.query(Case).all()
+def get_cases(db: Session = Depends(get_db), user=Depends(optional_auth)):
+    cases = db.query(Case).all()
+    # Hide sensitive fields in the raw payload for non-admin users
+    sensitive_keys = set(['id_card_nu', 'family_card_nu', 'passport_nu_001', 'passaport_nu_001'])
+    if not is_admin_user(user):
+        for c in cases:
+            if isinstance(c.raw, dict):
+                sanitized = dict(c.raw)
+                for k in list(sanitized.keys()):
+                    if k in sensitive_keys:
+                        sanitized.pop(k, None)
+                c.raw = sanitized
+    return cases
 
 @app.get("/cases/{case_id}", response_model=CaseRead)
-def get_case(case_id: int, db: Session = Depends(get_db)):
+def get_case(case_id: int, db: Session = Depends(get_db), user=Depends(optional_auth)):
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
+    # Sanitize raw fields for non-admins
+    sensitive_keys = set(['id_card_nu', 'family_card_nu', 'passport_nu_001', 'passaport_nu_001'])
+    if not is_admin_user(user) and isinstance(case.raw, dict):
+        sanitized = dict(case.raw)
+        for k in list(sanitized.keys()):
+            if k in sensitive_keys:
+                sanitized.pop(k, None)
+        case.raw = sanitized
     return case
 
 @app.post("/cases", response_model=CaseRead, status_code=status.HTTP_201_CREATED)
@@ -344,7 +375,12 @@ def assign_case(case_id: int, payload: dict, db: Session = Depends(get_db), user
 def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(require_auth)):
     try:
         wb = openpyxl.load_workbook(file.file)
+        # continue with import logic
+    except HTTPException:
+        # Re-raise FastAPI HTTPException as-is
+        raise
     except Exception as e:
+        logging.exception('Unhandled exception while parsing uploaded file: %s', e)
         raise HTTPException(status_code=400, detail=f"Invalid XLSX file: {e}")
     ws = wb.active
     headers = [cell.value for cell in ws[1]]
@@ -442,11 +478,21 @@ def list_import_jobs(db: Session = Depends(get_db)):
 
 
 @app.get('/import/jobs/{job_id}')
-def get_import_job(job_id: int, db: Session = Depends(get_db)):
+def get_import_job(job_id: int, db: Session = Depends(get_db), user=Depends(optional_auth)):
     job = db.get(ImportJob, job_id)
     if not job:
         raise HTTPException(status_code=404, detail='Job not found')
-    rows = [{'row_number': r.row_number, 'status': r.status, 'error': r.error, 'case_id': r.case_id} for r in job.rows]
+    sensitive_keys = set(['id_card_nu', 'family_card_nu', 'passport_nu_001', 'passaport_nu_001'])
+    rows = []
+    for r in job.rows:
+        raw_content = r.raw if isinstance(r.raw, dict) else r.raw
+        if not is_admin_user(user) and isinstance(raw_content, dict):
+            sanitized = dict(raw_content)
+            for k in list(sanitized.keys()):
+                if k in sensitive_keys:
+                    sanitized.pop(k, None)
+            raw_content = sanitized
+        rows.append({'row_number': r.row_number, 'status': r.status, 'error': r.error, 'case_id': r.case_id, 'raw': raw_content})
     return {'id': job.id, 'uploader_name': job.uploader_name, 'filename': job.filename, 'created_at': job.created_at.isoformat(), 'rows': rows}
 
 

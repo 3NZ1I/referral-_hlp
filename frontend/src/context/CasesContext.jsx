@@ -695,6 +695,8 @@ export const CasesProvider = ({ children }) => {
             message.error('Server import failed: file too large. Try a smaller file.');
           } else if (detail) {
             message.warning(`Server import returned: ${detail}. Attempting per-row fallback.`);
+          } else if (err && typeof err.message === 'string' && err.message.toLowerCase().includes('failed to fetch')) {
+            message.error('Failed to reach API: the backend may be down, or CORS is not configured to allow your origin. Check server logs and CORS_ORIGINS settings.');
           } else {
             message.warning('Server import failed (see console for details); attempting per-row create or fallback to local import.');
           }

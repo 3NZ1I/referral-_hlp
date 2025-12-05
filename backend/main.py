@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import logging
 import logging
 from backend.api import app as api_app
 from sqlalchemy import create_engine
@@ -45,3 +47,26 @@ app.include_router(router, prefix="/api")
 @app.get("/")
 def root():
     return {"status": "hlp-referral-api", "message": "API running - see /api/health"}
+
+
+@app.middleware("http")
+async def ensure_cors_headers_root(request: Request, call_next):
+    """Ensure that Access-Control-Allow-Origin header is present on all responses
+    (including error responses that might originate from the router or reverse proxy).
+    """
+    try:
+        response = await call_next(request)
+    except Exception as e:
+        # If the call_next raised, return a JSONResponse with CORS headers too
+        logging.exception("Unhandled exception while handling request: %s", e)
+        return JSONResponse({"detail": "Internal server error"}, status_code=500, headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": "true"})
+    if 'Access-Control-Allow-Origin' not in response.headers:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
+
+
+@app.exception_handler(Exception)
+def general_exception_handler_root(request: Request, exc: Exception):
+    logging.exception("Unhandled exception in API request: %s", exc)
+    headers = {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": "true"}
+    return JSONResponse({"detail": "Internal server error"}, status_code=500, headers=headers)
