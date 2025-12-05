@@ -27,6 +27,7 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgresql+psycopg2://user:password@db/referral_db}
       - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
       - JWT_EXP_MINUTES=${JWT_EXP_MINUTES:-120}
+      - RUN_MIGRATIONS=${RUN_MIGRATIONS:-false}
     depends_on:
       db:
         condition: service_healthy
