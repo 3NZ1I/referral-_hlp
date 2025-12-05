@@ -3,6 +3,8 @@ from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, status
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
+import logging
+import traceback
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from backend.models import User, Case, Comment
@@ -35,8 +37,14 @@ def health():
  
 @app.exception_handler(Exception)
 def general_exception_handler(request, exc):
-    # Avoid exposing internal errors; log locally and return safe message
-    return JSONResponse({"detail": "Internal server error"}, status_code=500)
+    # Log full stack trace locally for diagnostics, avoid exposing details in response
+    logging.exception("Unhandled exception in API request: %s", exc)
+    # Ensure CORS header presence on error responses so browser can receive the error
+    headers = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Credentials": "true",
+    }
+    return JSONResponse({"detail": "Internal server error"}, status_code=500, headers=headers)
 
 security = HTTPBearer()
 JWT_SECRET = os.getenv("SECRET_KEY", os.getenv("JWT_SECRET", "dev-secret"))
