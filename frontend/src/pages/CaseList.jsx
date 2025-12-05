@@ -104,11 +104,17 @@ const columns = [
   },
   { title: 'Dataset', dataIndex: 'datasetName', key: 'datasetName', width: 220 },
   {
-    title: 'Submission Date',
-    dataIndex: 'submissionDate',
-    key: 'submissionDate',
+    title: 'Last Update',
+    dataIndex: 'updated_at',
+    key: 'lastUpdate',
     width: 180,
-    render: (date) => date || 'N/A',
+    render: (date, record) => {
+      const val = date || (record && record.raw && (record.raw._last_edited || record.raw._submission_time || record.raw.submissiontime || record.created_at)) || record.created_at;
+      if (!val) return '—';
+      const parsed = new Date(val);
+      if (isNaN(parsed.getTime())) return '—';
+      return parsed.toISOString().split('T')[0];
+    },
   },
 ];
 
@@ -119,7 +125,7 @@ const CaseList = () => {
 
   const [statusFilter, setStatusFilter] = useState('');
   const [assignedFilter, setAssignedFilter] = useState('');
-  const [followUpFilter, setFollowUpFilter] = useState('');
+  // Follow-up filter was removed in the requested UI changes
 
   // Filter cases: admin and internal users see all cases, external users only see their assigned cases
   const lowerName = (currentUser?.name || '').toLowerCase();
@@ -149,10 +155,7 @@ const CaseList = () => {
       filteredCases = filteredCases.filter(c => c.assignedStaff === assignedFilter);
     }
   }
-  if (followUpFilter) {
-    if (followUpFilter === 'has') filteredCases = filteredCases.filter(c => !!c.followUpDate);
-    if (followUpFilter === 'none') filteredCases = filteredCases.filter(c => !c.followUpDate);
-  }
+  // No follow-up filter (removed)
 
   useEffect(() => { reloadCases(); }, [reloadCases]);
 
@@ -188,14 +191,11 @@ const CaseList = () => {
               ))}
             </Select>
 
-            <Select placeholder="Follow Up" style={{ minWidth: 140 }} onChange={v => setFollowUpFilter(v)} value={followUpFilter} allowClear>
-              <Select.Option value="has">Has Follow-up</Select.Option>
-              <Select.Option value="none">No Follow-up</Select.Option>
-            </Select>
+            {/* Follow-up filter removed; Last Update replaces submission date and tracks recent activity */}
           </div>
 
           <Space style={{ marginLeft: 'auto' }}>
-            <Button shape="round" onClick={() => { setStatusFilter(''); setAssignedFilter(''); setFollowUpFilter(''); }}>Clear Filters</Button>
+            <Button shape="round" onClick={() => { setStatusFilter(''); setAssignedFilter(''); }}>Clear Filters</Button>
             <Button shape="round" onClick={() => { /* TODO: implement save filters to URL */ }}>Save Filters</Button>
           </Space>
         </div>

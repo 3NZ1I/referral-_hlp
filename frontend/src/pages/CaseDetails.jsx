@@ -137,7 +137,7 @@ const CaseDetails = () => {
   const caseRecord = useMemo(() => cases.find((row) => row.key === id), [cases, id]);
   const [statusValue, setStatusValue] = useState(caseRecord?.status || 'Pending');
   const [staffValue, setStaffValue] = useState(caseRecord?.assignedStaff || '');
-  const [followUpValue, setFollowUpValue] = useState(() => toDayjs(caseRecord?.followUpDate));
+  // follow-up field removed from detail view per UI change
   const [saving, setSaving] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [addingComment, setAddingComment] = useState(false);
@@ -148,7 +148,6 @@ const CaseDetails = () => {
     if (!caseRecord) return;
     setStatusValue(caseRecord.status || 'Pending');
     setStaffValue(caseRecord.assignedStaff || '');
-    setFollowUpValue(toDayjs(caseRecord.followUpDate));
   }, [caseRecord]);
 
   useEffect(() => {
@@ -220,14 +219,7 @@ const CaseDetails = () => {
 
   // Compute category from referral/followup fields
 
-  const normalizedFollowUp = followUpValue ? followUpValue.format('YYYY-MM-DD') : '';
-  const originalFollowUp = formatDateDisplay(caseRecord.followUpDate) === '—'
-    ? ''
-    : (parseDateValue(caseRecord.followUpDate) ? dayjs(parseDateValue(caseRecord.followUpDate)).format('YYYY-MM-DD') : caseRecord.followUpDate || '');
-
-  const isDirty = statusValue !== (caseRecord.status || '')
-    || staffValue !== (caseRecord.assignedStaff || '')
-    || normalizedFollowUp !== originalFollowUp;
+  const isDirty = statusValue !== (caseRecord.status || '') || staffValue !== (caseRecord.assignedStaff || '');
 
   const handleSave = async () => {
     if (!caseRecord) return;
@@ -265,7 +257,6 @@ const CaseDetails = () => {
       await updateCase(caseRecord.key, {
         status: statusValue,
         assignedStaff: staffValue || 'Unassigned',
-        followUpDate: normalizedFollowUp,
       });
       // Persist assignment to backend if this case exists on server
       if (caseRecord.id) {
@@ -423,19 +414,7 @@ const CaseDetails = () => {
         return <Text strong style={{ display: 'block', marginTop: 4 }}>{categoryValue}</Text>;
       },
     },
-    {
-      key: 'followUpDate',
-      label: 'Follow-up Date',
-      render: () => (
-        <DatePicker
-          allowClear
-          value={followUpValue}
-          onChange={setFollowUpValue}
-          style={{ width: '100%', marginTop: 4 }}
-          format="YYYY-MM-DD"
-        />
-      ),
-    },
+    // Follow-up date removed from detail UI
     {
       key: 'submissionDate',
       label: 'Submission Date',

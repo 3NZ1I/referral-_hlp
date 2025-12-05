@@ -209,6 +209,10 @@ If you notice layout problems when resizing the browser window (especially on th
 
 - Fixed: Frontend build failed due to a missing component declaration in `CaseList.jsx` (Esbuild error: "Unexpected '}'"). The fix was to wrap hook usage and component logic inside `const CaseList = () => { ... }` and ensure the file exports the component correctly. Re-run `npm run build` to validate.
 
+- UI updates: Replaced "Submission Date" with "Last Update" in the Cases list, removed the "Follow-up" filter and Follow-up column from lists and filters, and replaced the "Notes" column in the Data page with an "Age (days)" column and SLA indicator. These changes also include a backend _updated_at_ field to track the last activity.
+- Deletion fix: When deleting cases from the Data page, the Cases list is refreshed and the UI now shows a summary of server deletions and failures to ensure visibility if server-side deletion could not be performed.
+- Import dedup: Client- and server-side de-duplication now prevents upload of duplicate cases by matching common identifiers (`case_id`, `_id`, `_uuid`, `caseNumber`). Duplicate rows are marked as 'skipped' on import jobs.
+
 How to test:
 1. Start the frontend dev server: `npm run dev`.
 2. Log in as admin and navigate to Data and User Management pages.

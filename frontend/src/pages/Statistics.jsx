@@ -58,6 +58,19 @@ const Statistics = () => {
       assigned,
       unassigned,
       assignedPercent: totalCases > 0 ? ((assigned / totalCases) * 100).toFixed(1) : 0,
+      avgDaysToComplete: (() => {
+        const completedCases = cases.filter((c) => c.completed_at || (c.status && c.status.toLowerCase() === 'completed'));
+        const diffs = completedCases.map((c) => {
+          const created = new Date(c.created_at || c.raw?._submission_time || c.submissionDate || c.raw?.submissiontime);
+          const completed = c.completed_at ? new Date(c.completed_at) : (c.comments && c.comments.length ? new Date(c.comments[c.comments.length - 1].timestamp || c.comments[c.comments.length - 1].created_at) : null);
+          if (!created || isNaN(created.getTime()) || !completed || isNaN(completed.getTime())) return null;
+          const diff = (completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24);
+          return Math.max(0, diff);
+        }).filter(Boolean);
+        if (!diffs.length) return 0;
+        const sum = diffs.reduce((acc, v) => acc + v, 0);
+        return Math.round((sum / diffs.length) * 10) / 10;
+      })(),
       statusCounts,
       categoryCounts,
     };
@@ -241,6 +254,17 @@ const Statistics = () => {
               suffix="%"
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#722ed1' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card>
+            <Statistic
+              title="Avg Days to Complete"
+              value={stats.avgDaysToComplete}
+              suffix="days"
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: '#ff4d4f' }}
             />
           </Card>
         </Col>

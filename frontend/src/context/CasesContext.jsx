@@ -517,6 +517,10 @@ export const CasesProvider = ({ children }) => {
     }
     
     const existingCaseNumbers = new Set((cases || []).map((entry) => normalizeCaseNumberValue(entry.caseNumber)).filter(Boolean));
+    const existingRawIds = new Set((cases || []).map((entry) => {
+      const raw = entry.raw || {};
+      return (raw._id || raw._uuid || raw.case_id || raw.caseNumber || raw._submission_time || raw.submissiontime);
+    }).filter(Boolean));
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -638,11 +642,17 @@ export const CasesProvider = ({ children }) => {
         let skippedDuplicates = 0;
         normalizedRows.forEach((row) => {
           const normalizedCaseNumber = normalizeCaseNumberValue(row.caseNumber || row.formFields?.case_id || '');
+          const rawId = row.raw && (row.raw._id || row.raw._uuid || row.raw.case_id || row.raw.caseNumber || row.raw._submission_time || row.raw.submissiontime);
           if (normalizedCaseNumber && existingCaseNumbers.has(normalizedCaseNumber)) {
             skippedDuplicates += 1;
             return;
           }
+          if (rawId && existingRawIds.has(rawId)) {
+            skippedDuplicates += 1;
+            return;
+          }
           if (normalizedCaseNumber) existingCaseNumbers.add(normalizedCaseNumber);
+          if (rawId) existingRawIds.add(rawId);
           dedupedRows.push(row);
         });
 
@@ -823,16 +833,30 @@ export const CasesProvider = ({ children }) => {
       return { ...dataset, rows: filteredRows, entries: filteredRows.length };
     }));
 
-    // Delete server-backed cases (best-effort)
+    // Delete server-backed cases and collect results
+    let serverDeleted = 0;
+    let serverFailed = 0;
     await Promise.all(serverIds.map(async (id) => {
       try {
         await apiDeleteCase(id);
+        serverDeleted += 1;
       } catch (err) {
         console.warn('Failed to delete server case', id, err);
+        serverFailed += 1;
       }
     }));
     // Refresh server state after deletion attempts
-    await loadCasesFromBackend();
+    try {
+      await loadCasesFromBackend();
+      if (serverDeleted) {
+        message.success(`Deleted ${serverDeleted} server cases and removed ${caseKeys.length - serverDeleted} local-only rows.`);
+      }
+      if (serverFailed) {
+        message.warning(`Failed to delete ${serverFailed} server cases; they may remain on the backend.`);
+      }
+    } catch (err) {
+      console.warn('Failed to reload cases after delete', err);
+    }
   }, []);
 
   const retryFailedRows = useCallback(async (datasetKey) => {

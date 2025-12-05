@@ -23,8 +23,29 @@ const caseColumns = [
   },
   { title: 'Case Number', dataIndex: 'caseNumber', key: 'caseNumber', width: 200 },
   { title: 'Assigned Staff Name', dataIndex: 'assignedStaff', key: 'assignedStaff', width: 220 },
-  { title: 'Follow-Up Date', dataIndex: 'followUpDate', key: 'followUpDate', width: 180 },
-  { title: 'Notes', dataIndex: 'notes', key: 'notes' },
+  { title: 'Age (days)', dataIndex: 'submissionDate', key: 'age', width: 140, render: (submissionDate, record) => {
+      const dateVal = submissionDate || (record && record.raw && (record.raw._submission_time || record.raw.submissiontime || record.created_at));
+      if (!dateVal) return '—';
+      const parsedDate = new Date(dateVal);
+      if (isNaN(parsedDate.getTime())) return '—';
+      const diffMs = Date.now() - parsedDate.getTime();
+      const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+      // Simple color mapping for Age indicator — green/orange/red
+      let color = '#2ecc71';
+      if (days > 5 && days <= 10) color = '#f39c12';
+      if (days > 10) color = '#ff4d4f';
+      const barStyle = { height: 8, width: '100%', background: '#f0f0f0', borderRadius: 4, overflow: 'hidden', marginTop: 6 };
+      const fillStyle = { height: '100%', width: `${Math.min(days, 100)}%`, background: color };
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontWeight: 700 }}>{days}</div>
+            <div style={{ fontSize: 12, color: '#888' }}>days</div>
+          </div>
+          <div style={barStyle}><div style={fillStyle} /></div>
+        </div>
+      );
+    } },
   { title: 'Dataset', dataIndex: 'datasetName', key: 'datasetName', width: 220 },
 ];
 
