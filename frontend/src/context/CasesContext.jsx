@@ -7,7 +7,7 @@ import React, {
   useState,
 } from 'react';
 import * as XLSX from 'xlsx';
-import { fetchCases as apiFetchCases, importXLSX as apiImportXLSX } from '../api';
+import { fetchCases as apiFetchCases, importXLSX as apiImportXLSX, createCase as apiCreateCase } from '../api';
 import { message } from 'antd';
 import { formSections, caseFieldMapping } from '../data/formMetadata';
 import { useAuth } from './AuthContext';
@@ -505,7 +505,7 @@ export const CasesProvider = ({ children }) => {
     
     const existingCaseNumbers = new Set((cases || []).map((entry) => normalizeCaseNumberValue(entry.caseNumber)).filter(Boolean));
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const array = new Uint8Array(event.target.result);
         const workbook = XLSX.read(array, { type: 'array' });
@@ -585,7 +585,38 @@ export const CasesProvider = ({ children }) => {
           resolve();
           return;
         }
+        // If backend import failed, try to create records on the server (if allowed/authenticated)
+        try {
+          // Attempt to create server-side records for deduped rows. If the call fails due to missing auth, fall back to client-only import
+          const created = [];
+          for (const row of dedupedRows) {
+            try {
+              const payload = {
+                title: row.title || row.caseNumber || 'Case',
+                description: row.notes || row.raw?.description || '',
+                status: row.status || 'Pending',
+                raw: row.raw || row,
+              };
+              const srv = await apiCreateCase(payload);
+              if (srv && srv.id) created.push(srv);
+            } catch (e) {
+              console.warn('Failed to create case on server for row, falling back to local import', e);
+              // If a single row creation fails due to auth, break and fall back to local import for all
+              throw e;
+            }
+          }
+          if (created.length) {
+            // If we created records, reload from server so mapping uses `raw` persisted
+            await loadCasesFromBackend();
+            message.success(`${created.length} rows created on server and refreshed`);
+            resolve(created);
+            return;
+          }
+        } catch (err) {
+          console.warn('Server create fallback failed or not authenticated; using in-memory import', err);
+        }
 
+        // Fallback to in-memory import only for local development or unauthenticated sessions
         setCases((prev) => [...dedupedRows, ...prev]);
         const datasetRecord = {
           key: datasetKey,
