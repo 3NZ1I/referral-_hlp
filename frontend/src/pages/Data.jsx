@@ -28,6 +28,8 @@ const caseColumns = [
   { title: 'Dataset', dataIndex: 'datasetName', key: 'datasetName', width: 220 },
 ];
 
+// NOTE: datasetColumns depends on component scope (currentUser and retryFailedRows)
+// We'll keep a default, but columns requiring runtime values will be built inside the component
 const datasetColumns = [
   { title: 'Record ID', dataIndex: 'recordId', key: 'recordId', width: 160 },
   { title: 'File Name', dataIndex: 'fileName', key: 'fileName' },
@@ -47,8 +49,8 @@ const datasetColumns = [
     width: 220,
     render: (_, record) => (
       <Space>
-        {record.failedRows && record.failedRows.length > 0 && currentUser && (currentUser.name === record.uploadedBy || currentUser.username === record.uploadedBy || (currentUser.role && currentUser.role.toLowerCase() === 'admin')) && (
-          <Button size="small" type="primary" onClick={() => retryFailedRows(record.key)}>
+        {record.failedRows && record.failedRows.length > 0 && (
+          <Button size="small" type="primary" disabled>
             Retry Failed Rows
           </Button>
         )}
@@ -70,6 +72,34 @@ const Data = () => {
     // Auto-refresh cases when navigating to the Data page
     reloadCases();
   }, [reloadCases]);
+
+  // Build dataset columns here so we can reference currentUser and retry handler
+  const datasetColumnsRuntime = [
+    { title: 'Record ID', dataIndex: 'recordId', key: 'recordId', width: 160 },
+    { title: 'File Name', dataIndex: 'fileName', key: 'fileName' },
+    { title: 'Entries', dataIndex: 'entries', key: 'entries', width: 120 },
+    { title: 'Uploaded By', dataIndex: 'uploadedBy', key: 'uploadedBy', width: 200 },
+    { title: 'Uploaded On', dataIndex: 'uploadedOn', key: 'uploadedOn', width: 160 },
+    {
+      title: 'Status', dataIndex: 'status', key: 'status', width: 140,
+      render: (status) => <Tag color={status === 'Validated' ? 'cyan' : 'gold'}>{status}</Tag>
+    },
+    {
+      title: 'Actions', key: 'actions', width: 220,
+      render: (_, record) => (
+        <Space>
+          {record.failedRows && record.failedRows.length > 0 && currentUser && (currentUser.name === record.uploadedBy || currentUser.username === record.uploadedBy || (currentUser.role && currentUser.role.toLowerCase() === 'admin')) && (
+            <Button size="small" type="primary" onClick={() => retryFailedRows(record.key)}>
+              Retry Failed Rows
+            </Button>
+          )}
+          <Button size="small" onClick={() => exportCasesToXLSX(record.rows || [], `${record.fileName || 'dataset'}.xlsx`)}>
+            Download Rows
+          </Button>
+        </Space>
+      ),
+    }
+  ];
 
   const handleUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -222,7 +252,7 @@ const Data = () => {
         </Paragraph>
         <div className="table-wrapper" style={{ marginTop: 16 }}>
           <Table
-            columns={datasetColumns}
+            columns={datasetColumnsRuntime}
             dataSource={datasets}
             pagination={false}
             rowKey="key"
