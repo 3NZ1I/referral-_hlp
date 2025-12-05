@@ -56,6 +56,18 @@ The HLP (Housing, Land and Property) Referral Case Management System is a compre
 
 ### 📥 Data Import
 - **XLSX Import**: Import data from Excel/KoboToolbox exports
+### UI Updates (Notes & Comments)
+- **Notes field handling**: All `note`-typed fields are now hidden from the Case Detail card views (they are still displayed as the 'Notes' column in case lists). This reduces verbosity in detail cards while keeping the list title and export-friendly columns intact. Note that `note` type fields remain available in the `raw` payload for admin users.
+- **Comments placement**: The Comments panel was moved from the bottom of the case detail page to just under the primary metadata (Case Number / Status / Assigned Staff / Category grid). This makes comments easier to find when reviewing case details.
+
+### Sensitive Fields & Admin-only Visibility
+- **Admin-only sensitive fields**: Fields that may contain PII such as `id_card_nu`, `family_card_nu`, and `passport_nu_001` are **now hidden from non-admin users** in API responses and UI rendering. These fields remain present in the data store and are visible in the UI for admin users only. This change affects `GET /cases`, `GET /cases/{id}`, and `GET /import/jobs/{job_id}`.
+- **Back-end sanitization**: The server sanitizes `raw` fields for non-admin users server-side to ensure sensitive values are not inadvertently returned to non-admin clients.
+
+### Import: Server Fallback & CORS
+- **Server fallback**: The frontend will attempt to import XLSX files as a single server job. If `/api/import` fails, the UI falls back to per-row creates and/or local-only import and notifies the user. The UI also now provides clearer messages to indicate whether the error was due to authentication/permission, file size, or inability to reach the server.
+- **CORS & credentials**: If the frontend calls the backend with `credentials: 'include'` (cookies or credentials), the server must echo the `Origin` in `Access-Control-Allow-Origin` instead of returning `'*'` as the wildcard. The backend now echoes `Origin` (when allowed by `CORS_ORIGINS`) to support credentialed requests and avoid browser blocking.
+
 - **Field Mapping**: Automatic mapping of survey fields to system fields
 - **Batch Import**: Process multiple cases at once
 

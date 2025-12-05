@@ -257,6 +257,24 @@ $token = (Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/auth/log
 Invoke-RestMethod -Uri http://localhost:8000/api/import -Method Post -Headers @{ Authorization = "Bearer $token" } -Form @{ file = Get-Item "C:\path\to\tmp_import_test.xlsx" }
 ```
 
+Assignment & Comments verification
+----------------------------------
+To verify that assignments are saved, and comments are shown in the new location:
+
+1. Create or log in as an admin and create a case (or use an existing case).
+2. Assign the case to an external user via the UI or API (this creates the user automatically if it doesn't exist):
+
+```powershell
+# Assign via API
+$token = (Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/auth/login -Body (@{username='admin'; password='admin123'} | ConvertTo-Json) -ContentType 'application/json').token
+Invoke-RestMethod -Uri http://localhost:8000/api/cases/1/assign -Method Post -Headers @{ Authorization = "Bearer $token" } -Body (@{ user = 'external-staff', ability = 'external' } | ConvertTo-Json) -ContentType 'application/json'
+```
+
+3. Verify the assigned user is visible in the case details and in the `GET /cases` response (the field `assigned_to` should show the user object).
+4. Open the case details in the UI — the comments panel is under the top metadata card (Case Number / Status / Assigned Staff / Category grid). If you add a comment, it should appear immediately beneath the metadata card.
+
+Note: Assignments to external users should persist; the backend creates a lightweight `User` entity if the assigned staff is not found, and `assigned_to_id` is set to maintain DB FK consistency.
+
 Client-side fallback explanation
 --------------------------------
 - The UI attempts to import the entire file as a single job by calling `/api/import` for efficiency and to capture server-side row processing.
