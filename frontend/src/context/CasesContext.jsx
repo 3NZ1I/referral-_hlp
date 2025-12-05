@@ -481,7 +481,7 @@ export const CasesProvider = ({ children }) => {
         datasetName: 'Backend',
         status: c.status || 'Pending',
         caseNumber: (c.raw?.case_id || c.title || (c.id ? `C-${c.id}` : '')),
-        assignedStaff: c.assigned_to?.name || c.raw?.staff_name || 'Unassigned',
+        assignedStaff: c.assigned_to?.name || 'Unassigned',
         followUpDate: c.raw?.today || c.raw?.last_visit_date || c.created_at || '',
         notes: c.description || c.raw?.extra_note || '',
         title: c.title || c.raw?.beneficiary_name || '',
@@ -593,7 +593,7 @@ export const CasesProvider = ({ children }) => {
         }
 
         const datasetKey = `${Date.now()}`;
-        const normalizedRows = rawObjects.map((row, index) => buildCaseRecord(row, datasetKey, file.name, index, currentUser?.name || 'Unassigned', 'Pending'));
+        const normalizedRows = rawObjects.map((row, index) => buildCaseRecord(row, datasetKey, file.name, index, 'Unassigned', 'Pending'));
 
         const dedupedRows = [];
         let skippedDuplicates = 0;
@@ -625,11 +625,7 @@ export const CasesProvider = ({ children }) => {
                 status: 'Pending',
                 raw: row.raw || row,
               };
-              // If we can map an assigned staff name to a known user id, attach assigned_to_id
-              // Attach uploader as assigned_to by default (system behavior) and ignore staff_name collected in XLSX
-              if (currentUser && currentUser.id) {
-                payload.assigned_to_id = currentUser.id;
-              }
+                    // Do not set assigned_to_id from XLSX staff values; default to Unassigned unless assignment is explicit
               const srv = await apiCreateCase(payload);
               if (srv && srv.id) created.push(srv);
             } catch (e) {
