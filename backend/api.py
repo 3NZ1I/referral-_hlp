@@ -78,9 +78,10 @@ async def ensure_cors_headers(request: Request, call_next):
     try:
         if origin:
             if ('*' in _origins_list) or (origin in _origins_list):
-                # If credentials are allowed, echo the origin explicitly
+                # If credentials are allowed, echo the origin explicitly and include credentials header
                 if _cors_allow_credentials:
                     response.headers['Access-Control-Allow-Origin'] = origin
+                    response.headers['Access-Control-Allow-Credentials'] = 'true'
                 else:
                     # Non-credentialed responses may use a wildcard if allowed
                     if '*' in _origins_list:
