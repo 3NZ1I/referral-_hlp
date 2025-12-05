@@ -91,6 +91,13 @@ body {
   overflow: hidden;
 }
 
+/* Make sure .ant-typography elements in card content remain horizontal even when nested elements apply transform */
+.dashboard-content .card-panel .ant-typography, .dashboard-content .card-panel h4 {
+  writing-mode: horizontal-tb !important;
+  transform: none !important;
+  white-space: nowrap !important;
+}
+
 /* Reduce heading size on narrow screens to avoid forced vertical stacking */
 @media screen and (max-width: 640px) {
   .card-panel .ant-typography {
