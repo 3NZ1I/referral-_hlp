@@ -14,10 +14,15 @@ const Login = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const success = await login(values.username, values.password);
-      if (success) {
+      const user = await login(values.username, values.password);
+      if (user) {
         message.success('Login successful!');
-        navigate('/cases');
+        if (user.must_change_password) {
+          message.info('Please change your password before continuing.');
+          navigate('/account');
+        } else {
+          navigate('/cases');
+        }
       } else {
         message.error('Invalid username or password');
       }

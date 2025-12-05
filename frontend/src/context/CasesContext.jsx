@@ -104,6 +104,19 @@ const rosterLabelSuffixIndex = (() => {
   }, {});
 })();
 
+const remapRosterHeader = (rawCell = '') => {
+  if (typeof rawCell !== 'string') return null;
+  const stripped = stripHtml(rawCell).trim();
+  // match forms like partnernu1_7_1-... or partnernu1_7_1 - ...
+  const match = stripped.match(/(partnernu1_[^\s-]+)[\s-]+(.+)/i);
+  if (!match) return null;
+  const slotPart = match[1].replace(/\s+/g, '');
+  const labelPart = match[2].replace(/[_*]/g, '').trim();
+  const suffix = rosterLabelSuffixIndex[normalizeKey(labelPart)];
+  if (!suffix) return null;
+  return `group_fj2tt69_${slotPart}${suffix}`;
+};
+
 const buildAliasIndex = (sections = []) => {
   const index = {};
   sections.forEach((section) => {

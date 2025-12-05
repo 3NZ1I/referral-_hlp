@@ -80,6 +80,17 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 
+def validate_password_strength(password: str) -> bool:
+    # Enforce minimum strength: at least 8 characters, at least one lowercase, one uppercase, and one digit/special
+    if not password or len(password) < 8:
+        return False
+    has_lower = any(c.islower() for c in password)
+    has_upper = any(c.isupper() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    has_symbol = any(not c.isalnum() for c in password)
+    return has_lower and has_upper and (has_digit or has_symbol)
+
+
 def create_token(payload: dict):
     to_encode = payload.copy()
     to_encode.update({"exp": datetime.utcnow() + timedelta(minutes=JWT_EXP_MINUTES)})
@@ -152,10 +163,15 @@ def get_users(db: Session = Depends(get_db)):
 @app.post("/users", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def create_user(user: UserCreate, db: Session = Depends(get_db), auth=Depends(require_auth)):
     # Hash password if provided
-    password = user.password
+    password = getattr(user, 'password', None)
+    if password and not validate_password_strength(password):
+        raise HTTPException(status_code=400, detail='Password does not meet strength requirements (min 8 chars; mixed case; digits or symbols)')
     user_data = user.dict(exclude={"password"})
     if password:
         user_data["password_hash"] = hash_password(password)
+    # Accept must_change_password if provided by admin
+    if 'must_change_password' in user.dict():
+        user_data['must_change_password'] = user.dict().get('must_change_password')
     new_user = User(**user_data)
     db.add(new_user)
     db.commit()
@@ -171,6 +187,31 @@ def delete_user(user_id: int, db: Session = Depends(get_db), auth=Depends(requir
     db.delete(db_user)
     db.commit()
     return JSONResponse(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@app.put('/users/{user_id}', response_model=UserRead)
+def update_user(user_id: int, payload: dict, db: Session = Depends(get_db), auth=Depends(require_auth)):
+    db_user = db.get(User, user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail='User not found')
+    # Only allow admin or the user itself to update
+    if not is_admin_user(auth) and (not isinstance(auth, dict) or auth.get('user_id') != user_id):
+        raise HTTPException(status_code=403, detail='Insufficient permissions')
+
+    # Password change needs validation
+    password = payload.get('password')
+    if password:
+        if not validate_password_strength(password):
+            raise HTTPException(status_code=400, detail='Password does not meet strength requirements (min 8 chars; mixed case; digits or symbols)')
+        db_user.password_hash = hash_password(password)
+
+    # Update other allowed fields: email, name, role, ability, must_change_password
+    for k in ['email', 'name', 'role', 'ability', 'must_change_password']:
+        if k in payload:
+            setattr(db_user, k, payload.get(k))
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 # COMMENTS CRUD
 @app.get("/cases/{case_id}/comments", response_model=list[CommentRead])
@@ -333,6 +374,9 @@ def register(payload: dict, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Username or email already exists")
     
+    # Validate password strength during registration
+    if not validate_password_strength(password):
+        raise HTTPException(status_code=400, detail='Password does not meet strength requirements (min 8 chars; mixed case; digits or symbols)')
     # Create user
     user = User(
         username=username,
@@ -342,13 +386,15 @@ def register(payload: dict, db: Session = Depends(get_db)):
         name=name,
         ability=payload.get("ability")
     )
+    if 'must_change_password' in payload:
+        user.must_change_password = bool(payload.get('must_change_password'))
     db.add(user)
     db.commit()
     db.refresh(user)
     
     # Return token
     token = create_token({"sub": user.username, "user_id": user.id, "role": user.role})
-    return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role}}
+    return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role, "must_change_password": user.must_change_password if hasattr(user, 'must_change_password') else False}}
 
 # Login endpoint
 @app.post("/auth/login")
@@ -366,7 +412,7 @@ def login(payload: dict, db: Session = Depends(get_db)):
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
         token = create_token({"sub": user.username, "user_id": user.id, "role": user.role})
-        return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role}}
+        return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role, "must_change_password": user.must_change_password if hasattr(user, 'must_change_password') else False}}
     except HTTPException:
         # Pass-through known HTTP exceptions
         raise

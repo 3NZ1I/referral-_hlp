@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import request from '../api/http';
+import { updateUserApi } from '../api';
 
 // Generate a simple initials-based SVG avatar data URL
 const generateAvatar = (name = '') => {
@@ -56,6 +57,7 @@ export const AuthProvider = ({ children }) => {
             ...u,
             name: u.name || u.username,
             avatar: u.avatar || generateAvatar(u.name || u.username),
+            must_change_password: u.must_change_password || false,
           })));
         }
       } catch (err) {
@@ -93,10 +95,11 @@ export const AuthProvider = ({ children }) => {
           avatar: generateAvatar(response.user.name || response.user.username),
           title: response.user.role === 'admin' ? 'Administrator' : 'User',
           organization: 'HLP',
+          must_change_password: response.user.must_change_password,
         };
         
         setCurrentUser(userWithAvatar);
-        return true;
+        return userWithAvatar;
       }
       return false;
     } catch (error) {
@@ -127,6 +130,7 @@ export const AuthProvider = ({ children }) => {
           avatar: generateAvatar(response.user.name || response.user.username),
           title: response.user.role === 'admin' ? 'Administrator' : 'User',
           organization: 'HLP',
+          must_change_password: response.user.must_change_password,
         };
         
         setCurrentUser(userWithAvatar);
@@ -141,10 +145,16 @@ export const AuthProvider = ({ children }) => {
 
   const addUser = async (userData) => {
     try {
-      const response = await request('/auth/register', {
-        method: 'POST',
-        body: userData,
-      });
+      let response;
+      // Prefer admin endpoint when creating a user from the admin UI
+      if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'Admin')) {
+        response = await request('/users', { method: 'POST', body: userData });
+      } else {
+        response = await request('/auth/register', {
+          method: 'POST',
+          body: userData,
+        });
+      }
       const u = response.user;
       // update local list
       setUsers(prev => prev ? [...prev, u] : [u]);
@@ -155,7 +165,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updateUser = (userId, updates) => {
+  const updateUser = async (userId, updates) => {
+    try {
+      // Persist to server when possible
+      await updateUserApi(userId, updates);
+    } catch (err) {
+      console.warn('Update user server call failed, falling back to local update', err);
+    }
     // Update current user if editing self
     setCurrentUser((cu) => (cu && cu.id === userId ? { ...cu, ...updates } : cu));
     setUsers(prev => prev.map(u => (u.id === userId ? { ...u, ...updates } : u)));

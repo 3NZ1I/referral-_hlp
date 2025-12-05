@@ -29,3 +29,4 @@ export const importXLSX = (file) => {
 export const getMaintenance = () => request('/maintenance');
 export const createMaintenance = (data) => request('/maintenance', { method: 'POST', body: data });
 export const deleteMaintenance = (id) => request(`/maintenance/${id}`, { method: 'DELETE' });
+export const updateUserApi = (id, data) => request(`/users/${id}`, { method: 'PUT', body: data });

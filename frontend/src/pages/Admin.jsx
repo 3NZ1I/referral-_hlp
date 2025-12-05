@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, message, Space, Popconfirm, Typography, DatePicker } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, message, Space, Popconfirm, Typography, DatePicker, Switch } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
+import { updateUserApi } from '../api';
 import { createMaintenance, getMaintenance, deleteMaintenance } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -46,6 +47,12 @@ const Admin = () => {
       const values = await form.validateFields();
       
       if (editingUser) {
+        // persist the update to server and local
+        try {
+          await updateUserApi(editingUser.id, values);
+        } catch (err) {
+          console.warn('Server update user failed, falling back to local', err);
+        }
         updateUser(editingUser.id, values);
         message.success('User updated successfully');
       } else {
@@ -323,9 +330,27 @@ const Admin = () => {
           <Form.Item
             name="password"
             label="Password"
-            rules={[{ required: !editingUser, message: 'Please enter password' }]}
+            rules={[{ required: !editingUser, message: 'Please enter password' }, ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value) return Promise.resolve();
+                const hasMin = value.length >= 8;
+                const hasLower = /[a-z]/.test(value);
+                const hasUpper = /[A-Z]/.test(value);
+                const hasDigitOrSymbol = /[0-9]|[^A-Za-z0-9]/.test(value);
+                if (hasMin && hasLower && hasUpper && hasDigitOrSymbol) return Promise.resolve();
+                return Promise.reject(new Error('Password must be at least 8 chars, include uppercase, lowercase, and a digit or symbol'));
+              }
+            })]}
           >
             <Input.Password placeholder={editingUser ? 'Leave blank to keep current password' : 'Enter password'} />
+          </Form.Item>
+
+          <Form.Item
+            name="must_change_password"
+            label="Force password change on first login"
+            valuePropName="checked"
+          >
+            <Switch />
           </Form.Item>
 
           <Form.Item

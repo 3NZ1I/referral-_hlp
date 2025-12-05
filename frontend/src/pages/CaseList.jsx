@@ -99,7 +99,7 @@ const CaseList = () => {
             </Paragraph>
           </div>
           <div className="panel-actions">
-            <Button type="primary" shape="round" onClick={() => navigate('/cases/new')}>New Case</Button>
+            {/* New Case intentionally hidden per UX request */}
           </div>
         </div>
 

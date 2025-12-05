@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import datetime
@@ -15,6 +15,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=True, index=True)
     password_hash = Column(String(255), nullable=True)
     role = Column(String(50), default="user")
+    must_change_password = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     cases = relationship("Case", back_populates="assigned_to")
 

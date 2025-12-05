@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     name: Optional[str]
     ability: Optional[str]
     role: Optional[str] = "user"
+    must_change_password: Optional[bool] = False
 
 
 class UserCreate(UserBase):
@@ -18,6 +19,7 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: int
     created_at: Optional[datetime]
+    must_change_password: Optional[bool] = False
 
     class Config:
         orm_mode = True

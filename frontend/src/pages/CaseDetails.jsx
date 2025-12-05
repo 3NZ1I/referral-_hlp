@@ -233,6 +233,35 @@ const CaseDetails = () => {
     if (!caseRecord) return;
     try {
       setSaving(true);
+      // Require a resolve comment when changing status to a resolved state
+      const resolvedStates = ['Completed', 'Closed'];
+      const statusWillBeResolved = resolvedStates.includes(statusValue);
+      if (statusWillBeResolved && !commentText.trim()) {
+        message.error('Please add a resolve comment before resolving the case');
+        setSaving(false);
+        return;
+      }
+      // If resolving and we have a comment text, add it before changing status
+      if (statusWillBeResolved && commentText.trim()) {
+        try {
+          if (caseRecord.id) {
+            await apiAddComment(caseRecord.id, commentText.trim());
+          } else {
+            // local fallback: add comment to local state
+            const newComment = {
+              id: Date.now().toString(),
+              text: commentText.trim(),
+              author: currentUser?.username || 'Unknown User',
+              timestamp: new Date().toISOString(),
+            };
+            const existingComments = caseRecord.comments || [];
+            await updateCase(caseRecord.key, { comments: [...existingComments, newComment] });
+          }
+          setCommentText('');
+        } catch (err) {
+          console.warn('Failed to persist resolve comment before resolving case', err);
+        }
+      }
       await updateCase(caseRecord.key, {
         status: statusValue,
         assignedStaff: staffValue || 'Unassigned',

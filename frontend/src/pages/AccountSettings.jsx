@@ -28,6 +28,8 @@ const AccountSettings = () => {
           return;
         }
         updates.password = values.newPassword;
+        // If user is changing their password, clear must_change_password
+        updates.must_change_password = false;
       }
 
       updateUser(currentUser.id, updates);
@@ -123,6 +125,17 @@ const AccountSettings = () => {
           <Form.Item
             label="New Password"
             name="newPassword"
+            rules={[({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value) return Promise.resolve();
+                const hasMin = value.length >= 8;
+                const hasLower = /[a-z]/.test(value);
+                const hasUpper = /[A-Z]/.test(value);
+                const hasDigitOrSymbol = /[0-9]|[^A-Za-z0-9]/.test(value);
+                if (hasMin && hasLower && hasUpper && hasDigitOrSymbol) return Promise.resolve();
+                return Promise.reject(new Error('New password must be at least 8 chars, include uppercase, lowercase, and a digit or symbol'));
+              }
+            })]}
           >
             <Input.Password
               prefix={<LockOutlined />}
