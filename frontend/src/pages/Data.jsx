@@ -51,6 +51,8 @@ const Data = () => {
     if (!file) return;
     try {
       await importDataset(file);
+      // Ensure we refresh cases after server import
+      // importDataset now ensures refreshing by default
     } finally {
       event.target.value = '';
     }

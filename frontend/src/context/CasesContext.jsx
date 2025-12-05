@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import * as XLSX from 'xlsx';
+import { fetchCases as apiFetchCases, importXLSX as apiImportXLSX } from '../api';
 import { message } from 'antd';
 import { formSections, caseFieldMapping } from '../data/formMetadata';
 import { useAuth } from './AuthContext';
@@ -451,7 +452,48 @@ export const CasesProvider = ({ children }) => {
 
   // no first-run setState needed; initial state already backfilled
 
-  const importDataset = useCallback((file) => new Promise((resolve, reject) => {
+  const loadCasesFromBackend = useCallback(async () => {
+    try {
+      const serverCases = await apiFetchCases();
+      if (!Array.isArray(serverCases)) return;
+      const mapped = serverCases.map((c) => ({
+        key: `server-${c.id}`,
+        datasetKey: `server`,
+        datasetName: 'Backend',
+        status: c.status || 'Pending',
+        caseNumber: c.id ? `C-${c.id}` : '',
+        assignedStaff: c.assigned_to?.name || 'Unassigned',
+        followUpDate: c.created_at || '',
+        notes: c.description || '',
+        title: c.title || '',
+        id: c.id,
+        raw: c,
+      }));
+      setCases(backfillCaseCollection(mapped));
+    } catch (err) {
+      console.warn('Failed to load cases from backend', err);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    // On mount, load cases from backend so data persists across refreshes
+    loadCasesFromBackend();
+  }, [loadCasesFromBackend]);
+
+  const importDataset = useCallback((file) => new Promise(async (resolve, reject) => {
+    // If the backend supports import, use it and reload cases
+    try {
+      if (file && apiImportXLSX) {
+        await apiImportXLSX(file);
+        await loadCasesFromBackend();
+        message.success(`${file.name || 'File'} imported to server and refreshed.`);
+        resolve([]);
+        return;
+      }
+    } catch (err) {
+      console.warn('Backend import failed, falling back to client-side import', err);
+      // fall-through to client-side import if backend import fails
+    }
     // Validate file before processing
     try {
       validateXlsxFile(file);
