@@ -16,12 +16,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Put all third-party libs in a single vendor chunk to avoid inter-chunk runtime import issues
           if (id.includes('node_modules')) {
-            // group react, react-dom and antd together into a single vendor chunk
-            if (id.includes('react') || id.includes('react-dom') || id.includes('antd')) return 'vendor.react';
-            if (id.includes('html2canvas')) return 'vendor.html2canvas';
-            if (id.includes('jspdf')) return 'vendor.jspdf';
-            if (id.includes('xlsx')) return 'vendor.xlsx';
             return 'vendor';
           }
         }
