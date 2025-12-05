@@ -207,6 +207,8 @@ If you notice layout problems when resizing the browser window (especially on th
 - Vertical breadcrumb/page titles: If a long Title appears oriented vertically on small screens, this was caused by forced wrapping. The CSS now ensures card panel headings use `writing-mode: horizontal-tb` and `white-space: normal`. If you still encounter this problem, try clearing the browser cache (to ensure you have the latest CSS) and inspect the element using browser devtools to confirm there are no local overrides.
 - Navigation inside tables: Tables are now scrollable horizontally and support selectable rows; if table rows are not clickable, ensure the `onRow` handler is present on that page's table (some pages like `Cases` list are clickable by default).
 
+- Fixed: Frontend build failed due to a missing component declaration in `CaseList.jsx` (Esbuild error: "Unexpected '}'"). The fix was to wrap hook usage and component logic inside `const CaseList = () => { ... }` and ensure the file exports the component correctly. Re-run `npm run build` to validate.
+
 How to test:
 1. Start the frontend dev server: `npm run dev`.
 2. Log in as admin and navigate to Data and User Management pages.

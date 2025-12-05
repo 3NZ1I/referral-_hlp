@@ -215,6 +215,7 @@ docker compose run --rm --entrypoint sh backend -c "cd /app/backend && python -m
   - Server-side cases are now backfilled in the UI to display categories using the above priority order.
 - Import errors & logging:
   - The import flow has improved error handling and more detailed console logs; when a server import fails, the UI provides a less alarming message and attempts per-row fallback automatically.
+  - Fixed a build error where `CaseList.jsx` was missing the component declaration `const CaseList = () => {` causing a Vite/Esbuild production build failure — updated the component structure and validated the build.
   
 Import debugging & troubleshooting
 ---------------------------------

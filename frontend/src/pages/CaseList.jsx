@@ -111,6 +111,8 @@ const columns = [
     render: (date) => date || 'N/A',
   },
 ];
+
+const CaseList = () => {
   const navigate = useNavigate();
   const { cases, reloadCases, staffDirectory, datasets } = useCases();
   const { currentUser } = useAuth();
