@@ -8,6 +8,8 @@ export const assignCase = (id, user, ability) => request(`/cases/${id}/assign`, 
   method: 'POST',
   body: { user, ability },
 });
+export const createCase = (data) => request('/cases', { method: 'POST', body: data });
+export const updateCaseApi = (id, data) => request(`/cases/${id}`, { method: 'PUT', body: data });
 export const fetchComments = (caseId) => request(`/cases/${caseId}/comments`);
 export const addComment = (caseId, text) => request(`/cases/${caseId}/comments`, {
   method: 'POST',

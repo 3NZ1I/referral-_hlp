@@ -18,7 +18,7 @@ import { EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCases } from '../context/CasesContext';
 import { useAuth } from '../context/AuthContext';
-import { assignCase as apiAssignCase } from '../api';
+import { assignCase as apiAssignCase, updateCaseApi } from '../api';
 import { formSections, selectOptions } from '../data/formMetadata';
 import dayjs from 'dayjs';
 
@@ -214,6 +214,16 @@ const CaseDetails = () => {
       });
       // Persist assignment to backend if this case exists on server
       if (caseRecord.id) {
+        // Persist status change as well as assignment
+        try {
+          await updateCaseApi(caseRecord.id, {
+            title: caseRecord.title,
+            description: caseRecord.raw?.description || caseRecord.notes || '',
+            status: statusValue,
+          });
+        } catch (err) {
+          console.warn('Failed to persist case update to backend', err);
+        }
         try {
           await apiAssignCase(caseRecord.id, staffValue || null, null);
         } catch (err) {
