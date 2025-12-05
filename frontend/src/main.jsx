@@ -18,3 +18,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </AuthProvider>
   </React.StrictMode>
 );
+
+// Debugging: log React availability and the presence of hooks
+try {
+  // `React.version` is present in React, log to help debug duplicate/missing React instances
+  console.info('React version (from entry):', React && React.version);
+  if (!React || !React.useLayoutEffect) {
+    console.error('React or React.useLayoutEffect is not available at runtime', React);
+  }
+} catch (err) {
+  console.error('Error checking React availability:', err);
+}
