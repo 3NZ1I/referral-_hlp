@@ -111,14 +111,19 @@ const Data = () => {
     message.success('Exported selected cases as XLSX.');
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (!selectedRowKeys.length) {
       message.warning('Select at least one case to delete.');
       return;
     }
-    deleteCases(selectedRowKeys);
-    setSelectedRowKeys([]);
-    message.success('Selected cases deleted.');
+    try {
+      await deleteCases(selectedRowKeys);
+      setSelectedRowKeys([]);
+      message.success('Selected cases deleted.');
+    } catch (err) {
+      console.error('Failed to delete cases', err);
+      message.error('Failed to delete selected cases.');
+    }
   };
 
   const rowSelection = {
