@@ -124,14 +124,14 @@ const Data = () => {
   return (
     <>
       <div className="card-panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+        <div className="panel-header">
           <div>
             <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap' }}>Data &gt; Uploads</Title>
             <Paragraph type="secondary" style={{ marginTop: 4 }}>
               Overview of XLSX uploads processed into the case workspace. Use this view to confirm row counts and review validation status.
             </Paragraph>
           </div>
-          <Space>
+          <Space className="panel-actions">
             <Dropdown
               menu={{
                 items: [

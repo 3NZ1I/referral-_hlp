@@ -315,6 +315,20 @@ const mapFieldsFromRow = (rawRow) => {
       }
     });
   });
+
+  // Also map case-level canonical fields from caseFieldAliasIndex (caseNumber, status, assignedStaff, followUpDate, notes, submissionDate)
+  Object.entries(caseFieldAliasIndex).forEach(([caseKey, aliases]) => {
+    for (const alias of aliases) {
+      const clean = normalizeKey(alias);
+      if (rowLookup[clean] !== undefined && rowLookup[clean] !== '') {
+        // Only set if not already set by field-level mapping (forms)
+        if (result[caseKey] === undefined || result[caseKey] === '') {
+          result[caseKey] = rowLookup[clean];
+        }
+        break;
+      }
+    }
+  });
   
   return result;
 };
@@ -417,14 +431,17 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index) => {
     }
   }
   
+  const computedStatus = canonicalFields.status || resolveCaseFieldValue(normalizedRow, 'status', 'Pending');
+  const computedAssigned = canonicalFields.assignedStaff || canonicalFields.staff_name || resolveCaseFieldValue(normalizedRow, 'assignedStaff', 'Unassigned');
+
   return {
     key: `${datasetKey}-${index + 1}-${Math.random().toString(16).slice(2, 6)}`,
     datasetKey,
     datasetName,
     // Status and assignedStaff should use system defaults, NOT survey metadata
-    status: 'Pending',
+    status: computedStatus || 'Pending',
     caseNumber,
-    assignedStaff: 'Unassigned',
+    assignedStaff: computedAssigned || 'Unassigned',
     followUpDate: resolveCaseFieldValue(normalizedRow, 'followUpDate', ''),
     notes: resolveCaseFieldValue(normalizedRow, 'notes', ''),
     category,
@@ -592,11 +609,17 @@ export const CasesProvider = ({ children }) => {
           for (const row of dedupedRows) {
             try {
               const payload = {
-                title: row.title || row.caseNumber || 'Case',
-                description: row.notes || row.raw?.description || '',
-                status: row.status || 'Pending',
+                title: row.title || row.formFields?.beneficiary_name || row.caseNumber || 'Case',
+                description: row.notes || row.formFields?.extra_note || row.raw?.description || '',
+                status: row.status || row.formFields?.survey_off_diss || row.formFields?.survey_off_diss || 'Pending',
                 raw: row.raw || row,
               };
+              // If we can map an assigned staff name to a known user id, attach assigned_to_id
+              const assignedCandidate = row.assignedStaff || row.formFields?.staff_name || '';
+              if (assignedCandidate && users) {
+                const match = users.find((u) => u.name === assignedCandidate || u.username === assignedCandidate);
+                if (match && match.id) payload.assigned_to_id = match.id;
+              }
               const srv = await apiCreateCase(payload);
               if (srv && srv.id) created.push(srv);
             } catch (e) {
@@ -650,7 +673,7 @@ export const CasesProvider = ({ children }) => {
       reject(err);
     };
     reader.readAsArrayBuffer(file);
-  }), [cases]);
+  }), [cases, users, currentUser, loadCasesFromBackend]);
 
   const deleteDatasets = useCallback((keysToDelete) => {
     if (!keysToDelete.length) return;

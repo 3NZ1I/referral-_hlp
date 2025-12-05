@@ -91,6 +91,27 @@ body {
   overflow: hidden;
 }
 
+/* Panel header layout helper for consistent action alignment on all pages */
+.panel-header {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center; /* center vertically so buttons stay aligned when title wraps */
+  flex-wrap: wrap; /* allow actions to wrap under title on small screens */
+}
+
+.panel-header > div:first-child {
+  flex: 1 1 240px; /* allow title area to grow/shrink appropriately */
+  min-width: 0; /* prevent overflow with ellipsis */
+}
+
+.panel-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap; /* keep buttons from overflowing horizontally */
+}
+
 /* Make sure .ant-typography elements in card content remain horizontal even when nested elements apply transform */
 .dashboard-content .card-panel .ant-typography, .dashboard-content .card-panel h4 {
   writing-mode: horizontal-tb !important;
