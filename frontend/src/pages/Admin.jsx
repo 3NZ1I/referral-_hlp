@@ -171,7 +171,7 @@ const Admin = () => {
       <div className="card-panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 250px', minWidth: 0 }}>
-            <Title level={4} style={{ margin: 0 }}>User Management</Title>
+            <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap' }}>User Management</Title>
             <Paragraph type="secondary" style={{ marginTop: 4 }}>
               Manage system users, roles, and permissions
             </Paragraph>

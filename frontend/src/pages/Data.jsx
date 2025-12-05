@@ -126,7 +126,7 @@ const Data = () => {
       <div className="card-panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
           <div>
-            <Title level={4} style={{ margin: 0 }}>Data &gt; Uploads</Title>
+            <Title level={4} style={{ margin: 0, whiteSpace: 'nowrap' }}>Data &gt; Uploads</Title>
             <Paragraph type="secondary" style={{ marginTop: 4 }}>
               Overview of XLSX uploads processed into the case workspace. Use this view to confirm row counts and review validation status.
             </Paragraph>
@@ -182,7 +182,7 @@ const Data = () => {
       <Divider style={{ margin: '32px 0' }} />
 
       <div className="card-panel">
-        <Title level={5} style={{ marginTop: 0 }}>Upload History</Title>
+        <Title level={5} style={{ marginTop: 0, whiteSpace: 'nowrap' }}>Upload History</Title>
         <Paragraph type="secondary" style={{ marginTop: 4 }}>
           Reference log of files added to the workspace with their processed counts.
         </Paragraph>
