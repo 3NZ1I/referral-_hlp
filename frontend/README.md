@@ -38,3 +38,12 @@ If you are developing a production application, we recommend using TypeScript wi
 		};
 		```
  - Limit sheet parsing using `safeSheetSelection(workbook, allowedNames)` if needed.
+
+## Build notes
+
+- Use a clean build to avoid stale assets or mismatched vendor chunks:
+	- `npm run build:clean` (this deletes `dist` then builds a fresh bundle).
+- In Docker, the frontend Dockerfile runs `npm ci` and `npm run build:clean` to ensure a clean build.
+- If you see UI issues after a deploy (white screen or `useLayoutEffect` errors), clear your browser cache (Ctrl+F5 or incognito), and ensure the Docker image was rebuilt without cache on the server:
+	- `docker compose build --pull --no-cache frontend`
+	- `docker compose up -d --build frontend`
