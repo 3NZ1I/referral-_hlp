@@ -19,7 +19,7 @@ const Login = () => {
         message.success('Login successful!');
         if (user.must_change_password) {
           message.info('Please change your password before continuing.');
-          navigate('/account');
+          navigate('/settings');
         } else {
           navigate('/cases');
         }

@@ -93,6 +93,11 @@ function AppRoutes() {
     return <Navigate to="/cases" replace />;
   }
 
+  // Require password change if flagged - block other application routes
+  if (currentUser && currentUser.must_change_password && location.pathname !== '/settings') {
+    return <Navigate to="/settings" replace />;
+  }
+
   return (
     <DashboardLayout
       selectedKey={selectedKey}
