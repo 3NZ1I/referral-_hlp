@@ -20,7 +20,7 @@ from .schemas import (
     CommentCreate,
     CommentRead,
 )
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, or_
 from sqlalchemy.orm import sessionmaker
 import os
 import openpyxl
@@ -276,6 +276,13 @@ def update_case(case_id: int, case: CaseUpdate, db: Session = Depends(get_db), u
         if key == 'resolve_comment':
             continue
         setattr(db_case, key, value)
+    # Update timestamps
+    try:
+        db_case.updated_at = datetime.utcnow()
+        if new_status and new_status in resolved_states:
+            db_case.completed_at = datetime.utcnow()
+    except Exception:
+        logging.exception('Failed to set updated_at or completed_at on case')
     db.commit()
     db.refresh(db_case)
     return db_case
@@ -372,6 +379,14 @@ def add_comment(case_id: int, comment: CommentCreate, db: Session = Depends(get_
         user_id = user.get('user_id') or user.get('sub')
     new_comment = Comment(case_id=case_id, user_id=user_id, **comment.dict())
     db.add(new_comment)
+    # Update the case's updated_at timestamp when adding a new comment
+    try:
+        existing_case = db.get(Case, case_id)
+        if existing_case:
+            existing_case.updated_at = datetime.utcnow()
+            db.add(existing_case)
+    except Exception:
+        logging.exception('Failed to set updated_at for case when adding comment')
     db.commit()
     db.refresh(new_comment)
     return new_comment
@@ -406,6 +421,18 @@ def assign_case(case_id: int, payload: dict, db: Session = Depends(get_db), user
     # Prefer to set assigned_to_id explicitly to ensure DB-level FK sync
     case.assigned_to = assigned_user
     case.assigned_to_id = assigned_user.id if assigned_user else None
+    # Update timestamp and add an assignment comment for audit trail
+    try:
+        case.updated_at = datetime.utcnow()
+        db.add(case)
+        user_id = None
+        if isinstance(user, dict):
+            user_id = user.get('user_id') or user.get('sub')
+        assign_text = f"Assigned to {assigned_user.name if assigned_user else 'Unassigned'}"
+        comment = Comment(case_id=case_id, user_id=user_id, content=assign_text)
+        db.add(comment)
+    except Exception:
+        logging.exception('Failed to set updated_at or persist assignment comment')
     db.commit()
     db.refresh(case)
     return case
@@ -488,6 +515,28 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
         db.add(import_row)
         db.flush()
 
+        # Deduplicate: if raw contains an external identifier (case_id/_id/_uuid/caseNumber) that matches an existing case, skip
+        dup_key = None
+        for alias_key in ('case_id', '_id', '_uuid', 'caseNumber'):
+            if alias_key in case_data and case_data.get(alias_key):
+                dup_key = str(case_data.get(alias_key))
+                break
+        if dup_key:
+            existing_case = db.query(Case).filter(
+                or_(
+                    Case.raw['case_id'].astext == dup_key,
+                    Case.raw['_id'].astext == dup_key,
+                    Case.raw['_uuid'].astext == dup_key,
+                    Case.raw['caseNumber'].astext == dup_key,
+                )
+            ).first()
+            if existing_case:
+                import_row.case_id = existing_case.id
+                import_row.status = 'skipped'
+                db.add(import_row)
+                db.commit()
+                continue
+
         case = Case(
             title=title,
             description=description,
@@ -564,11 +613,32 @@ def retry_import_job(job_id: int, db: Session = Depends(get_db), user=Depends(re
         raise HTTPException(status_code=404, detail='Job not found')
     retry_count = 0
     for row in job.rows:
-        if row.status == 'failed':
+        if row.status == 'failed' or row.status == 'skipped':
             try:
                 row_data = row.raw or {}
                 title = row_data.get('Title') or row_data.get('title') or row_data.get('case_id') or 'No Title'
                 description = row_data.get('Description') or row_data.get('description') or ''
+                # dedupe by common keys; avoid creating duplicate case
+                dup_key = None
+                for alias_key in ('case_id', '_id', '_uuid', 'caseNumber'):
+                    if alias_key in row_data and row_data.get(alias_key):
+                        dup_key = str(row_data.get(alias_key))
+                        break
+                if dup_key:
+                    existing = db.query(Case).filter(
+                        or_(
+                            Case.raw['case_id'].astext == dup_key,
+                            Case.raw['_id'].astext == dup_key,
+                            Case.raw['_uuid'].astext == dup_key,
+                            Case.raw['caseNumber'].astext == dup_key,
+                        )
+                    ).first()
+                    if existing:
+                        row.case_id = existing.id
+                        row.status = 'skipped'
+                        db.add(row)
+                        db.commit()
+                        continue
                 new_case = Case(title=title, description=description, status='Pending', raw=row_data)
                 db.add(new_case)
                 db.commit()

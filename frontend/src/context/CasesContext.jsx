@@ -426,6 +426,8 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
     notes: resolveCaseFieldValue(normalizedRow, 'notes', ''),
     category,
     submissionDate,
+    created_at: normalizedRow.created_at || normalizedRow._submission_time || normalizedRow.submissiontime || undefined,
+    updated_at: normalizedRow.updated_at || normalizedRow._last_edited || normalizedRow._updated || normalizedRow._submission_time || undefined,
     raw: normalizedRow,
     formFields: canonicalFields,
   };
@@ -465,6 +467,9 @@ export const CasesProvider = ({ children }) => {
         title: c.title || c.raw?.beneficiary_name || '',
         id: c.id,
         raw: c.raw || c,
+        created_at: c.created_at || (c.raw && (c.raw._submission_time || c.raw.submissiontime)) || undefined,
+        updated_at: c.updated_at || (c.raw && (c.raw._last_edited || c.raw._updated)) || undefined,
+        completed_at: c.completed_at || undefined,
         uploadedBy: c.raw?.uploaded_by || c.raw?.uploadedBy || null,
         assignedToId: (c.assigned_to && c.assigned_to.id) || null,
         assignedStaffNormalized: ((c.assigned_to && c.assigned_to.name) || c.assignedStaff || '').toLowerCase(),

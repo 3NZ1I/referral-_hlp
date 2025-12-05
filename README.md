@@ -86,6 +86,10 @@ UI & Security Changes
 - 'Notes' type fields are now hidden from the case detail cards but remain visible as the column header 'Notes' in lists and tables. If you rely on 'note' type fields, they can still be accessed via the API if you are an admin.
 - Sensitive fields such as `id_card_nu`, `family_card_nu`, and `passport_nu_001` are only visible to admin users. These fields are marked `hidden` in the form metadata and are sanitized from API responses when requested by non-admin users.
 - The case view UI now shows the 'Comments' panel directly under the first form section for improved visibility.
+ - The Cases list now shows a `Last Update` column instead of `Submission Date`. `Last Update` reflects the latest activity on a case (comments, assignments, or status changes).
+ - Removed the Follow-up date filters and columns from lists and the Data page (follow-up date values remain in raw back-end data but are not shown in list filters by default).
+ - The Data page 'Notes' column has been replaced with an 'Age (days)' column for consistency with SLA indicators across the UI.
+ - Import CSV/XLSX deduplication has been added on both client and server to prevent duplicate cases being created when an uploaded file contains existing cases (keys checked include `case_id`, `_id`, `_uuid`, and `caseNumber`).
 - Ensure `CORS_ORIGINS` is set to include your frontend origin. Example in Docker: set `CORS_ORIGINS: "https://hlp.bessar.work"` in your environment or `.env` file.
 - For debugging, run:
 ```bash

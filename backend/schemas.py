@@ -44,6 +44,8 @@ class CaseUpdate(CaseBase):
 class CaseRead(CaseBase):
     id: int
     created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    completed_at: Optional[datetime]
     assigned_to: Optional[UserRead]
     raw: Optional[dict]
 

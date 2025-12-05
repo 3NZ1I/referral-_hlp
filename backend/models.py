@@ -31,6 +31,8 @@ class Case(Base):
     assigned_to = relationship("User", back_populates="cases")
     comments = relationship("Comment", back_populates="case")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
     # Raw form data (incoming XLSX JSON) — used by frontend to backfill formFields
     raw = Column(JSON, nullable=True)
 
