@@ -192,6 +192,8 @@ const Admin = () => {
             dataSource={users}
             rowKey="id"
             pagination={{ pageSize: 10 }}
+            /* prevent fixed tables and enable horizontal scroll when necessary */
+            scroll={{ x: 900 }}
           />
         </div>
       </div>

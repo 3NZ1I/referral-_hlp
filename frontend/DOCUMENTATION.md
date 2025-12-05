@@ -186,6 +186,22 @@ Open your browser and navigate to `http://localhost:5173`
 
 ---
 
+## Known UI Issues & Fixes
+
+If you notice layout problems when resizing the browser window (especially on the Data and User Management pages), try the following:
+
+- Tables: The table components now use a horizontal scroll fallback when the viewport is narrow. If a table column layout appears clipped or fixed, confirm your viewport width allows the table a horizontal scrollbar. The `.table-wrapper` element has been updated to support overflow-x: auto so you can scroll horizontally if a table's columns exceed the visible width.
+- Vertical breadcrumb/page titles: If a long Title appears oriented vertically on small screens, this was caused by forced wrapping. The CSS now ensures card panel headings use `writing-mode: horizontal-tb` and `white-space: normal`. If you still encounter this problem, try clearing the browser cache (to ensure you have the latest CSS) and inspect the element using browser devtools to confirm there are no local overrides.
+- Navigation inside tables: Tables are now scrollable horizontally and support selectable rows; if table rows are not clickable, ensure the `onRow` handler is present on that page's table (some pages like `Cases` list are clickable by default).
+
+How to test:
+1. Start the frontend dev server: `npm run dev`.
+2. Log in as admin and navigate to Data and User Management pages.
+3. Resize the developer tools or browser window to a narrow width and verify the table displays a horizontal scrollbar and the panel heading remains horizontally oriented.
+
+If the problem persists: capture a screenshot and your browser name/version to help diagnose further.
+
+
 ## Configuration
 
 ### Environment Variables

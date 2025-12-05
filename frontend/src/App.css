@@ -58,6 +58,14 @@ body {
 
 .table-wrapper {
   margin-top: 24px;
+  /* Allow tables to scroll horizontally when the viewport is narrow */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+}
+
+/* Make sure inner table elements can expand horizontally so the wrapper can scroll */
+.table-wrapper .ant-table .ant-table-content table {
+  min-width: 900px; /* conservative minimum; tables will be scrollable if columns require more */
 }
 
 .roster-table__wrapper {
@@ -66,6 +74,29 @@ body {
   border-radius: 14px;
   overflow: hidden;
   background: var(--bg-card);
+}
+
+/* Ensure headings in panels render horizontally (fixes vertical text when layout is narrow) */
+.card-panel .ant-typography {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  white-space: normal !important;
+  overflow-wrap: break-word;
+}
+
+.card-panel h4 {
+  /* Prevent headers from stacking single letters on narrow screens */
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+/* Reduce heading size on narrow screens to avoid forced vertical stacking */
+@media screen and (max-width: 640px) {
+  .card-panel .ant-typography {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+  }
 }
 
 /* Dark mode button styles */

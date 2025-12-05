@@ -173,6 +173,8 @@ const Data = () => {
             pagination={false}
             rowKey="key"
             rowSelection={rowSelection}
+            /* Add horizontal scrolling to prevent layout breaking on narrow viewports */
+            scroll={{ x: 1000 }}
           />
         </div>
       </div>
@@ -190,6 +192,8 @@ const Data = () => {
             dataSource={datasets}
             pagination={false}
             rowKey="key"
+            /* Add horizontal scroll to dataset table as well */
+            scroll={{ x: 900 }}
           />
         </div>
       </div>
