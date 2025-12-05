@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Table, Tag, Button, Space, Typography } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Table, Tag, Button, Space, Typography, Select } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useCases } from '../context/CasesContext';
 import { useAuth } from '../context/AuthContext';
@@ -7,9 +7,9 @@ import { useAuth } from '../context/AuthContext';
 const { Title, Paragraph } = Typography;
 
 const columns = [
-  { 
-    title: 'Referral Status', 
-    dataIndex: 'status', 
+  {
+    title: 'Referral Status',
+    dataIndex: 'status',
     key: 'status',
     width: 150,
     render: (status) => {
@@ -17,101 +17,127 @@ const columns = [
       if (status === 'Completed') color = 'cyan';
       if (status === 'In Progress') color = 'blue';
       if (status === 'Pending') color = 'default';
-      return <Tag color={color}>{status}</Tag>;
+      return <Tag color={color}>{status || 'Unspecified'}</Tag>;
     },
-    filters: [
-      { text: 'Pending', value: 'Pending' },
-      { text: 'In Progress', value: 'In Progress' },
-      { text: 'Completed', value: 'Completed' },
-      { text: 'On Hold', value: 'On Hold' },
-      { text: 'Closed', value: 'Closed' },
-    ],
-    onFilter: (value, record) => record.status === value,
   },
-  { 
-    title: 'Case Number', 
-    dataIndex: 'caseNumber', 
-    key: 'caseNumber', 
+  {
+    title: 'Case Number',
+    dataIndex: 'caseNumber',
+    key: 'caseNumber',
     width: 180,
-    sorter: (a, b) => a.caseNumber.localeCompare(b.caseNumber),
+    sorter: (a, b) => (a.caseNumber || '').localeCompare(b.caseNumber || ''),
   },
-  { 
-    title: 'Assigned to', 
-    dataIndex: 'assignedStaff', 
-    key: 'assignedStaff', 
+  {
+    title: 'Assigned to',
+    dataIndex: 'assignedStaff',
+    key: 'assignedStaff',
     width: 200,
-    filters: [
-      { text: 'Unassigned', value: 'Unassigned' },
-    ],
-    onFilter: (value, record) => record.assignedStaff === value,
+    render: (text) => text || 'Unassigned',
   },
-  { 
-    title: 'Category', 
-    dataIndex: 'category', 
-    key: 'category', 
+  {
+    title: 'Category',
+    dataIndex: 'category',
+    key: 'category',
     width: 150,
     render: (category) => category || 'N/A',
   },
-  { 
-    title: 'Notes', 
-    dataIndex: 'notes', 
+  {
+    title: 'Notes',
+    dataIndex: 'notes',
     key: 'notes',
   },
 ];
 
 const CaseList = () => {
-  const { cases, reloadCases } = useCases();
-  const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { cases, reloadCases, staffDirectory } = useCases();
+  const { currentUser } = useAuth();
+
+  const [statusFilter, setStatusFilter] = useState('');
+  const [assignedFilter, setAssignedFilter] = useState('');
+  const [followUpFilter, setFollowUpFilter] = useState('');
 
   // Filter cases: admin and internal users see all cases, external users only see their assigned cases
-  const filteredCases = currentUser?.role === 'admin' || currentUser?.role === 'internal'
-    ? cases 
+  let filteredCases = currentUser?.role === 'admin' || currentUser?.role === 'internal'
+    ? cases
     : cases.filter(c => c.assignedStaff === currentUser?.name);
+
+  if (statusFilter) {
+    filteredCases = filteredCases.filter(c => (c.status || '').toLowerCase().includes(statusFilter.toLowerCase()));
+  }
+  if (assignedFilter) {
+    if (assignedFilter === 'Unassigned') {
+      filteredCases = filteredCases.filter(c => !c.assignedStaff || c.assignedStaff === 'Unassigned');
+    } else {
+      filteredCases = filteredCases.filter(c => c.assignedStaff === assignedFilter);
+    }
+  }
+  if (followUpFilter) {
+    if (followUpFilter === 'has') filteredCases = filteredCases.filter(c => !!c.followUpDate);
+    if (followUpFilter === 'none') filteredCases = filteredCases.filter(c => !c.followUpDate);
+  }
 
   useEffect(() => { reloadCases(); }, [reloadCases]);
 
   return (
-  <div>
-    <div className="card-panel">
-      <div className="panel-header">
+    <div>
+      <div className="card-panel">
+        <div className="panel-header">
           <div style={{ flex: '1 1 250px', minWidth: 0 }}>
-          <Title level={4} style={{ margin: 0 }}>Cases &gt; Case List</Title>
-          <Paragraph type="secondary" style={{ marginTop: 4 }}>
-            Review and update safe beneficiary case records with the newly captured survey.
-          </Paragraph>
+            <Title level={4} style={{ margin: 0 }}>Cases</Title>
+            <Paragraph type="secondary" style={{ marginTop: 4 }}>
+              Review and update safe beneficiary case records.
+            </Paragraph>
+          </div>
+          <div className="panel-actions">
+            <Button type="primary" shape="round" onClick={() => navigate('/cases/new')}>New Case</Button>
+          </div>
         </div>
-        <div className="panel-actions">
-          <Button type="primary" shape="round">Add record</Button>
+
+        <div className="filters-bar" style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Select placeholder="Status" style={{ minWidth: 160 }} onChange={v => setStatusFilter(v)} value={statusFilter} allowClear>
+              <Select.Option value="Pending">Pending</Select.Option>
+              <Select.Option value="In Progress">In Progress</Select.Option>
+              <Select.Option value="Completed">Completed</Select.Option>
+              <Select.Option value="On Hold">On Hold</Select.Option>
+              <Select.Option value="Closed">Closed</Select.Option>
+            </Select>
+
+            <Select placeholder="Assigned" style={{ minWidth: 220 }} onChange={v => setAssignedFilter(v)} value={assignedFilter} allowClear>
+              <Select.Option value="Unassigned">Unassigned</Select.Option>
+              {staffDirectory && staffDirectory.map(s => (
+                <Select.Option value={s.name} key={s.id}>{s.name}</Select.Option>
+              ))}
+            </Select>
+
+            <Select placeholder="Follow Up" style={{ minWidth: 140 }} onChange={v => setFollowUpFilter(v)} value={followUpFilter} allowClear>
+              <Select.Option value="has">Has Follow-up</Select.Option>
+              <Select.Option value="none">No Follow-up</Select.Option>
+            </Select>
+          </div>
+
+          <Space style={{ marginLeft: 'auto' }}>
+            <Button shape="round" onClick={() => { setStatusFilter(''); setAssignedFilter(''); setFollowUpFilter(''); }}>Clear Filters</Button>
+            <Button shape="round" onClick={() => { /* TODO: implement save filters to URL */ }}>Save Filters</Button>
+          </Space>
         </div>
-      </div>
-      <div className="filters-bar">
-        <Space wrap>
-          <Button shape="round">Referral Status</Button>
-          <Button shape="round">Assigned Staff</Button>
-          <Button shape="round">Follow-Up Date</Button>
-        </Space>
-        <Space wrap style={{ marginLeft: 'auto' }}>
-          <Button shape="round">Group</Button>
-          <Button shape="round">Filter</Button>
-          <Button shape="round">Sort</Button>
-        </Space>
-      </div>
-      <div className="table-wrapper">
-        <Table
-          columns={columns}
-          dataSource={filteredCases}
-          pagination={false}
-          rowKey="key"
-          scroll={{ x: 800 }}
-          onRow={(record) => ({
-            onClick: () => navigate(`/case/${record.key}`),
-            style: { cursor: 'pointer' },
-          })}
-        />
+
+        <div className="table-wrapper">
+          <Table
+            columns={columns}
+            dataSource={filteredCases}
+            pagination={false}
+            rowKey="key"
+            scroll={{ x: 800 }}
+            onRow={(record) => ({
+              onClick: () => navigate(`/case/${record.key}`),
+              style: { cursor: 'pointer' },
+            })}
+          />
+        </div>
       </div>
     </div>
-  </div>
   );
 };
 

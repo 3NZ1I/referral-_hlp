@@ -519,6 +519,16 @@ export const CasesProvider = ({ children }) => {
       }
     } catch (err) {
       console.warn('Backend import failed, falling back to client-side import', err);
+      // Show user-friendly error based on status
+      if (err && err.status === 401) {
+        message.error('Server import failed: please login or refresh your session.');
+      } else if (err && err.status === 403) {
+        message.error('Server import failed: permission denied (admin required).');
+      } else if (err && err.body && err.body.detail) {
+        message.error(`Server import failed: ${err.body.detail}`);
+      } else {
+        message.error('Server import failed; fallback to local import. Check network/auth.');
+      }
       // fall-through to client-side import if backend import fails
     }
     // Validate file before processing
@@ -710,6 +720,8 @@ export const CasesProvider = ({ children }) => {
         console.warn('Failed to delete server case', id, err);
       }
     }));
+    // Refresh server state after deletion attempts
+    await loadCasesFromBackend();
   }, []);
 
   const mergeCaseUpdates = useCallback((caseItem, updates = {}) => {

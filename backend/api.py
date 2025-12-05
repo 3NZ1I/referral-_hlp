@@ -334,53 +334,53 @@ def login(payload: dict, db: Session = Depends(get_db)):
         
         token = create_token({"sub": user.username, "user_id": user.id, "role": user.role})
         return {"token": token, "user": {"id": user.id, "username": user.username, "email": user.email, "role": user.role}}
-
-
-    # Maintenance schedule endpoints (simple in-memory store)
-    @app.get('/maintenance')
-    def get_maintenance():
-        return MAINTENANCE_SCHEDULES
-
-
-    @app.post('/maintenance')
-    def create_maintenance(payload: dict, user=Depends(require_auth)):
-        global _maintenance_seq
-        if not is_admin_user(user):
-            raise HTTPException(status_code=403, detail='Admin privileges required')
-        start = payload.get('start')
-        end = payload.get('end')
-        message = payload.get('message') or 'Scheduled maintenance'
-        if not start or not end:
-            raise HTTPException(status_code=400, detail='start and end datetime required')
-        try:
-            start_dt = datetime.fromisoformat(start)
-            end_dt = datetime.fromisoformat(end)
-        except Exception:
-            raise HTTPException(status_code=400, detail='Invalid datetime format - use isoformat')
-        if start_dt >= end_dt:
-            raise HTTPException(status_code=400, detail='start must be before end')
-        entry = {
-            'id': _maintenance_seq,
-            'start': start_dt.isoformat(),
-            'end': end_dt.isoformat(),
-            'message': message,
-            'created_by': user.get('user_id') if isinstance(user, dict) else None,
-        }
-        _maintenance_seq += 1
-        MAINTENANCE_SCHEDULES.append(entry)
-        return entry
-
-
-    @app.delete('/maintenance/{mid}')
-    def delete_maintenance(mid: int, user=Depends(require_auth)):
-        if not is_admin_user(user):
-            raise HTTPException(status_code=403, detail='Admin privileges required')
-        global MAINTENANCE_SCHEDULES
-        MAINTENANCE_SCHEDULES = [m for m in MAINTENANCE_SCHEDULES if m['id'] != mid]
-        return {'deleted': mid}
     except HTTPException:
         # Pass-through known HTTP exceptions
         raise
     except Exception as e:
         logging.exception("Unhandled error in login for user '%s': %s", payload.get('username'), e)
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Maintenance schedule endpoints (simple in-memory store)
+@app.get('/maintenance')
+def get_maintenance():
+    return MAINTENANCE_SCHEDULES
+
+
+@app.post('/maintenance')
+def create_maintenance(payload: dict, user=Depends(require_auth)):
+    global _maintenance_seq
+    if not is_admin_user(user):
+        raise HTTPException(status_code=403, detail='Admin privileges required')
+    start = payload.get('start')
+    end = payload.get('end')
+    message = payload.get('message') or 'Scheduled maintenance'
+    if not start or not end:
+        raise HTTPException(status_code=400, detail='start and end datetime required')
+    try:
+        start_dt = datetime.fromisoformat(start)
+        end_dt = datetime.fromisoformat(end)
+    except Exception:
+        raise HTTPException(status_code=400, detail='Invalid datetime format - use isoformat')
+    if start_dt >= end_dt:
+        raise HTTPException(status_code=400, detail='start must be before end')
+    entry = {
+        'id': _maintenance_seq,
+        'start': start_dt.isoformat(),
+        'end': end_dt.isoformat(),
+        'message': message,
+        'created_by': user.get('user_id') if isinstance(user, dict) else None,
+    }
+    _maintenance_seq += 1
+    MAINTENANCE_SCHEDULES.append(entry)
+    return entry
+
+
+@app.delete('/maintenance/{mid}')
+def delete_maintenance(mid: int, user=Depends(require_auth)):
+    if not is_admin_user(user):
+        raise HTTPException(status_code=403, detail='Admin privileges required')
+    global MAINTENANCE_SCHEDULES
+    MAINTENANCE_SCHEDULES = [m for m in MAINTENANCE_SCHEDULES if m['id'] != mid]
+    return {'deleted': mid}
