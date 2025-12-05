@@ -603,11 +603,20 @@ export const CasesProvider = ({ children }) => {
           perRowFailedRows = [];
           for (const row of dedupedRows) {
             try {
+              const sanitizedRaw = (() => {
+                try {
+                  return JSON.parse(JSON.stringify(row.raw || row));
+                } catch (err) {
+                  // Fallback to a minimal raw set to avoid JSON non-serializable values
+                  return { caseNumber: row.caseNumber || undefined, title: row.title || undefined };
+                }
+              })();
+              const titleVal = (row.title || row.formFields?.beneficiary_name || row.caseNumber || `Case ${row.key}`) + '';
               const payload = {
-                title: row.title || row.formFields?.beneficiary_name || row.caseNumber || 'Case',
-                description: row.notes || row.formFields?.extra_note || row.raw?.description || '',
+                title: titleVal.trim() || `Case ${row.key}`,
+                description: (row.notes || row.formFields?.extra_note || row.raw?.description || '') + '',
                 status: 'Pending',
-                raw: row.raw || row,
+                raw: sanitizedRaw,
               };
               const srv = await apiCreateCase(payload);
               if (srv && srv.id) created.push(srv);
