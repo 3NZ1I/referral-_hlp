@@ -29,6 +29,86 @@ To run backend tests (pytest) locally, ensure you have test-dependencies install
 pip install -r backend/requirements-test.txt
 pytest backend/tests
 ```
+## Troubleshooting & Developer Guide
+
+This project runs a FastAPI backend and a Vite/React frontend. Below are common developer workflows and troubleshooting steps.
+
+Environment variables
+- `DATABASE_URL`: Database URL (e.g. `postgresql+psycopg2://user:password@db/referral_db` or `sqlite:///dev.db`)
+- `CORS_ORIGINS`: Comma-separated list of allowed origins (e.g. `https://hlp.bessar.work`). Default: `*` for development.
+
+Start services (Docker compose)
+-------------------------------
+Use Docker Compose to run the whole stack (recommended for development):
+
+```powershell
+# Build images and bring up backend + frontend
+docker compose build --pull --no-cache backend frontend
+docker compose up -d --no-deps --build backend frontend
+```
+
+Run migrations with Docker
+-------------------------
+When running migrations against Postgres in Docker, run the `alembic` command inside the backend container so that it can connect to the database and use the correct runtime environment:
+
+```powershell
+docker compose run --rm --entrypoint sh backend -c "cd /app/backend && alembic upgrade head"
+```
+
+If you run `alembic` from your host environment and it fails with `ModuleNotFoundError: No module named 'psycopg2'`, install the driver or switch to sqlite for dev:
+
+```powershell
+# Option 1 (Postgres)
+pip install psycopg2-binary
+
+# Option 2 (sqlite fallback for local dev)
+setx DATABASE_URL "sqlite:///dev.db"
+alembic upgrade head
+```
+
+Alembic revision ID length troubleshooting
+------------------------------------------
+When Alembic updates `alembic_version`, you may encounter an error like "value too long for type character varying(32)". That's caused by a `revision` string longer than 32 characters. To fix:
+
+1. Edit the migration file under `backend/alembic/versions` and set a shorter `revision` value (e.g., `005_import_job`).
+2. Ensure `down_revision` remains accurate (e.g., `004_add_raw_case_column`).
+3. Re-run `alembic upgrade head`.
+
+CORS header troubleshooting
+--------------------------
+If the browser shows:
+`Access to fetch at 'https://api.bessar.work/api/users' from origin 'https://hlp.bessar.work' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource`, then:
+
+- Check backend logs for errors — CORS headers may not be present if the server crashes on startup due to a 500 error.
+- Ensure `CORS_ORIGINS` is set to include your frontend origin. Example in Docker: set `CORS_ORIGINS: "https://hlp.bessar.work"` in your environment or `.env` file.
+- For debugging, run:
+```bash
+curl -i -H "Origin: https://hlp.bessar.work" http://localhost:8000/api/cases
+```
+You should receive `Access-Control-Allow-Origin: *` or the configured value in `CORS_ORIGINS`.
+
+Database driver and build issues
+-------------------------------
+Some dependencies require native build tools (e.g. `psycopg2` needs `libpq-dev` for compilation). To avoid build errors:
+
+- On Debian/Ubuntu:
+```bash
+sudo apt-get update && sudo apt-get install -y libpq-dev build-essential python3-dev
+pip install psycopg2-binary
+```
+- Alternatively, use the Docker compose setup; you won't need these host-level packages.
+
+Running tests
+-------------
+Install test dependencies and run pytest:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements-test.txt
+pytest backend/tests -q
+```
+
 ## Frontend Deployment (React/Vite)
 
 ### Node.js Version
@@ -83,6 +163,17 @@ To serve the frontend for development:
 npm run preview -- --port 3000
 ```
 If you see "Blocked request. This host ('hlp.bessar.work') is not allowed", ensure `allowedHosts` is set as above.
+
+### Debugging the backend
+- View logs:
+```powershell
+docker compose logs --tail 200 backend
+```
+
+- Inspect container shell and run debug commands inside if needed:
+```powershell
+docker compose run --rm --entrypoint sh backend -c "cd /app/backend && python -m uvicorn backend.api:app --reload --host 0.0.0.0 --port 8000"
+```
 
 ### Production: Serve Built Files
 For production, serve the built files from `frontend/dist` using Caddy:
