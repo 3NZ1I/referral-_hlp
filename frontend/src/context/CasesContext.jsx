@@ -73,6 +73,14 @@ const normalizeKey = (key = '') => {
 
 const stripHtml = (value = '') => value.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ');
 
+const collectLabelAliases = (label = {}) => ['en', 'ar']
+  .map((locale) => {
+    const raw = label[locale];
+    if (!raw || typeof raw !== 'string') return '';
+    return stripHtml(raw).trim();
+  })
+  .filter(Boolean);
+
 const rosterLabelSuffixIndex = (() => {
   const entries = [
     ['صلة القرابة', '_partner_relation1'],
