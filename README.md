@@ -90,6 +90,8 @@ UI & Security Changes
  - Removed the Follow-up date filters and columns from lists and the Data page (follow-up date values remain in raw back-end data but are not shown in list filters by default).
  - The Data page 'Notes' column has been replaced with an 'Age (days)' column for consistency with SLA indicators across the UI.
  - Import CSV/XLSX deduplication has been added on both client and server to prevent duplicate cases being created when an uploaded file contains existing cases (keys checked include `case_id`, `_id`, `_uuid`, and `caseNumber`).
+ - Import jobs: The backend now records per-import job and per-row state via `ImportJob` and `ImportRow` entities. The frontend will show per-row results (pending, success, skipped, failed) and gracefully falls back to per-row creation/local-only import if server-side import fails.
+ - Resolve comment requirement: When updating a case to `Completed` or `Closed` via `PUT /cases/{id}`, include a `resolve_comment` in the payload. Backend validation will reject updates to resolved states without this field, and the UI provides a `Resolve Now` action to make this explicit.
 - Ensure `CORS_ORIGINS` is set to include your frontend origin. Example in Docker: set `CORS_ORIGINS: "https://hlp.bessar.work"` in your environment or `.env` file.
 - For debugging, run:
 ```bash

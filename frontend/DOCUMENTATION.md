@@ -33,6 +33,21 @@ The HLP (Housing, Land and Property) Referral Case Management System is a compre
 
 ---
 
+## Release Notes (Most recent changes)
+
+- Date: 2025-12-06 — Minor release
+- Resolve Now (UI): Added a `Resolve Now` button and flow in the Case Details UI which guarantees a `resolve_comment` is captured and persisted before the case status updates to a resolved state (Completed/Closed). The Save button will also validate that a resolve comment is present when users change a case to a resolved state.
+- Import robustness: The backend import endpoint (`/api/import`) now provides better validation and error messages for header and row parsing. The frontend gracefully falls back to per-row creation or local-only import if the server import fails. Local fallback rows are marked with `created_at` timestamps so `Age (days)` metrics display correctly for all imports.
+- Import dedup: Duplicate detection is performed both server-side (using JSON path queries when available) and client-side. For DB dialects that lack JSON path support (SQLite development setups), the server falls back to scanning existing `raw` fields in Python to detect duplicates. Import jobs also store per-row status (pending, skipped, success, failed).
+- Data & Age/SLA: The Cases list shows `Age (days)` and an SLA indicator based on the submission date / created_at. Local imports now include `created_at`, and backend updates set `updated_at` and `completed_at` (where applicable).
+- Delete-case fixes: Deleting a case now nullifies import rows and deletes comments before deleting the case, preventing database FK constraint errors. Permission normalization (`role` vs `roles` string/list handling) was fixed to avoid 403 unauthorized errors for valid users.
+- Case detail UI changes: `note`-typed fields are hidden in case detail cards, the Comments panel was moved up for visibility, and the 'Submission Date' column showing on the Cases list is now `Last Update` (updated_at-based).
+- Search: Beneficiary search now uses canonical keys (`beneficiary_name`, `beneficiary_family_name`, etc.) with backward-compatible fallbacks for legacy or prefixed keys (e.g., `benef_*`).
+- Favicon/title/footer: Planned changes were discussed; favicon and page title were not updated in this release and remain pending; the footer update is also pending.
+
+These are primarily functional and UX improvements; if you need me to split this into separate release notes by subsystem (backend/frontend), I can do that as a follow-up.
+
+
 ## Features
 
 ### 🔐 Authentication & Authorization
@@ -219,6 +234,19 @@ How to test:
 1. Start the frontend dev server: `npm run dev`.
 2. Log in as admin and navigate to Data and User Management pages.
 3. Resize the developer tools or browser window to a narrow width and verify the table displays a horizontal scrollbar and the panel heading remains horizontally oriented.
+
+Additional testing for new UX/API changes:
+4. Resolve Now (UI):
+  - Set a case's status to `Completed` or `Closed` using the Case Details page.
+  - Attempt to click `Save` without a comment — the UI should show an error explaining a resolve comment is required.
+  - Add a resolve comment and either click `Resolve Now` or Save; verify the server now shows a `resolve_comment` attached to the update and a comment appears in the case timeline.
+5. Import / Import job behavior:
+  - Try uploading a KoboToolbox XLSX that includes existing `case_id`/`caseNumber` values; duplicates should be skipped and marked as `skipped` in the import job results.
+  - Temporarily turn off the backend import endpoint or simulate a server failure; the frontend should fall back to per-row creates (or local-only import) and mark created rows with `created_at` so Age (days) displays correctly.
+6. Deletion and Permissions:
+  - Delete a case from the Data page as an admin; confirm the case is removed and comments/import rows are cleaned up server-side.
+  - Try deleting a case with a non-admin user and note correct permission behavior (403 if unauthorized).
+
 
 If the problem persists: capture a screenshot and your browser name/version to help diagnose further.
 
