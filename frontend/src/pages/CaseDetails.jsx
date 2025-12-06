@@ -234,7 +234,8 @@ const CaseDetails = () => {
         return;
       }
       // If resolving and we have a comment text, add it before changing status
-      if (statusWillBeResolved && commentText.trim()) {
+      const resolveCommentLocal = commentText.trim();
+      if (statusWillBeResolved && resolveCommentLocal) {
         try {
           if (caseRecord.id) {
             await apiAddComment(caseRecord.id, commentText.trim());
@@ -262,11 +263,16 @@ const CaseDetails = () => {
       if (caseRecord.id) {
         // Persist status change as well as assignment
         try {
-          await updateCaseApi(caseRecord.id, {
-            title: caseRecord.title,
-            description: caseRecord.raw?.description || caseRecord.notes || '',
-            status: statusValue,
-          });
+            const payload = {
+              title: caseRecord.title,
+              description: caseRecord.raw?.description || caseRecord.notes || '',
+              status: statusValue,
+            };
+            // If resolving, include resolve_comment to satisfy backend validation
+            if (statusWillBeResolved && resolveCommentLocal) {
+              payload.resolve_comment = resolveCommentLocal;
+            }
+            await updateCaseApi(caseRecord.id, payload);
         } catch (err) {
           console.warn('Failed to persist case update to backend', err);
         }

@@ -44,11 +44,12 @@ const Search = () => {
 
       return cases.filter((c) => {
         const fields = c.formFields || {};
-        const name = fields.benef_name?.toLowerCase() || '';
-        const lastName = fields.benef_last_name?.toLowerCase() || '';
-        const father = fields.benef_father?.toLowerCase() || '';
-        const mother = fields.benef_mother?.toLowerCase() || '';
-        const birthDate = fields.benef_birth_date || '';
+        // Use canonical keys if available; fall back to legacy benef_* keys for backward compatibility
+        const name = (fields.beneficiary_name || fields.benef_name)?.toLowerCase() || '';
+        const lastName = (fields.beneficiary_last_name || fields.benef_last_name)?.toLowerCase() || '';
+        const father = (fields.beneficiary_father || fields.benef_father)?.toLowerCase() || '';
+        const mother = (fields.beneficiary_mother || fields.benef_mother)?.toLowerCase() || '';
+        const birthDate = fields.beneficiary_birth_date || fields.benef_birth_date || '';
 
         let matches = true;
         if (beneficiaryName && !name.includes(beneficiaryName.toLowerCase().trim())) matches = false;
@@ -81,8 +82,8 @@ const Search = () => {
       width: 200,
       render: (_, record) => {
         const fields = record.formFields || {};
-        const name = fields.benef_name || '';
-        const lastName = fields.benef_last_name || '';
+        const name = fields.beneficiary_name || fields.benef_name || '';
+        const lastName = fields.beneficiary_last_name || fields.benef_last_name || '';
         return `${name} ${lastName}`.trim() || 'N/A';
       },
     },

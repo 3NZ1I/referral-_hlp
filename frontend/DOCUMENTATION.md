@@ -57,9 +57,11 @@ The HLP (Housing, Land and Property) Referral Case Management System is a compre
 
 ### 📥 Data Import
 - **XLSX Import**: Import data from Excel/KoboToolbox exports
+  - **Import Robustness**: The backend `/api/import` endpoint provides better error messages for header and row parsing failures, and the frontend now gracefully falls back to per-row creation or a local-only import if a server import fails. The frontend will mark local fallback rows with `created_at` timestamps so the `Age (days)` metric is still computed in list views.
 ### UI Updates (Notes & Comments)
 - **Notes field handling**: All `note`-typed fields are now hidden from the Case Detail card views (they are still displayed as the 'Notes' column in case lists). This reduces verbosity in detail cards while keeping the list title and export-friendly columns intact. Note that `note` type fields remain available in the `raw` payload for admin users.
 - **Comments placement**: The Comments panel was moved from the bottom of the case detail page to just under the primary metadata (Case Number / Status / Assigned Staff / Category grid). This makes comments easier to find when reviewing case details.
+  - **Resolve comment behavior**: When a user changes a case's status to a resolved state (`Completed` or `Closed`), the UI ensures a resolve comment is created and sent to the server as `resolve_comment` in the case update request so backend validation passes and a persistent comment is recorded for the resolution action.
 
 ### Sensitive Fields & Admin-only Visibility
 - **Admin-only sensitive fields**: Fields that may contain PII such as `id_card_nu`, `family_card_nu`, and `passport_nu_001` are **now hidden from non-admin users** in API responses and UI rendering. These fields remain present in the data store and are visible in the UI for admin users only. This change affects `GET /cases`, `GET /cases/{id}`, and `GET /import/jobs/{job_id}`.

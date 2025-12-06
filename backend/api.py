@@ -104,11 +104,32 @@ async def ensure_cors_headers(request: Request, call_next):
 MAINTENANCE_SCHEDULES = []
 _maintenance_seq = 1
 
-def is_admin_user(user):
+def _normalize_roles(user):
+    """Return a normalized list of role strings for the given user token.
+    The token may supply `role` as a string, a list `roles`, or not at all.
+    """
     if not isinstance(user, dict):
+        return []
+    raw = user.get('roles') or user.get('role') or user.get('roles')
+    if not raw:
+        return []
+    if isinstance(raw, str):
+        return [raw.strip().lower()]
+    if isinstance(raw, (list, tuple)):
+        return [str(r).strip().lower() for r in raw if r is not None]
+    # otherwise, attempt to coerce to string
+    return [str(raw).strip().lower()]
+
+
+def is_admin_user(user):
+    roles = _normalize_roles(user)
+    return 'admin' in roles
+
+def has_role(user, role_name):
+    if not role_name:
         return False
-    role = user.get('role') or user.get('roles') or user.get('role')
-    return role == 'admin' or (role and role.lower() == 'admin')
+    roles = _normalize_roles(user)
+    return role_name.strip().lower() in roles
 
 
 # Lightweight health endpoint for readiness checks
@@ -294,10 +315,10 @@ def delete_case(case_id: int, db: Session = Depends(get_db), user=Depends(requir
         raise HTTPException(status_code=404, detail="Case not found")
     print(f'DEBUG: Attempt delete case {case_id} by user {user}')
     logging.info('Attempt delete case %s by user %s', case_id, user)
-    logging.info('is_admin_user=%s, role=%s', is_admin_user(user), (user.get('role') if isinstance(user, dict) else None))
-    # permission check: only admin or owner? For now require auth and allow admin/internal
-    # Only allow admin or internal role to delete cases
-    if not (is_admin_user(user) or (isinstance(user, dict) and (user.get('role') or '').lower() == 'internal')):
+    roles = _normalize_roles(user)
+    logging.info('is_admin_user=%s, roles=%s', is_admin_user(user), roles)
+    # permission check: only admin or internal
+    if not (is_admin_user(user) or has_role(user, 'internal')):
         raise HTTPException(status_code=403, detail='Insufficient permissions to delete case')
     try:
         # Delete comments related to this case to avoid FK constraint issues
@@ -467,7 +488,19 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
         logging.exception('Unhandled exception while parsing uploaded file: %s', e)
         raise HTTPException(status_code=400, detail=f"Invalid XLSX file: {e}")
     ws = wb.active
-    headers = [cell.value for cell in ws[1]]
+    try:
+        header_row = ws[1]
+        headers = [cell.value for cell in header_row]
+        if not any(headers):
+            raise HTTPException(status_code=400, detail='XLSX header row is empty - no column names were detected')
+    except IndexError:
+        # No rows in sheet
+        raise HTTPException(status_code=400, detail='XLSX file contains no rows')
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.exception('Failed to parse header row in XLSX file: %s', e)
+        raise HTTPException(status_code=400, detail=f'Unable to parse header row: {e}')
     imported = 0
     created_ids = []
     failed_rows = []
@@ -511,83 +544,97 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
             return [sanitize_obj(v) for v in obj]
         return sanitize_value(obj)
 
-    for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
-        case_data = dict(zip(headers, row))
-        # Sanitize raw data to be JSON stored safely
-        case_data = sanitize_obj(case_data)
-        # Map XLSX columns to Case fields (customize as needed)
-        # Store the raw row data to allow frontend mapping and backfill
-        title = case_data.get('Title') or case_data.get('title') or case_data.get('case_id') or 'No Title'
-        description = case_data.get('Description') or case_data.get('description') or ''
-        # Enforce system default status 'Pending' for imported cases
-        status = 'Pending'
-        # Store uploader info in raw so frontend can display who uploaded the record when available
-        if isinstance(case_data, dict):
-            case_data = dict(case_data)
-        if uploader_user and isinstance(case_data, dict):
-            # Avoid overwriting a raw uploaded_by if already present
-            case_data.setdefault('uploaded_by', uploader_user.name)
-        # create an import row record for tracking
-        import_row = ImportRow(job_id=job.id, row_number=row_idx, raw=case_data, status='pending')
-        db.add(import_row)
-        db.flush()
-
-        # Deduplicate: if raw contains an external identifier (case_id/_id/_uuid/caseNumber) that matches an existing case, skip
-        dup_key = None
-        for alias_key in ('case_id', '_id', '_uuid', 'caseNumber'):
-            if alias_key in case_data and case_data.get(alias_key):
-                dup_key = str(case_data.get(alias_key))
-                break
-        if dup_key:
-            existing_case = db.query(Case).filter(
-                or_(
-                    Case.raw['case_id'].astext == dup_key,
-                    Case.raw['_id'].astext == dup_key,
-                    Case.raw['_uuid'].astext == dup_key,
-                    Case.raw['caseNumber'].astext == dup_key,
-                )
-            ).first()
-            if existing_case:
-                import_row.case_id = existing_case.id
-                import_row.status = 'skipped'
-                db.add(import_row)
-                db.commit()
-                continue
-
-        case = Case(
-            title=title,
-            description=description,
-            status=status,
-            raw=case_data,
-        )
-        # Do not assign uploader by default; keep system-unassigned when imported
-        try:
-            db.add(case)
-            db.commit()
-            db.refresh(case)
-            imported += 1
-            created_ids.append(case.id)
-            # update the import row
-            import_row.case_id = case.id
-            import_row.status = 'success'
+    # Wrap overall import loop with robust error handling to avoid uncaught exceptions -> 500
+    try:
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            case_data = dict(zip(headers, row))
+            # Sanitize raw data to be JSON stored safely
+            case_data = sanitize_obj(case_data)
+            # Map XLSX columns to Case fields (customize as needed)
+            # Store the raw row data to allow frontend mapping and backfill
+            title = case_data.get('Title') or case_data.get('title') or case_data.get('case_id') or 'No Title'
+            description = case_data.get('Description') or case_data.get('description') or ''
+            # Enforce system default status 'Pending' for imported cases
+            status = 'Pending'
+            # Store uploader info in raw so frontend can display who uploaded the record when available
+            if isinstance(case_data, dict):
+                case_data = dict(case_data)
+            if uploader_user and isinstance(case_data, dict):
+                # Avoid overwriting a raw uploaded_by if already present
+                case_data.setdefault('uploaded_by', uploader_user.name)
+            # create an import row record for tracking
+            import_row = ImportRow(job_id=job.id, row_number=row_idx, raw=case_data, status='pending')
             db.add(import_row)
-            db.commit()
-        except Exception as e:
-            logging.exception('Failed to import row: %s', e)
-            db.rollback()
-            # Update import_row to failed
+            db.flush()
+            # Deduplicate: if raw contains an external identifier (case_id/_id/_uuid/caseNumber) that matches an existing case, skip
+            dup_key = None
+            for alias_key in ('case_id', '_id', '_uuid', 'caseNumber'):
+                if alias_key in case_data and case_data.get(alias_key):
+                    dup_key = str(case_data.get(alias_key))
+                    break
+            if dup_key:
+                existing_case = db.query(Case).filter(
+                    or_(
+                        Case.raw['case_id'].astext == dup_key,
+                        Case.raw['_id'].astext == dup_key,
+                        Case.raw['_uuid'].astext == dup_key,
+                        Case.raw['caseNumber'].astext == dup_key,
+                    )
+                ).first()
+                if existing_case:
+                    import_row.case_id = existing_case.id
+                    import_row.status = 'skipped'
+                    db.add(import_row)
+                    db.commit()
+                    continue
+            case = Case(
+                title=title,
+                description=description,
+                status=status,
+                raw=case_data,
+            )
+            # Do not assign uploader by default; keep system-unassigned when imported
             try:
-                import_row.error = str(e)
-                import_row.status = 'failed'
+                db.add(case)
+                db.commit()
+                db.refresh(case)
+                imported += 1
+                created_ids.append(case.id)
+                # update the import row
+                import_row.case_id = case.id
+                import_row.status = 'success'
                 db.add(import_row)
                 db.commit()
-            except Exception:
+            except Exception as e:
+                logging.exception('Failed to import row: %s', e)
                 db.rollback()
-            # record the failure so the client can show and reattempt
-            failed_rows.append({'row': row_idx, 'error': str(e)})
-            # skip faulty row and continue importing
-            continue
+                # Update import_row to failed (best-effort)
+                try:
+                    import_row.error = str(e)
+                    import_row.status = 'failed'
+                    db.add(import_row)
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                # record the failure so the client can show and reattempt
+                failed_rows.append({'row': row_idx, 'error': str(e)})
+                # skip faulty row and continue importing
+                continue
     # db.commit() already performed per-row
+    except HTTPException:
+        # re-raise HTTPExceptions produced deliberately above
+        raise
+    except Exception as e:
+        # Any unexpected error should be logged with job id if available
+        logging.exception('Unhandled exception while processing uploaded file (import job id=%s): %s', getattr(job, 'id', 'N/A'), e)
+        # Attempt to set job status / rows to failed for transparency
+        try:
+            job.status = 'failed'
+            db.add(job)
+            db.commit()
+        except Exception:
+            db.rollback()
+        raise HTTPException(status_code=500, detail=f'Import failed due to server error: {e}')
     logging.info('Import summary: imported=%s created=%s failed=%s', imported, len(created_ids), len(failed_rows))
     return {"imported": imported, "created_ids": created_ids, "failed_rows": failed_rows, 'job_id': job.id}
 

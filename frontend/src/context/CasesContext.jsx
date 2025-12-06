@@ -776,13 +776,16 @@ export const CasesProvider = ({ children }) => {
         }
 
         // Fallback to in-memory import only for local development or unauthenticated sessions
-        setCases((prev) => [...dedupedRows, ...prev]);
+        // Ensure local fallback rows include a created_at timestamp so Age/SLA calculations work
+        const nowIso = new Date().toISOString();
+        const dedupedWithTimestamps = dedupedRows.map((r) => ({ ...r, created_at: r.created_at || nowIso }));
+        setCases((prev) => [...dedupedWithTimestamps, ...prev]);
         if (!currentUser) {
           message.info('Imported to local workspace only. Sign in to persist to the server.');
         } else {
           message.info('Imported locally (server persistence failed); check network/auth).');
         }
-        const datasetRecord = {
+          const datasetRecord = {
           key: datasetKey,
           recordId: `UPL-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`,
           fileName: file.name,
@@ -790,7 +793,7 @@ export const CasesProvider = ({ children }) => {
           uploadedBy: currentUser ? (currentUser.name || currentUser.username) : 'You',
           uploadedOn: new Date().toLocaleDateString(),
           status: 'Validated',
-          rows: dedupedRows,
+            rows: dedupedWithTimestamps,
           serverImportSummary: importResult || null,
           failedRows: perRowFailedRows || [],
         };
