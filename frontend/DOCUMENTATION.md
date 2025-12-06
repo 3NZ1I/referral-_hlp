@@ -754,7 +754,113 @@ server {
         try_files $uri $uri/ /index.html;
     }
 }
-```
+
+    ## n8n Integration (Kobo → Referral System) — Minimal Guide
+
+    This section contains a compact, ready-to-use n8n workflow and code snippets to forward KoboToolbox submissions to the Referral System at https://api.bessar.work/api. It uses `_uuid` as the dedupe key and includes steps to add a duplicate comment or create a case.
+
+    Prerequisites:
+    - An n8n instance with access to the internet (able to reach https://api.bessar.work).
+    - A service account (internal role) for n8n. Store the JWT token in a credential called `ReferralAPIToken`.
+    - Kobo webhook configured to call your n8n webhook path (e.g., /webhook/kobo-submission).
+
+    Nodes (minimal) with code and config:
+
+    1) Webhook (Trigger)
+    - Type: Webhook
+    - Name: Kobo Webhook
+    - HTTP Method: POST
+    - Path: `/webhook/kobo-submission`
+
+    2) MapKoboToCase (Function)
+    Code (paste as-is into the Function node):
+    ```javascript
+    const firstOf = (...vals) => { for (const v of vals) if (v !== undefined && v !== null && String(v).trim() !== '') return v; return null; };
+    const s = items[0].json || {};
+    const raw = s;
+    const _uuid = firstOf(s._uuid, s.instanceID, s._id);
+    const caseNumber = firstOf(s.case_id, s.caseNumber);
+    const beneficiary_name = firstOf(s.beneficiary_name, s.name, s.full_name);
+    const beneficiary_family_name = firstOf(s.beneficiary_family_name, s.last_name);
+    const title = firstOf(s.Title, beneficiary_name ? `${beneficiary_name}${beneficiary_family_name ? ' ' + beneficiary_family_name : ''}` : null, `Kobo ${firstOf(caseNumber, _uuid, 'submission')}`);
+    const description = firstOf(s.description, s.summary, s.notes, '') || '';
+    const payload = { title: String(title || `Kobo ${_uuid || caseNumber || 'unknown'}`), description: String(description || ''), raw };
+    return [{ json: { payload, dedupe:{ _uuid, caseNumber, beneficiary_name, beneficiary_family_name }, _uuid, caseNumber, raw } }];
+    ```
+
+    3) GET Cases (HTTP Request)
+    - Type: HTTP Request
+    - Name: GET Cases
+    - Method: GET
+    - URL: `https://api.bessar.work/api/cases?limit=200`
+    - Credentials: ReferralAPIToken
+
+    4) FilterDuplicates (Function)
+    Code:
+    ```javascript
+    const list = Array.isArray(items[0].json) ? items[0].json : (items[0].json.data || items[0].json.items || items[0].json || []);
+    const map = $items("MapKoboToCase")[0].json;
+    const targetUuid = map.dedupe._uuid;
+    let found = null;
+    if (Array.isArray(list)) {
+      found = list.find(c => c.raw && (String(c.raw._uuid) === String(targetUuid) || String(c.raw.instanceID) === String(targetUuid) || String(c.raw._id) === String(targetUuid)));
+    }
+    return [{ json: { duplicateFound: Boolean(found), foundCase: found || null, mappedPayload: map.payload, dedupe: map.dedupe, originalRaw: map.raw } }];
+    ```
+
+    5) If node (Check Duplicate) — Branches: true/false
+    - Condition: `{{$json["duplicateFound"]}} === true`
+
+    6A) True (Duplicate): POST Comment (optional)
+    - Type: HTTP Request
+    - Name: POST Comment (duplicate)
+    - Method: POST
+    - URL: `https://api.bessar.work/api/cases/{{ $json.foundCase.id }}/comments`
+    - Credentials: ReferralAPIToken
+    - Body (Raw JSON):
+    ```json
+    {
+      "content": "Duplicate Kobo submission — instance: {{$json.originalRaw.instanceID || $json.dedupe._uuid}} — not created."
+    }
+    ```
+    - Respond to Webhook: `{ "success": true, "message": "Duplicate - not created", "case_id": {{ $json.foundCase.id }} }`
+
+    6B) False (Not Duplicate): POST Create Case
+    - Type: HTTP Request
+    - Name: POST Create Case
+    - Method: POST
+    - URL: `https://api.bessar.work/api/cases`
+    - Credentials: ReferralAPIToken
+    - Body Type: Raw JSON
+    - Body (Use expression): `{{ $json.mappedPayload }}` or explicitly:
+    ```json
+    {
+      "title": "{{$json.mappedPayload.title}}",
+      "description": "{{$json.mappedPayload.description}}",
+      "raw": {{$json.mappedPayload.raw}}
+    }
+    ```
+    - Respond to Webhook: `{ "success": true, "message": "Case created", "case_id": "{{ $json.id }}" }`
+
+    Optional: Add nodes for attachment download & upload or to call `/api/import` for batch imports.
+
+    Credentials setup (n8n):
+    - Create new credential: `ReferralAPIToken` (HTTP Header or API Key)
+    - If HTTP Header: set `Authorization` header to `Bearer <JWT_TOKEN>`
+    - If API Key: add `Authorization: Bearer {{$credentials.ReferralAPIToken.apiKey}}` to node headers
+
+    Test via curl:
+    ```bash
+    curl -X POST https://<n8n-hook>/webhook/kobo-submission -H "Content-Type: application/json" -d '{"_uuid":"test-1","beneficiary_name":"Test"}'
+    ```
+
+    Notes:
+    - Use `_uuid` as the primary dedupe key and keep `raw` intact for server auditing.
+    - If your backend supports a `raw._uuid` filter param, you can replace `limit=200` with a filtered GET to reduce data transfer.
+    - For production, protect the webhook (secret param or signature);
+    - For high-volume imports, prefer `POST /api/import` and let the server handle dedupe and `ImportJob` tracking.
+
+
 
 **Using Apache:**
 1. Build: `npm run build`
