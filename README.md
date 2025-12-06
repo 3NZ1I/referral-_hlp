@@ -211,7 +211,6 @@ docker compose run --rm --entrypoint sh backend -c "cd /app/backend && python -m
 ```
 
 ### Notable fixes & changes (recent)
-- Categories:
   - The 'Category' shown in case lists now uses these fields (priority order):
     1. `law_followup5` — External legal guidance
     2. `law_followup4` — External legal referral
@@ -219,7 +218,22 @@ docker compose run --rm --entrypoint sh backend -c "cd /app/backend && python -m
     4. `law_followup1` — Type of legal case
     5. `eng_followup1` — Engineering referral type
   - Server-side cases are now backfilled in the UI to display categories using the above priority order.
-- Import errors & logging:
+### Backfill migration for `raw.body` wrapper
+If you have existing records where the form content was nested under `raw.body`, use the included backfill script to promote commonly-used fields to top-level `raw` keys so the UI can compute Age, Category and Family Roster consistently.
+
+Run the migration (dry-run first):
+```powershell
+Set-Location -Path "C:\Users\Bessar Farac\OneDrive\Documents\HLP\ref_system"
+$env:DATABASE_URL = 'postgresql+psycopg2://user:password@localhost/referral_db'  # or sqlite:///dev.db for dev
+python -m backend.scripts.migration_promote_raw --apply
+```
+
+To revert the migration (uses `_body_backup` created by the script):
+```powershell
+python -m backend.scripts.migration_promote_raw --rollback
+```
+
+The script promotes fields including known timestamp aliases, roster aliases, `formFields`, `caseNumber`/`case_id`/`_id` and category aliases. It stores the original nested body under `_body_backup` so rollback is possible.
   - The import flow has improved error handling and more detailed console logs; when a server import fails, the UI provides a less alarming message and attempts per-row fallback automatically.
   - Fixed a build error where `CaseList.jsx` was missing the component declaration `const CaseList = () => {` causing a Vite/Esbuild production build failure — updated the component structure and validated the build.
   
