@@ -788,11 +788,28 @@ export const CasesProvider = ({ children }) => {
       return;
     }
     
-    const existingCaseNumbers = new Set((cases || []).map((entry) => normalizeCaseNumberValue(entry.caseNumber)).filter(Boolean));
-    const existingRawIds = new Set((cases || []).map((entry) => {
-      const raw = entry.raw || {};
-      return (raw._id || raw._uuid || raw.case_id || raw.caseNumber || raw._submission_time || raw.submissiontime);
-    }).filter(Boolean));
+    // Build a comprehensive set of existing identifiers for deduping (case number, raw ids, formFields case id)
+    const existingIdentifiers = new Set();
+    const existingRawIds = new Set();
+    (cases || []).forEach((entry) => {
+      try {
+        // Add caseNumber normalized
+        const cn = normalizeCaseNumberValue(entry.caseNumber || (entry.formFields && entry.formFields.case_id) || '');
+        if (cn) existingIdentifiers.add(cn);
+        // Add known raw-based IDs and canonical case id fields
+        const raw = entry.raw || {};
+        const rawIds = [raw._id, raw._uuid, raw.case_id, raw.caseNumber, raw._submission_time, raw.submissiontime, raw.case_id_store, raw.case_id_store];
+        rawIds.forEach((r) => {
+          if (r !== undefined && r !== null && r !== '') {
+            const nr = normalizeCaseNumberValue(r);
+            existingIdentifiers.add(nr);
+            existingRawIds.add(nr);
+          }
+        });
+      } catch (e) {
+        // ignore
+      }
+    });
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -961,18 +978,20 @@ export const CasesProvider = ({ children }) => {
         const dedupedRows = [];
         let skippedDuplicates = 0;
         normalizedRows.forEach((row) => {
-          const normalizedCaseNumber = normalizeCaseNumberValue(row.caseNumber || row.formFields?.case_id || '');
-          const rawId = row.raw && (row.raw._id || row.raw._uuid || row.raw.case_id || row.raw.caseNumber || row.raw._submission_time || row.raw.submissiontime);
-          if (normalizedCaseNumber && existingCaseNumbers.has(normalizedCaseNumber)) {
+            const normalizedCaseNumber = normalizeCaseNumberValue(row.caseNumber || row.formFields?.case_id || '');
+            const candidateRawIds = (row.raw && [row.raw._id, row.raw._uuid, row.raw.case_id, row.raw.caseNumber, row.raw._submission_time, row.raw.submissiontime]) || [];
+            // If any of the row identifiers match existing identifiers, skip as duplicate
+            if (normalizedCaseNumber && existingIdentifiers.has(normalizedCaseNumber)) {
             skippedDuplicates += 1;
             return;
           }
-          if (rawId && existingRawIds.has(rawId)) {
+            const matchedRaw = candidateRawIds.some((r) => r && existingRawIds.has(normalizeCaseNumberValue(r)));
+            if (matchedRaw) {
             skippedDuplicates += 1;
             return;
           }
-          if (normalizedCaseNumber) existingCaseNumbers.add(normalizedCaseNumber);
-          if (rawId) existingRawIds.add(rawId);
+            if (normalizedCaseNumber) existingIdentifiers.add(normalizedCaseNumber);
+            candidateRawIds.forEach((r) => { if (r) existingRawIds.add(normalizeCaseNumberValue(r)); });
           dedupedRows.push(row);
         });
 
