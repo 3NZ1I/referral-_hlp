@@ -1,0 +1,351 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kobo",
+        "options": {
+          "responseData": "Response Body: {\"status\":\"received\"}"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        144
+      ],
+      "id": "a924f71f-06dc-4105-9aac-988396717128",
+      "name": "Webhook",
+      "webhookId": "36ad311a-3392-41e4-b136-e366659e46eb"
+    },
+    {
+      "parameters": {
+        "jsCode": "const firstOf = (...vals) => { for (const v of vals) if (v !== undefined && v !== null && String(v).trim() !== '') return v; return null; };\nconst s = items[0].json || {};\nconst webhook = (s && s.body && typeof s.body === 'object') ? s.body : s;\nconst raw = webhook;\nconst _uuid = firstOf(webhook._uuid, webhook.instanceID, webhook._id);\nconst caseNumber = firstOf(webhook.case_number, webhook.caseNumber, webhook.case_id, webhook._uuid);\nconst beneficiary_name = firstOf(webhook.beneficiary_name, webhook.name, webhook.full_name, (webhook.body && webhook.body.beneficiary_name));\nconst beneficiary_family_name = firstOf(webhook.beneficiary_family_name, webhook.last_name, (webhook.body && webhook.body.last_name));\nconst title = firstOf(webhook.Title, beneficiary_name ? `${beneficiary_name}${beneficiary_family_name ? ' ' + beneficiary_family_name : ''}` : null, `Kobo ${firstOf(caseNumber, _uuid, 'submission')}`);\nconst description = firstOf(webhook.description, webhook.summary, webhook.notes, (webhook.body && webhook.body.description)) || '';\nconst payload = { title: String(title || `Kobo ${_uuid || caseNumber || 'unknown'}`), description: String(description || ''), raw };\nreturn [{ json: { payload, dedupe:{ _uuid, caseNumber, beneficiary_name, beneficiary_family_name }, _uuid, caseNumber, raw } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        144
+      ],
+      "id": "a155967c-64d9-432b-ab11-3b873ff81031",
+      "name": "MapKoboToCase"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MoveBodyIds: extract nested raw.body.case_id or caseNumber into raw.kobo_case_id/raw.kobo_caseNumber to ensure the server picks the server-side generated case number; keep object structure intact.\nconst p = items[0].json || $json || {};\nconst raw = p.raw || {};\nif (raw && raw.body && typeof raw.body === 'object') {\n  if (raw.body.case_id !== undefined && raw.kobo_case_id === undefined) { raw.kobo_case_id = raw.body.case_id; delete raw.body.case_id; }\n  if (raw.body.caseNumber !== undefined && raw.kobo_caseNumber === undefined) { raw.kobo_caseNumber = raw.body.caseNumber; delete raw.body.caseNumber; }\n}\nreturn [{ json: { ...p, raw } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        144
+      ],
+      "id": "9f0a3b59-2f7a-4301-9b3a-6b2c9e8eabcd",
+      "name": "MoveBodyIds"
+    },
+    {
+      "parameters": {
+        "url": "https://api.bessar.work/api/cases?limit=200",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        672,
+        144
+      ],
+      "id": "f4446145-3405-49df-a36e-bd60e5a388e5",
+      "name": "GET Cases",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "LCGX0fZ5ttREJHXo",
+          "name": "Unnamed credential"
+        },
+        "httpHeaderAuth": {
+          "id": "6sEhPnteBZzvalE6",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const list = Array.isArray(items[0].json) ? items[0].json : (items[0].json.data || items[0].json.items || items[0].json || []);\nconst map = $items(\"MapKoboToCase\")[0].json || $items(\"CleanPayload\")[0].json;\nconst targetUuid = map.dedupe._uuid || (map.raw && map.raw._uuid);\nconst targetKoboId = map.raw && (map.raw.kobo_case_id || map.raw.case_id || map.raw.kobo_caseNumber || map.raw.caseNumber || map.raw._id);\nlet found = null;\n\nif (Array.isArray(list)) {\n  found = list.find(c => {\n    if (!c.raw) return false;\n    const r = c.raw || {};\n    // Check by _uuid first\n    if (targetUuid && (String(r._uuid) === String(targetUuid) || String(r.instanceID) === String(targetUuid) || String(r._id) === String(targetUuid))) return true;\n    // Check by stored kobo id\n    if (targetKoboId && (String(r.kobo_case_id) === String(targetKoboId) || String(r.kobo_caseNumber) === String(targetKoboId))) return true;\n    return false;\n  });\n}\n\nreturn [{ json: { duplicateFound: Boolean(found), foundCase: found || null, mappedPayload: map.payload || map } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        144
+      ],
+      "id": "0a2bc180-7960-4e0b-86df-73403d0c8475",
+      "name": "FilterDuplicates"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -176
+      ],
+      "id": "5017e04a-2e13-4ab9-ac03-3ff31e26266e",
+      "name": "Check Duplicate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "da6ef436-5d88-43f8-825a-3aefc28e3c52",
+              "leftValue": "{{$json[\"duplicateFound\"]}}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        144
+      ],
+      "id": "156e1160-7c40-483c-bdc0-61fd07c2044d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.bessar.work/api/cases/{{ $json.foundCase.id }}/comments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"content\": \"Duplicate Kobo submission — instance: {{ $json.mappedPayload.raw.instanceID || $json.mappedPayload._uuid || $json.dedupe._uuid }} — dropped by automation.\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1344,
+        48
+      ],
+      "id": "5ce5bbb6-c2c4-4072-9ac5-e878be1a07ea",
+      "name": "POST Comment (duplicate)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "6sEhPnteBZzvalE6",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "=POST",
+        "url": "=https://api.bessar.work/api/cases",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $node[\"MoveBodyIds\"].json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1344,
+        256
+      ],
+      "id": "428f2709-b7cb-45e8-9623-78387fc3d1db",
+      "name": "POST Create Case",
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "6sEhPnteBZzvalE6",
+          "name": "Header Auth account"
+        },
+        "httpBasicAuth": {
+          "id": "PtmUniHsuYSHUsec",
+          "name": "Unnamed credential 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"success\": true, \"message\": \"Case created\", \"case_id\": \"{{ $json.id || $json[\\\"created\\\"]?.id }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        688
+      ],
+      "id": "59339e80-caf6-439d-b493-929704f02031",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Remove any Kobo case id/number fields so server will generate the real case id\nconst payload = $json.mappedPayload || $items(\"MapKoboToCase\")[0].json.payload;\nconst cleanedRaw = payload.raw ? { ...payload.raw } : {};\ndelete cleanedRaw.case_id;\ndelete cleanedRaw.caseNumber;\ndelete cleanedRaw._id;      // optional\n// keep _uuid if you want dedupe to work\nreturn [{ json: { title: payload.title, description: payload.description, raw: cleanedRaw } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        464
+      ],
+      "id": "6484a6f7-18d6-4b3c-a18b-da2fcb433c2c",
+      "name": "RemoveCaseIds"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CleanPayload: compute title from case_number, normalize raw, and ensure no top-level caseNumber\nconst map = $items(\"MapKoboToCase\")[0].json || $json.mappedPayload || $json;\nconst p = map.payload || map.mappedPayload || map;\n\n// Normalize raw (ensure object)\nlet raw = p.raw;\nif (typeof raw === 'string') {\n  try { raw = JSON.parse(raw); } catch(e) { raw = { 'body': p.raw }; }\n}\nraw = (raw && typeof raw === 'object') ? { ...raw } : {};\n\n// Parse raw.body if string\nif (raw.body && typeof raw.body === 'string') {\n  try { raw.body = JSON.parse(raw.body); } catch(e) {}\n}\n\n// Build case number from available locations (body case_number included)\nconst caseNumber = (\n  raw.body && raw.body.case_number ? raw.body.case_number :\n  raw.case_number ? raw.case_number :\n  raw.caseNumber ? raw.caseNumber :\n  p.caseNumber || map.caseNumber || p.case_id || raw.case_id || map._uuid || null\n);\n\n// Title: use caseNumber if present, else fallback to beneficiary or uuid\nlet title = caseNumber ? String(caseNumber) : (p.title && p.title !== 'Kobo Submission' ? p.title : (raw.beneficiary_name || raw.name || `Kobo ${map._uuid || Math.random().toString(36).slice(2,8)}`));\n\n// Move Kobo fields out of top level to preserve them in raw.kobo_* (avoid dedupe interference)\nif (raw.case_id !== undefined && raw.kobo_case_id === undefined) {\n  raw.kobo_case_id = raw.case_id;\n  delete raw.case_id;\n}\nif (raw.caseNumber !== undefined && raw.kobo_caseNumber === undefined) {\n  raw.kobo_caseNumber = raw.caseNumber;\n  delete raw.caseNumber;\n}\nif (raw._id !== undefined && raw.kobo__id === undefined) {\n  raw.kobo__id = raw._id;\n  delete raw._id;\n}\n\n// Normalize empty email to null (prevents EmailStr server validation)\nif (raw.assigned_to && raw.assigned_to.email !== undefined && String(raw.assigned_to.email).trim()==='') {\n  raw.assigned_to.email = null;\n}\n\n// Any other fields to be removed/sanitized? e.g. set raw.internalLogs = null\n// raw.internal = undefined;\n\n// Return safe payload\nreturn [{ json: { title: String(title || ''), description: p.description || \"__مسؤل الأستبيان__\", raw } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        144
+      ],
+      "id": "310c5bb3-e0e0-45b1-9e4c-5cf5ad193039",
+      "name": "CleanPayload"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "MapKoboToCase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MapKoboToCase": {
+      "main": [
+        [
+          {
+            "node": "CleanPayload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Cases": {
+      "main": [
+        [
+          {
+            "node": "FilterDuplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FilterDuplicates": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate": {
+      "main": [
+        []
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "POST Comment (duplicate)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "POST Create Case",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST Comment (duplicate)": {
+      "main": [
+        []
+      ]
+    },
+    "POST Create Case": {
+      "main": [
+        []
+      ]
+    },
+    "RemoveCaseIds": {
+      "main": [
+        []
+      ]
+    },
+    "CleanPayload": {
+      "main": [
+        [
+          {
+            "node": "MoveBodyIds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MoveBodyIds": {
+      "main": [
+        [
+          {
+            "node": "GET Cases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8dd3f2f4-da56-41d2-8f4b-96947cc4fdc4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ecd7f4da01d52429b366a80ad10a00d5960fbb7b9f0335cfa8abda769ac4d632"
+  },
+  "id": "pPtOwqcLjLpk1oyk",
+  "tags": []
+}
