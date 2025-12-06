@@ -166,6 +166,33 @@ const CaseList = () => {
     const buildTextFilters = (key) => {
       const set = new Set();
       (cases || []).forEach((c) => {
+        if (key === 'category') {
+          try {
+            const formFields = (c && c.formFields) || {};
+            const categoryFields = [
+              { field: 'law_followup5', optionsKey: 'sj0lw93' },
+              { field: 'law_followup4', optionsKey: 'sj0lw92' },
+              { field: 'law_followup3', optionsKey: 'sj0lw91' },
+              { field: 'law_followup1', optionsKey: 'sj0rz88' },
+              { field: 'eng_followup1', optionsKey: 'sj0rz77' },
+            ];
+            let added = false;
+            for (const { field, optionsKey } of categoryFields) {
+              const val = formFields[field] || (c && c.raw && c.raw[field]);
+              if (val && val !== '') {
+                set.add(getOptionLabel(optionsKey, val, valueLang));
+                added = true;
+              }
+            }
+            if (!added && c.category && typeof c.category === 'string') {
+              const p = c.category.split('/');
+              set.add(valueLang === 'ar' ? (p[1] || p[0]).trim() : (p[0] || c.category).trim());
+            }
+            return; // skip default handling
+          } catch (e) {
+            // fallback to default
+          }
+        }
         const v = c[key];
         if (v !== undefined && v !== null && v !== '') set.add(String(v));
       });
@@ -197,6 +224,30 @@ const CaseList = () => {
           if (filters && filters.length) {
             newCol.filters = filters;
             newCol.onFilter = (value, rec) => {
+              if (key === 'category') {
+                try {
+                  const formFields = (rec && rec.formFields) || {};
+                  const categoryFields = [
+                    { field: 'law_followup5', optionsKey: 'sj0lw93' },
+                    { field: 'law_followup4', optionsKey: 'sj0lw92' },
+                    { field: 'law_followup3', optionsKey: 'sj0lw91' },
+                    { field: 'law_followup1', optionsKey: 'sj0rz88' },
+                    { field: 'eng_followup1', optionsKey: 'sj0rz77' },
+                  ];
+                  for (const { field, optionsKey } of categoryFields) {
+                    const val = formFields[field] || (rec && rec.raw && rec.raw[field]);
+                    if (val && val !== '') return String(getOptionLabel(optionsKey, val, valueLang)).toLowerCase() === String(value).toLowerCase();
+                  }
+                } catch (e) {
+                  // fallback
+                }
+                if (rec && rec.category && typeof rec.category === 'string') {
+                  const p = rec.category.split('/');
+                  const lab = valueLang === 'ar' ? (p[1] || p[0]).trim() : (p[0] || rec.category).trim();
+                  return String(lab).toLowerCase() === String(value).toLowerCase();
+                }
+                return false;
+              }
               const v = rec[key] || '';
               return String(v).toLowerCase() === String(value).toLowerCase();
             };
