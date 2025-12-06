@@ -434,6 +434,10 @@ The following fields are **only visible to Admin users**:
 
 > Tip: If you're using n8n, include a `MoveBodyIds` step or promote `formFields` from nested `raw.body` to top-level `raw.formFields` before sending the case to the API; the backend includes migration helper and promotion logic to allow for either shape.
 
+**Dev debugging tip:**
+
+- When running the frontend in development mode, the console logs a debug message when grouped roster fields are parsed. Look for a console entry like: `backfillFormFields: parsed roster slots` which shows the discovered slots and the parsed roster array length and objects (handy for diagnosing why a table is empty).
+
 ### 4. Search
 
 **Location:** `/search`
