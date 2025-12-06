@@ -390,14 +390,17 @@ const backfillFormFields = (caseItem) => {
         groups[slot][suffix] = caseItem.raw[k];
       });
       // Convert groups to roster entries using a mapping from suffix -> field name
-      const suffixMap = {
-        'partner_relation1': 'relation',
-        'partner_govreg': 'govreg',
-        'partner_name': 'name',
-        'partner_lastname': 'lastName',
-        'partner': 'birthDate',
-        'partner_nationality': 'nationality',
-        'note': 'note',
+      const mapSuffixToField = (suffix) => {
+        const s = suffix.toLowerCase();
+        if (s.includes('relation')) return 'relation';
+        if (s.includes('govreg')) return 'govreg';
+        if (s.includes('last') || s.includes('lastname')) return 'lastName';
+        if (s.includes('first') && s.includes('name')) return 'name';
+        if (s.includes('name')) return 'name';
+        if (s === 'partner' || s.includes('birth') || s.includes('date')) return 'birthDate';
+        if (s.includes('national') || s.includes('country')) return 'nationality';
+        if (s.includes('note')) return 'note';
+        return suffix;
       };
       // Ensure roster order matches Kobo form ordering and local display expectations.
       // Explicit slot order mapping for the survey used by the team:
@@ -408,7 +411,7 @@ const backfillFormFields = (caseItem) => {
         const g = groups[slot];
         const obj = {};
         Object.entries(g).forEach(([suffix, val]) => {
-          const mapped = suffixMap[suffix] || suffix;
+          const mapped = mapSuffixToField(suffix) || suffix;
           if (val !== undefined && val !== null && val !== '') obj[mapped] = val;
         });
         return Object.keys(obj).length ? obj : null;
