@@ -428,6 +428,10 @@ The following fields are **only visible to Admin users**:
   2. `raw.family` — an array structure present on older or webhook-wrapped payloads.
   3. Repeated grouped fields from Kobo/ODK that follow the naming pattern `group_fj2tt69_partnernu1_<slot>_<field>` — the UI will parse groups like `group_fj2tt69_partnernu1_7_1_partner_name`, `group_fj2tt69_partnernu1_7_1_partner_relation1`, `group_fj2tt69_partnernu1_7_1_partner_govreg`, `group_fj2tt69_partnernu1_7_1_partner_lastname`, `group_fj2tt69_partnernu1_7_1_partner`, and `group_fj2tt69_partnernu1_7_1_partner_nationality` into the roster table.
 
+**Display order note:**
+
+- The roster rows are rendered according to the Kobo group slot mapping and the expected ordering for this survey. The UI sorts cases into the order: `7_1`, `5_1`, `3_1`, `2_1`, `1`, `6_1`, `4_1` where those slot names come from the Kobo group suffixes such as `partnernu1_7_1`.
+
 > Tip: If you're using n8n, include a `MoveBodyIds` step or promote `formFields` from nested `raw.body` to top-level `raw.formFields` before sending the case to the API; the backend includes migration helper and promotion logic to allow for either shape.
 
 ### 4. Search
