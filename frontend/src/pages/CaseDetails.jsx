@@ -418,6 +418,17 @@ const CaseDetails = () => {
     };
 
     // If formFields.family array exists, build rows from the array (legacy n8n or Kobo roster arrays)
+    const isMeaningfulValue = (val) => {
+      if (val === undefined || val === null) return false;
+      if (typeof val === 'string') {
+        const t = val.trim();
+        if (!t) return false;
+        if (t === '—' || t === '-' || t === '—') return false;
+        return true;
+      }
+      // numbers and booleans are considered meaningful (including 0)
+      return true;
+    };
     const ffFamily = (caseRecord.formFields && caseRecord.formFields.family) || (caseRecord.raw && caseRecord.raw.family);
     const rows = Array.isArray(ffFamily) ? ffFamily.map((member, memberIndex) => {
       const slot = (member && member.slot) || (memberIndex + 1);
@@ -480,10 +491,10 @@ const CaseDetails = () => {
           }
         })(),
       };
-      // Only return rows with at least one non-empty roster field (exclude slotLabel)
+      // Only return rows with at least one meaningful roster field (exclude slotLabel)
       const hasData = rosterColumns
         .filter((column) => column.key !== 'slotLabel')
-        .some((column) => (obj[column.key] !== undefined && obj[column.key] !== '' && obj[column.key] !== null));
+        .some((column) => isMeaningfulValue(obj[column.key]));
       return hasData ? obj : null;
     }).filter(Boolean) : rosterSlots
       .map((slot, slotIndex) => {
@@ -508,7 +519,7 @@ const CaseDetails = () => {
 
         const hasData = rosterColumns
           .filter((column) => column.key !== 'slotLabel')
-          .some((column) => row[column.key] && row[column.key] !== '—');
+          .some((column) => isMeaningfulValue(row[column.key]));
         return hasData ? row : null;
       })
       .filter(Boolean);

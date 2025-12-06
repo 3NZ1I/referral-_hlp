@@ -444,18 +444,20 @@ const backfillFormFields = (caseItem) => {
         groups[slot][suffix] = caseItem.raw[k];
       });
       // Convert groups to roster entries using a mapping from suffix -> field name
-      const mapSuffixToField = (suffix) => {
-        const s = suffix.toLowerCase();
-        if (s.includes('relation')) return 'relation';
-        if (s.includes('govreg')) return 'govreg';
-        if (s.includes('last') || s.includes('lastname')) return 'lastName';
-        if (s.includes('first') && s.includes('name')) return 'name';
-        if (s.includes('name')) return 'name';
-        if (s === 'partner' || s.includes('birth') || s.includes('date')) return 'birthDate';
-        if (s.includes('national') || s.includes('country')) return 'nationality';
-        if (s.includes('note')) return 'note';
-        return suffix;
-      };
+  // Reusable mapping function to convert group suffixes into our member fields
+  const mapSuffixToField = (suffix) => {
+    if (!suffix || typeof suffix !== 'string') return suffix;
+    const s = suffix.toLowerCase();
+    if (s.includes('relation')) return 'relation';
+    if (s.includes('govreg') || /reg(istr|istration|istr|)/.test(s)) return 'govreg';
+    if (s.includes('last') || s.includes('lastname') || s.includes('family_name') || s.includes('title')) return 'lastName';
+    if ((s.includes('first') && s.includes('name')) || (s.match(/\bname\b/) && s.includes('first'))) return 'name';
+    if (s.includes('name')) return 'name';
+    if (s === 'partner' || s.includes('birth') || s.includes('date') || s.includes('dob')) return 'birthDate';
+    if (s.includes('national') || s.includes('country')) return 'nationality';
+    if (s.includes('note')) return 'note';
+    return suffix.replace(/^_+/, '');
+  };
       // Ensure roster order matches Kobo form ordering and local display expectations.
       // For local file imports, preserve the header order (appearance order in file)
       let slotsToUse;
@@ -526,7 +528,20 @@ const normalizeFamilyMember = (m) => {
     }
     return '';
   };
-  const name = getAny(['name', 'first_name', 'firstname', 'partner_name', 'beneficiary_name', 'given_name', 'givenname']);
+  // If the member object contains canonical group keys, extract by suffix first
+  const obj = {};
+  Object.entries(src).forEach(([key, val]) => {
+    if (!key) return;
+    const canonicalMatch = key.toString().match(/group_fj2tt69_partnernu1_(\d+(?:_\d+)*)_(.+)$/i);
+    if (canonicalMatch) {
+      const suffix = canonicalMatch[2];
+      const mapped = mapSuffixToField(suffix);
+      if (mapped && val !== undefined && val !== null && val !== '') {
+        obj[mapped] = val;
+      }
+    }
+  });
+  const name = obj.name || getAny(['name', 'first_name', 'firstname', 'partner_name', 'beneficiary_name', 'given_name', 'givenname']);
   const lastName = getAny(['lastName', 'lastname', 'last_name', 'family_name', 'partner_lastname', 'partner_last_name', 'surname']);
   const relation = getAny(['relation', 'relation1', 'partner_relation1', 'relationship']);
   const birthDate = getAny(['birthDate', 'partner', 'birthday', 'date_of_birth', 'dob']);
@@ -534,7 +549,6 @@ const normalizeFamilyMember = (m) => {
   const govreg = getAny(['govreg', 'partner_govreg', 'registered', 'registered_in_civil', 'registered_in_civil_registry']);
   const slot = getAny(['slot', 'slotLabel', 'slot_number', 'id']);
   const note = getAny(['note', 'partner_note']);
-  const obj = {};
   if (name) obj.name = name;
   if (lastName) obj.lastName = lastName;
   if (relation) obj.relation = relation;
