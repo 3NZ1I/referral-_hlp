@@ -17,6 +17,11 @@ def test_generate_token_admin(client):
     body = r.json()
     assert 'token' in body
     assert 'expires_in_minutes' in body
+    # Verify token contains expected claims
+    import jwt
+    token_payload = jwt.decode(body['token'], options={"verify_signature": False})
+    assert token_payload.get('sub') == 'n8n'
+    assert token_payload.get('role') == 'system'
 
 def test_generate_token_non_admin_forbidden(client):
     # Register normal user
