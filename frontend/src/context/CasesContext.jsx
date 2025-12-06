@@ -379,11 +379,14 @@ const backfillFormFields = (caseItem) => {
       const rosterPattern = /^group_fj2tt69_partnernu1_(\d+(?:_\d+)*)_(.+)$/; // capture slot and suffix
       const groups = {};
       rawKeys.forEach((k) => {
-        const m = k.match(rosterPattern);
+        // Normalize key for matching: lowercase, strip HTML, and replace non-alphanum/underscore with underscore
+        const normalizedKey = normalizeKey(k).replace(/[^a-z0-9_]/g, '_');
+        const m = normalizedKey.match(rosterPattern);
         if (!m) return;
-        const slot = m[1];
-        const suffix = m[2];
+        let slot = m[1].replace(/_+/g, '_');
+        let suffix = m[2].replace(/^_+/, '').replace(/_+/g, '_');
         if (!groups[slot]) groups[slot] = {};
+        // Keep original value from the raw object (not the normalized key)
         groups[slot][suffix] = caseItem.raw[k];
       });
       // Convert groups to roster entries using a mapping from suffix -> field name
