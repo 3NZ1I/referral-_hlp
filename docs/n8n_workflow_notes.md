@@ -14,3 +14,5 @@ Key changes:
 - `POST Create Case` node - switched to header auth only (no BasicAuth) to prevent BasicAuth overwriting the `Authorization` header. Ensure you provide a valid Bearer token or header auth credential for automation (n8n admin token).
 
 How to validate: use the `GET Cases` node to inspect `raw` returned for existing cases; verify roster nodes, `_submission_time`, and category aliases are present at top-level `raw` after `MoveBodyIds` runs.
+
+Note on Kobo group fields: the frontend will parse repeated group fields that follow the Kobo naming pattern used in the survey (e.g. `group_fj2tt69_partnernu1_7_1_partner_name`, `group_fj2tt69_partnernu1_7_1_partner_relation1`, etc.) into `formFields.family` so the Case Details roster table shows them. If possible, prefer to promote `formFields` in `MoveBodyIds` or send `formFields.family` directly to avoid per-field parsing.
