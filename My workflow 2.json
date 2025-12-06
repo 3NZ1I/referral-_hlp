@@ -181,10 +181,6 @@
         "httpHeaderAuth": {
           "id": "6sEhPnteBZzvalE6",
           "name": "Header Auth account"
-        },
-        "httpBasicAuth": {
-          "id": "PtmUniHsuYSHUsec",
-          "name": "Unnamed credential 2"
         }
       }
     },
