@@ -364,11 +364,11 @@ def get_cases(db: Session = Depends(get_db), user=Depends(optional_auth)):
                     c.raw = _flatten_raw_wrapper(c.raw)
             except Exception:
                 pass
-    except Exception:
-        pass
             # Normalize empty emails on assigned_to relation
             if c.assigned_to and isinstance(c.assigned_to.email, str) and c.assigned_to.email.strip() == '':
                 c.assigned_to.email = None
+    except Exception:
+        pass
     return cases
 
 @app.get("/cases/{case_id}", response_model=CaseRead)
