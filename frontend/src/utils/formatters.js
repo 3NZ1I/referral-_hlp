@@ -9,14 +9,27 @@ const asArray = (value) => {
   return value ? [value] : [];
 };
 
+const normalizeKey = (key = '') => {
+  if (!key || typeof key !== 'string') return '';
+  return stripFormatting(key).toLowerCase();
+};
+
 export const getOptionLabel = (optionsKey, optionValue, lang = 'en') => {
   const catalog = (selectOptions && selectOptions[optionsKey]) || [];
-  const match = catalog.find((opt) => opt.value === optionValue);
-  if (match) {
-    const text = (match.label && (match.label[lang] || match.label.en)) || optionValue;
-    return text;
-  }
-  return optionValue;
+  if (optionValue === undefined || optionValue === null) return '';
+  const normalizedInput = normalizeKey(String(optionValue || ''));
+  // Prefer exact value match
+  const byValue = catalog.find((opt) => String(opt.value) === String(optionValue));
+  if (byValue) return (byValue.label && (byValue.label[lang] || byValue.label.en)) || String(optionValue);
+  // Fallback: match against English/Arabic labels (some imports may use labels instead of values)
+  const byLabel = catalog.find((opt) => {
+    const en = (opt.label && opt.label.en) ? normalizeKey(opt.label.en) : '';
+    const ar = (opt.label && opt.label.ar) ? normalizeKey(opt.label.ar) : '';
+    return normalizedInput === en || normalizedInput === ar;
+  });
+  if (byLabel) return (byLabel.label && (byLabel.label[lang] || byLabel.label.en)) || String(optionValue);
+  // If there's no match, return the input value as-is
+  return String(optionValue);
 };
 
 export const stripFormatting = (text) => {

@@ -50,7 +50,7 @@ const caseColumns = [
   { title: 'Dataset', dataIndex: 'datasetName', key: 'datasetName', width: 220, render: (datasetName, record) => {
       // If case is server originated, attempt to detect 'n8n' via uploadedBy or raw markers, and show 'n8n' or 'Server'
       try {
-        if (record && record.datasetKey === 'server') {
+        if (record && record.datasetKey && typeof record.datasetKey === 'string' && record.datasetKey.startsWith('server')) {
           const uploader = (record.uploadedBy || record.raw?.uploaded_by || record.raw?.uploadedBy || '') || '';
           if (typeof uploader === 'string' && uploader.toLowerCase().includes('n8n')) {
             return 'n8n (Backend)';

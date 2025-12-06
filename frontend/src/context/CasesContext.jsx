@@ -121,7 +121,14 @@ const rosterLabelSuffixIndex = (() => {
 
 const remapRosterHeader = (rawCell = '') => {
   if (typeof rawCell !== 'string') return null;
-  const stripped = stripHtml(rawCell).trim();
+  // Some server exports use slashed keys like 'group_xxx/group_xxx_field'
+  // Prefer the last segment after the slash so we operate on the actual field name
+  let stripped = stripHtml(rawCell).trim();
+  try {
+    if (stripped.includes('/')) stripped = stripped.split('/').pop();
+  } catch (e) {
+    // ignore any split errors
+  }
   const norm = normalizeKey(stripped);
   // If header already includes the canonical group prefix, normalize and return
   const existingMatch = norm.match(/group_fj2tt69_partnernu1_(\d+(?:_\d+)*)_([a-z0-9_]+)/i);
@@ -289,6 +296,16 @@ const mapFieldsFromRow = (rawRow) => {
     if (!key || value === undefined || value === null || value === '') return;
     const cleanKey = normalizeKey(key);
     rowLookup[cleanKey] = typeof value === 'string' ? value.trim() : value;
+    // If raw key looks like a slashed or oddly formatted roster header, attempt to remap to canonical roster field
+    try {
+      const maybeCanonical = remapRosterHeader(String(key));
+      if (maybeCanonical) {
+        const canonicalClean = normalizeKey(maybeCanonical);
+        if (rowLookup[canonicalClean] === undefined) rowLookup[canonicalClean] = typeof value === 'string' ? value.trim() : value;
+      }
+    } catch (e) {
+      // ignore remap errors
+    }
   });
   // Also include any nested keys under raw.formFields (server backends often put question fields under formFields)
   if (rawRow && rawRow.formFields && typeof rawRow.formFields === 'object') {
@@ -297,6 +314,15 @@ const mapFieldsFromRow = (rawRow) => {
       const cleanKey = normalizeKey(key);
       // Do not overwrite existing top-level entries; only add if missing
       if (rowLookup[cleanKey] === undefined) rowLookup[cleanKey] = typeof value === 'string' ? value.trim() : value;
+      try {
+        const maybeCanonical = remapRosterHeader(String(key));
+        if (maybeCanonical) {
+          const canonicalClean = normalizeKey(maybeCanonical);
+          if (rowLookup[canonicalClean] === undefined) rowLookup[canonicalClean] = typeof value === 'string' ? value.trim() : value;
+        }
+      } catch (e) {
+        // ignore
+      }
     });
   }
   
@@ -463,8 +489,12 @@ const backfillFormFields = (caseItem) => {
       const rosterPattern = /^group_fj2tt69_partnernu1_(\d+(?:_\d+)*)_(.+)$/; // capture slot and suffix
       const groups = {};
       rawKeys.forEach((k) => {
-        // Normalize key for matching: lowercase, strip HTML, and replace non-alphanum/underscore with underscore
-        const normalizedKey = normalizeKey(k).replace(/[^a-z0-9_]/g, '_');
+        // Normalize key for matching: lowercase, strip HTML, replace non-alphanum/underscore with underscore
+        let normalizedKey = normalizeKey(k).replace(/[^a-z0-9_]/g, '_');
+        // If a server-provided key includes the group prefix twice because of slash (e.g. group_..._7_1_group_..._7_1_partner_name),
+        // prefer the last occurrence so the slot and suffix are parsed correctly.
+        const lastIdx = normalizedKey.lastIndexOf('group_fj2tt69_partnernu1_');
+        if (lastIdx > 0) normalizedKey = normalizedKey.slice(lastIdx);
         const m = normalizedKey.match(rosterPattern);
         if (!m) return;
         let slot = m[1].replace(/_+/g, '_');
@@ -680,7 +710,7 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
     raw: normalizedRow,
     formFields: canonicalFields,
     // Source: 'file' for local XLSX uploads; 'server' for backend cases; set datasetKey so callers can detect
-    source: (datasetKey === 'server' ? 'server' : 'file'),
+    source: (datasetKey && typeof datasetKey === 'string' && datasetKey.startsWith('server') ? 'server' : 'file'),
     // roster family data is kept under `formFields.family` for rendering in details; do not expose a family size in the case list
   };
 };
@@ -730,9 +760,10 @@ export const CasesProvider = ({ children }) => {
     try {
       const serverCases = await apiFetchCases();
       if (!Array.isArray(serverCases)) return;
+      const serverLoadKey = `server-${Date.now()}`;
       const mapped = serverCases.map((c) => ({
         key: `server-${c.id}`,
-        datasetKey: `server`,
+        datasetKey: serverLoadKey,
         datasetName: 'Backend',
         status: c.status || 'Pending',
         caseNumber: (c.raw?.case_id || c.title || (c.id ? `C-${c.id}` : '')),
@@ -788,7 +819,44 @@ export const CasesProvider = ({ children }) => {
           console.warn('Backfill category error', m.id, err);
         }
       });
-      setCases(backfillCaseCollection(mapped));
+      const backfilledMapped = backfillCaseCollection(mapped);
+      setCases(backfilledMapped);
+      // Build a backend dataset summary (n8n / server cases) so Upload History shows server imports
+      try {
+        const serverDatasetKey = serverLoadKey;
+        const uploadedBys = mapped.map(m => m.uploadedBy).filter(Boolean);
+        let uploaderLabel = 'Backend';
+        if (uploadedBys.some((u) => typeof u === 'string' && u.toLowerCase().includes('n8n'))) {
+          uploaderLabel = 'n8n';
+        } else if (uploadedBys.some((u) => typeof u === 'string' && u.toLowerCase().includes('kobo'))) {
+          uploaderLabel = 'Kobo';
+        }
+        const latestUploaded = mapped.reduce((acc, m) => {
+          const created = m.created_at || m.updated_at || null;
+          if (!created) return acc;
+          if (!acc) return created;
+          return new Date(created) > new Date(acc) ? created : acc;
+        }, null);
+        const serverDataset = {
+          key: serverDatasetKey,
+          recordId: `SRV-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`,
+          fileName: `Backend (${uploaderLabel})`,
+          entries: (backfilledMapped && backfilledMapped.length) || (mapped && mapped.length) || 0,
+          uploadedBy: uploaderLabel,
+          uploadedOn: latestUploaded ? (new Date(latestUploaded)).toLocaleDateString() : new Date().toLocaleDateString(),
+          status: 'Server',
+          rows: backfilledMapped,
+          failedRows: [],
+        };
+        if ((backfilledMapped && backfilledMapped.length) || (mapped && mapped.length)) {
+          setDatasets((prev) => {
+            const filtered = (prev || []).filter((d) => d.key !== serverDatasetKey);
+            return [serverDataset, ...filtered];
+          });
+        }
+      } catch (e) {
+        // ignore dataset aggregation errors
+      }
     } catch (err) {
       console.warn('Failed to load cases from backend', err);
     }
