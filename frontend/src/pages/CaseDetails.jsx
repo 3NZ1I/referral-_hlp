@@ -33,10 +33,14 @@ const asArray = (value) => {
   return value ? [value] : [];
 };
 
-const getOptionLabel = (optionsKey, optionValue) => {
+const getOptionLabel = (optionsKey, optionValue, lang = 'en') => {
   const catalog = selectOptions[optionsKey] || [];
   const match = catalog.find((opt) => opt.value === optionValue);
-  return match ? `${match.label?.en || optionValue}${match.label?.ar ? ` / ${match.label.ar}` : ''}` : optionValue;
+  if (match) {
+    const text = (match.label && (match.label[lang] || match.label.en)) || optionValue;
+    return text;
+  }
+  return optionValue;
 };
 
 const stripFormatting = (text) => {
@@ -94,7 +98,7 @@ const toDayjs = (value) => {
   return parsed ? dayjs(parsed) : null;
 };
 
-const formatFieldValue = (rawValue, field) => {
+const formatFieldValue = (rawValue, field, lang = 'en') => {
   if (rawValue === undefined || rawValue === null || rawValue === '') {
     return '—';
   }
@@ -102,7 +106,7 @@ const formatFieldValue = (rawValue, field) => {
   if (field?.optionsKey) {
     const values = field.type === 'select_multiple' ? asArray(rawValue) : [rawValue];
     if (!values.length) return '—';
-    return values.map((value) => getOptionLabel(field.optionsKey, value)).join(', ');
+    return values.map((value) => getOptionLabel(field.optionsKey, value, lang)).join(', ');
   }
 
   if (field?.type === 'date') {
@@ -139,6 +143,7 @@ const CaseDetails = () => {
     reloadCases,
   } = useCases();
   const { currentUser, canSeeHiddenFields } = useAuth();
+  const [valueLang, setValueLang] = useState('en');
 
   const caseRecord = useMemo(() => cases.find((row) => row.key === id), [cases, id]);
   const [statusValue, setStatusValue] = useState(caseRecord?.status || 'Pending');
@@ -492,7 +497,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_relation1`;
             const fieldDef = getFieldDef(fieldName);
-            return caseRecord?.source === 'file' ? (member.relation || member.relationship || member.relation1 || '') : formatFieldValue(member.relation || member.relationship || member.relation1 || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.relation || member.relationship || member.relation1 || '') : formatFieldValue(member.relation || member.relationship || member.relation1 || '', fieldDef, valueLang);
           } catch (e) {
             return member.relation || member.relationship || member.relation1 || '';
           }
@@ -501,7 +506,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_govreg`;
             const fieldDef = getFieldDef(fieldName);
-            return caseRecord?.source === 'file' ? (member.govreg || '') : formatFieldValue(member.govreg || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.govreg || '') : formatFieldValue(member.govreg || '', fieldDef, valueLang);
           } catch (e) {
             return member.govreg || '';
           }
@@ -510,7 +515,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_name`;
             const fieldDef = getFieldDef(fieldName);
-            return caseRecord?.source === 'file' ? (member.name || member.beneficiary_name || '') : formatFieldValue(member.name || member.beneficiary_name || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.name || member.beneficiary_name || '') : formatFieldValue(member.name || member.beneficiary_name || '', fieldDef, valueLang);
           } catch (e) {
             return member.name || member.beneficiary_name || '';
           }
@@ -519,7 +524,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_lastname`;
             const fieldDef = getFieldDef(fieldName);
-            return caseRecord?.source === 'file' ? (member.lastname || member.last_name || member.family_name || '') : formatFieldValue(member.lastname || member.last_name || member.family_name || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.lastName || member.lastname || member.last_name || member.family_name || '') : formatFieldValue(member.lastName || member.lastname || member.last_name || member.family_name || '', fieldDef, valueLang);
           } catch (e) {
             return member.lastname || member.last_name || member.family_name || '';
           }
@@ -528,7 +533,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner`;
             const fieldDef = getFieldDef(fieldName);
-            return caseRecord?.source === 'file' ? (member.birthDate || member.birthday || member.date_of_birth || '') : formatFieldValue(member.birthDate || member.birthday || member.date_of_birth || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.birthDate || member.birthday || member.date_of_birth || '') : formatFieldValue(member.birthDate || member.birthday || member.date_of_birth || '', fieldDef, valueLang);
           } catch (e) {
             return member.birthDate || member.birthday || member.date_of_birth || '';
           }
@@ -537,7 +542,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_nationality`;
             const fieldDef = getFieldDef(fieldName);
-            return caseRecord?.source === 'file' ? (member.nationality || '') : formatFieldValue(member.nationality || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.nationality || '') : formatFieldValue(member.nationality || '', fieldDef, valueLang);
           } catch (e) {
             return member.nationality || '';
           }
@@ -561,12 +566,12 @@ const CaseDetails = () => {
         const row = {
           key: slot,
           slotLabel: slotIndex + 1,
-          relation: formatFieldValue(formFieldMap[relationKey], getFieldDef(relationKey)),
-          govreg: formatFieldValue(formFieldMap[govregKey], getFieldDef(govregKey)),
-          name: formatFieldValue(formFieldMap[nameKey], getFieldDef(nameKey)),
-          lastName: formatFieldValue(formFieldMap[lastNameKey], getFieldDef(lastNameKey)),
-          birthDate: formatFieldValue(formFieldMap[birthDateKey], getFieldDef(birthDateKey)),
-          nationality: formatFieldValue(formFieldMap[nationalityKey], getFieldDef(nationalityKey)),
+          relation: formatFieldValue(formFieldMap[relationKey], getFieldDef(relationKey), valueLang),
+          govreg: formatFieldValue(formFieldMap[govregKey], getFieldDef(govregKey), valueLang),
+          name: formatFieldValue(formFieldMap[nameKey], getFieldDef(nameKey), valueLang),
+          lastName: formatFieldValue(formFieldMap[lastNameKey], getFieldDef(lastNameKey), valueLang),
+          birthDate: formatFieldValue(formFieldMap[birthDateKey], getFieldDef(birthDateKey), valueLang),
+          nationality: formatFieldValue(formFieldMap[nationalityKey], getFieldDef(nationalityKey), valueLang),
         };
 
         const hasData = rosterColumns
@@ -644,7 +649,7 @@ const CaseDetails = () => {
                   <Text strong>{formatLabel(field.label?.en, field.name)}</Text>
                   {field.label?.ar && <Text type="secondary" style={{ fontSize: 12 }}>{formatLabel(field.label.ar, '')}</Text>}
                 </div>
-                <Text style={{ display: 'block', marginTop: 8 }}>{formatFieldValue(formFieldMap[field.name], field)}</Text>
+                <Text style={{ display: 'block', marginTop: 8 }}>{formatFieldValue(formFieldMap[field.name], field, valueLang)}</Text>
               </div>
             ))}
           </div>
@@ -669,7 +674,7 @@ const CaseDetails = () => {
     return (
       <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
         {visibleFields.map((field) => {
-          const value = formatFieldValue(formFieldMap[field.name], field);
+          const value = formatFieldValue(formFieldMap[field.name], field, valueLang);
           return (
             <div key={field.name} style={{ padding: 16, border: '1px solid rgba(0,0,0,0.06)', borderRadius: 8 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -693,6 +698,12 @@ const CaseDetails = () => {
             <Paragraph type="secondary" style={{ marginTop: 4 }}>
               Detailed capture of the intake form using the latest metadata schema.
             </Paragraph>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Select value={valueLang} onChange={(v) => setValueLang(v)} style={{ width: 120 }}>
+                <Select.Option value="en">Values: English</Select.Option>
+                <Select.Option value="ar">Values: Arabic</Select.Option>
+              </Select>
+            </div>
           </div>
           <Space className="panel-actions" wrap style={{ flexShrink: 0 }}>
             <button className="ghost-btn" onClick={() => navigate('/cases')}>Back to list</button>

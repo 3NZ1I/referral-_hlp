@@ -401,7 +401,13 @@ const backfillFormFields = (caseItem) => {
   try {
     // If raw already includes canonical family array, use it
     if ((!mergedFields || Object.keys(mergedFields).length === 0) && caseItem.raw && (caseItem.raw.family || caseItem.raw.formFields && caseItem.raw.formFields.family)) {
-      mergedFields.family = caseItem.raw.formFields && caseItem.raw.formFields.family ? caseItem.raw.formFields.family : caseItem.raw.family;
+      // Normalize existing family arrays from raw or raw.formFields.family
+      const rawFamily = caseItem.raw.formFields && caseItem.raw.formFields.family ? caseItem.raw.formFields.family : caseItem.raw.family;
+      if (Array.isArray(rawFamily)) {
+        mergedFields.family = rawFamily.map((m) => normalizeFamilyMember(m)).filter(Boolean);
+      } else {
+        mergedFields.family = rawFamily;
+      }
     }
     // If formFields.family not present, try to parse grouped fields for the family roster
     if ((!mergedFields.family || !Array.isArray(mergedFields.family) || mergedFields.family.length === 0) && caseItem.raw) {
@@ -479,7 +485,7 @@ const backfillFormFields = (caseItem) => {
         });
         // retain the slot for later rendering (slot name like '7_1')
         obj.slot = slot;
-        return Object.keys(obj).length ? obj : null;
+        return Object.keys(obj).length ? normalizeFamilyMember(obj) : null;
       }).filter(Boolean);
       if (rosterArr.length) {
         mergedFields.family = rosterArr;
@@ -508,6 +514,36 @@ const backfillFormFields = (caseItem) => {
   }
 
   return { ...caseItem, formFields: mergedFields };
+};
+
+// Normalize family member objects across different source representations
+const normalizeFamilyMember = (m) => {
+  if (!m || typeof m !== 'object') return null;
+  const src = m || {};
+  const getAny = (keys) => {
+    for (const k of keys) {
+      if (src[k] !== undefined && src[k] !== null && src[k] !== '') return src[k];
+    }
+    return '';
+  };
+  const name = getAny(['name', 'first_name', 'firstname', 'partner_name', 'beneficiary_name', 'given_name', 'givenname']);
+  const lastName = getAny(['lastName', 'lastname', 'last_name', 'family_name', 'partner_lastname', 'partner_last_name', 'surname']);
+  const relation = getAny(['relation', 'relation1', 'partner_relation1', 'relationship']);
+  const birthDate = getAny(['birthDate', 'partner', 'birthday', 'date_of_birth', 'dob']);
+  const nationality = getAny(['nationality', 'partner_nationality', 'country']);
+  const govreg = getAny(['govreg', 'partner_govreg', 'registered', 'registered_in_civil', 'registered_in_civil_registry']);
+  const slot = getAny(['slot', 'slotLabel', 'slot_number', 'id']);
+  const note = getAny(['note', 'partner_note']);
+  const obj = {};
+  if (name) obj.name = name;
+  if (lastName) obj.lastName = lastName;
+  if (relation) obj.relation = relation;
+  if (birthDate) obj.birthDate = birthDate;
+  if (nationality) obj.nationality = nationality;
+  if (govreg) obj.govreg = govreg;
+  if (slot) obj.slot = slot;
+  if (note) obj.note = note;
+  return Object.keys(obj).length ? obj : null;
 };
 
 const backfillCaseCollection = (collection = []) => {
