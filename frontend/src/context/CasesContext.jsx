@@ -519,14 +519,16 @@ const backfillFormFields = (caseItem) => {
         obj.slot = slot;
         return Object.keys(obj).length ? normalizeFamilyMember(obj) : null;
       }).filter(Boolean);
-      if (rosterArr.length) {
-        mergedFields.family = rosterArr;
+      // Ensure roster member objects are normalized (in case any keys are raw or unnormalized)
+      const normalizedRosterArr = rosterArr.map((r) => normalizeFamilyMember(r)).filter(Boolean);
+      if (normalizedRosterArr.length) {
+        mergedFields.family = normalizedRosterArr;
         // also set raw.family so other parts that rely on raw.family can use it
         try {
           caseItem.raw.formFields = caseItem.raw.formFields || {};
-          caseItem.raw.formFields.family = rosterArr;
+          caseItem.raw.formFields.family = normalizedRosterArr;
           // also set top-level raw.family for convenience and backward compatibility
-          caseItem.raw.family = rosterArr;
+          caseItem.raw.family = normalizedRosterArr;
         } catch (e) {
           // ignore errors setting nested object
         }

@@ -88,6 +88,7 @@ const CaseDetails = () => {
   const [addingComment, setAddingComment] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editCommentText, setEditCommentText] = useState('');
+  const [showInspector, setShowInspector] = useState(false);
 
   useEffect(() => {
     if (!caseRecord) return;
@@ -132,7 +133,7 @@ const CaseDetails = () => {
     for (const { field, optionsKey } of categoryFieldMap) {
       const value = fields[field];
       if (value && value !== '') {
-        return getOptionLabel(optionsKey, value);
+      return getOptionLabel(optionsKey, value, valueLang);
       }
     }
     return '—';
@@ -535,6 +536,21 @@ const CaseDetails = () => {
     return (
       <>
         <div className="roster-table__wrapper">
+          {(process.env.NODE_ENV !== 'production' || (currentUser && (currentUser.role || '').toLowerCase() === 'admin')) && (
+            <div style={{ marginBottom: 8 }}>
+              <Button size="small" onClick={() => setShowInspector((s) => !s)}>
+                {showInspector ? 'Hide roster debug' : 'Show roster debug'}
+              </Button>
+              {showInspector && (
+                <div style={{ marginTop: 8, background: '#fff', border: '1px dashed rgba(0,0,0,0.08)', padding: 8, borderRadius: 6 }}>
+                  <div style={{ marginBottom: 8 }}><Text strong>Raw (caseRecord.raw)</Text></div>
+                  <pre style={{ whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto', fontSize: 12 }}>{JSON.stringify(caseRecord.raw, null, 2)}</pre>
+                  <div style={{ marginTop: 8, marginBottom: 8 }}><Text strong>Normalized (caseRecord.formFields)</Text></div>
+                  <pre style={{ whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto', fontSize: 12 }}>{JSON.stringify(caseRecord.formFields, null, 2)}</pre>
+                </div>
+              )}
+            </div>
+          )}
           {rows.length ? (
             <div className="roster-table__scroll">
               <table className="roster-table">
