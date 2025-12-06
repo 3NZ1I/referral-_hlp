@@ -397,6 +397,23 @@ const backfillFormFields = (caseItem) => {
     }
     // If formFields.family not present, try to parse grouped fields for the family roster
     if ((!mergedFields.family || !Array.isArray(mergedFields.family) || mergedFields.family.length === 0) && caseItem.raw) {
+      // Make a best-effort attempt to remap non-canonical headers in raw into canonical group keys.
+      // This helps when header normalization missed them (e.g., 'First name 1' left un-mapped).
+      try {
+        Object.keys(caseItem.raw || {}).forEach((k) => {
+          try {
+            const maybeCanonical = remapRosterHeader(String(k));
+            if (maybeCanonical && !Object.prototype.hasOwnProperty.call(caseItem.raw, maybeCanonical)) {
+              // Preserve original; only set if canonical missing
+              caseItem.raw[maybeCanonical] = caseItem.raw[k];
+            }
+          } catch (e) {
+            // ignore malformed keys
+          }
+        });
+      } catch (remapErr) {
+        // ignore remap errors; proceed with original raw
+      }
       // collect keys that match the grouped roster pattern 'group_fj2tt69_partnernu1_<slot>_...'
       const rawKeys = Object.keys(caseItem.raw || {});
       const rosterPattern = /^group_fj2tt69_partnernu1_(\d+(?:_\d+)*)_(.+)$/; // capture slot and suffix
