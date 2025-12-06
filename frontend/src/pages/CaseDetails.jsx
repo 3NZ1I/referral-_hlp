@@ -486,7 +486,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_relation1`;
             const fieldDef = getFieldDef(fieldName);
-            return formatFieldValue(member.relation || member.relationship || member.relation1 || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.relation || member.relationship || member.relation1 || '') : formatFieldValue(member.relation || member.relationship || member.relation1 || '', fieldDef);
           } catch (e) {
             return member.relation || member.relationship || member.relation1 || '';
           }
@@ -495,7 +495,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_govreg`;
             const fieldDef = getFieldDef(fieldName);
-            return formatFieldValue(member.govreg || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.govreg || '') : formatFieldValue(member.govreg || '', fieldDef);
           } catch (e) {
             return member.govreg || '';
           }
@@ -504,7 +504,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_name`;
             const fieldDef = getFieldDef(fieldName);
-            return formatFieldValue(member.name || member.beneficiary_name || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.name || member.beneficiary_name || '') : formatFieldValue(member.name || member.beneficiary_name || '', fieldDef);
           } catch (e) {
             return member.name || member.beneficiary_name || '';
           }
@@ -513,7 +513,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_lastname`;
             const fieldDef = getFieldDef(fieldName);
-            return formatFieldValue(member.lastname || member.last_name || member.family_name || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.lastname || member.last_name || member.family_name || '') : formatFieldValue(member.lastname || member.last_name || member.family_name || '', fieldDef);
           } catch (e) {
             return member.lastname || member.last_name || member.family_name || '';
           }
@@ -522,7 +522,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner`;
             const fieldDef = getFieldDef(fieldName);
-            return formatFieldValue(member.birthDate || member.birthday || member.date_of_birth || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.birthDate || member.birthday || member.date_of_birth || '') : formatFieldValue(member.birthDate || member.birthday || member.date_of_birth || '', fieldDef);
           } catch (e) {
             return member.birthDate || member.birthday || member.date_of_birth || '';
           }
@@ -531,7 +531,7 @@ const CaseDetails = () => {
           try {
             const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_nationality`;
             const fieldDef = getFieldDef(fieldName);
-            return formatFieldValue(member.nationality || '', fieldDef);
+            return caseRecord?.source === 'file' ? (member.nationality || '') : formatFieldValue(member.nationality || '', fieldDef);
           } catch (e) {
             return member.nationality || '';
           }
