@@ -108,10 +108,19 @@ const remapRosterHeader = (rawCell = '') => {
   if (typeof rawCell !== 'string') return null;
   const stripped = stripHtml(rawCell).trim();
   // match forms like partnernu1_7_1-... or partnernu1_7_1 - ...
-  const match = stripped.match(/(partnernu1_[^\s-]+)[\s-]+(.+)/i);
+  let match = stripped.match(/(partnernu1_[^\s-]+)[\s-]+(.+)/i);
+  // fallback: match slot notation anywhere like '7_1 First name' or 'First name 7_1'
+  if (!match) match = stripped.match(/(\d+(?:_\d+)+)[\s-]+(.+)/i) || stripped.match(/(.+?)[\s-]+(\d+(?:_\d+)+)/i);
   if (!match) return null;
-  const slotPart = match[1].replace(/\s+/g, '');
-  const labelPart = match[2].replace(/[_*]/g, '').trim();
+  // match will have the slot in either position (1 or 2); determine which one contains digits
+  let slotPart = match[1];
+  let labelPart = match[2];
+  if (!/\d/.test(slotPart) && /\d/.test(labelPart)) {
+    // swap
+    const tmp = slotPart; slotPart = labelPart; labelPart = tmp;
+  }
+  slotPart = slotPart.replace(/\s+/g, '');
+  labelPart = labelPart.replace(/[_*]/g, '').trim();
   const suffix = rosterLabelSuffixIndex[normalizeKey(labelPart)];
   if (!suffix) return null;
   return `group_fj2tt69_${slotPart}${suffix}`;
@@ -700,8 +709,13 @@ export const CasesProvider = ({ children }) => {
           const normalized = normalizeKey(baseValue);
           const canonicalFromAlias = aliasToCanonicalIndex[normalized];
           
-          // Debug ALL header mappings
-          // Header mapping: ${rawCell.substring(0,30)}
+          // Debug header mapping for development
+          try {
+            if (process && process.env && process.env.NODE_ENV !== 'production') {
+              // eslint-disable-next-line no-console
+              console.debug('XLSX header mapping:', { idx, raw: rawCell, normalized, canonicalFromAlias });
+            }
+          } catch (e) {}
           
           if (canonicalFromAlias) return canonicalFromAlias;
           return normalized || `column${idx}`;
