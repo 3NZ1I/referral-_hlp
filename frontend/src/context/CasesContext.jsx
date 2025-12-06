@@ -368,8 +368,52 @@ const backfillFormFields = (caseItem) => {
   
   // If raw has a direct family roster array (e.g., raw.family) and we didn't map it yet, ensure it populates formFields.family
   try {
+    // If raw already includes canonical family array, use it
     if ((!mergedFields || Object.keys(mergedFields).length === 0) && caseItem.raw && (caseItem.raw.family || caseItem.raw.formFields && caseItem.raw.formFields.family)) {
       mergedFields.family = caseItem.raw.formFields && caseItem.raw.formFields.family ? caseItem.raw.formFields.family : caseItem.raw.family;
+    }
+    // If formFields.family not present, try to parse grouped fields for the family roster
+    if ((!mergedFields.family || !Array.isArray(mergedFields.family) || mergedFields.family.length === 0) && caseItem.raw) {
+      // collect keys that match the grouped roster pattern 'group_fj2tt69_partnernu1_<slot>_...'
+      const rawKeys = Object.keys(caseItem.raw || {});
+      const rosterPattern = /^group_fj2tt69_partnernu1_(\d+(?:_\d+)*)_(.+)$/; // capture slot and suffix
+      const groups = {};
+      rawKeys.forEach((k) => {
+        const m = k.match(rosterPattern);
+        if (!m) return;
+        const slot = m[1];
+        const suffix = m[2];
+        if (!groups[slot]) groups[slot] = {};
+        groups[slot][suffix] = caseItem.raw[k];
+      });
+      // Convert groups to roster entries using a mapping from suffix -> field name
+      const suffixMap = {
+        'partner_relation1': 'relation',
+        'partner_govreg': 'govreg',
+        'partner_name': 'name',
+        'partner_lastname': 'lastName',
+        'partner': 'birthDate',
+        'partner_nationality': 'nationality',
+      };
+      const rosterArr = Object.keys(groups).map((slot) => {
+        const g = groups[slot];
+        const obj = {};
+        Object.entries(g).forEach(([suffix, val]) => {
+          const mapped = suffixMap[suffix] || suffix;
+          if (val !== undefined && val !== null && val !== '') obj[mapped] = val;
+        });
+        return Object.keys(obj).length ? obj : null;
+      }).filter(Boolean);
+      if (rosterArr.length) {
+        mergedFields.family = rosterArr;
+        // also set raw.family so other parts that rely on raw.family can use it
+        try {
+          caseItem.raw.formFields = caseItem.raw.formFields || {};
+          caseItem.raw.formFields.family = rosterArr;
+        } catch (e) {
+          // ignore errors setting nested object
+        }
+      }
     }
   } catch (e) {
     // ignore any errors
@@ -445,10 +489,7 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
     updated_at: normalizedRow.updated_at || normalizedRow._last_edited || normalizedRow._updated || normalizedRow._submission_time || undefined,
     raw: normalizedRow,
     formFields: canonicalFields,
-    // familySize: first check canonical form fields (array), then raw.family, then explicit fam_number alias
-    familySize: (canonicalFields && canonicalFields.family && Array.isArray(canonicalFields.family) ? canonicalFields.family.length :
-      (normalizedRow && normalizedRow.family && Array.isArray(normalizedRow.family) ? normalizedRow.family.length :
-        (normalizedRow && (normalizedRow.fam_number || normalizedRow.fam_number === 0) ? Number(normalizedRow.fam_number) : undefined))) || undefined,
+    // roster family data is kept under `formFields.family` for rendering in details; do not expose a family size in the case list
   };
 };
 

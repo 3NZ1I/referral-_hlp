@@ -421,6 +421,15 @@ The following fields are **only visible to Admin users**:
 - Delete comments
 - Back to list
 
+**Notes on Family Roster data source:**
+
+- The family roster table shown in the case details is populated using the following sources (in priority order):
+  1. `formFields.family` — a canonical array of family member objects (preferred).
+  2. `raw.family` — an array structure present on older or webhook-wrapped payloads.
+  3. Repeated grouped fields from Kobo/ODK that follow the naming pattern `group_fj2tt69_partnernu1_<slot>_<field>` — the UI will parse groups like `group_fj2tt69_partnernu1_7_1_partner_name`, `group_fj2tt69_partnernu1_7_1_partner_relation1`, `group_fj2tt69_partnernu1_7_1_partner_govreg`, `group_fj2tt69_partnernu1_7_1_partner_lastname`, `group_fj2tt69_partnernu1_7_1_partner`, and `group_fj2tt69_partnernu1_7_1_partner_nationality` into the roster table.
+
+> Tip: If you're using n8n, include a `MoveBodyIds` step or promote `formFields` from nested `raw.body` to top-level `raw.formFields` before sending the case to the API; the backend includes migration helper and promotion logic to allow for either shape.
+
 ### 4. Search
 
 **Location:** `/search`

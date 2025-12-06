@@ -42,23 +42,6 @@ const columns = [
     render: (category) => category || 'N/A',
   },
   {
-    title: 'Family',
-    dataIndex: 'familySize',
-    key: 'familySize',
-    width: 110,
-    render: (familySize, record) => {
-      if (familySize !== undefined && familySize !== null) return familySize;
-      // fallback to formFields.family length or fam_number alias
-      const ffLen = (record && record.formFields && record.formFields.family && Array.isArray(record.formFields.family)) ? record.formFields.family.length : null;
-      if (ffLen != null) return ffLen;
-      const rawFamilyLen = (record && record.raw && record.raw.family && Array.isArray(record.raw.family)) ? record.raw.family.length : null;
-      if (rawFamilyLen != null) return rawFamilyLen;
-      const famNum = record && record.raw && (record.raw.fam_number || record.raw.famNumber || record.raw.famNumber === 0) ? (record.raw.fam_number || record.raw.famNumber) : null;
-      if (famNum !== null) return famNum;
-      return '—';
-    },
-  },
-  {
     title: 'Age (days)',
     dataIndex: 'submissionDate',
     key: 'age',
