@@ -214,6 +214,9 @@ def _flatten_raw_wrapper(raw: dict) -> dict:
                 body = body
         if isinstance(body, dict):
             flattened = dict(body)
+            # keep a backup of the original nested body to avoid losing raw payload context
+            if '_body_backup' not in raw:
+                flattened['_body_backup'] = dict(body)
             # Preserve wrapper metadata like headers & kobo ids
             for k, v in raw.items():
                 if k == 'body':
@@ -224,9 +227,56 @@ def _flatten_raw_wrapper(raw: dict) -> dict:
     except Exception:
         # if anything goes wrong, return raw as-is
         pass
-    # Ensure submission time normalization happens
+    # Ensure submission time normalization happens and promote known wrapper fields
     try:
+        raw = _promote_wrapper_fields_in_raw(raw)
         raw = _ensure_submission_time_in_raw(raw)
+    except Exception:
+        pass
+    return raw
+
+
+def _promote_wrapper_fields_in_raw(raw: dict) -> dict:
+    """Ensure commonly used fields present under raw.body are promoted to top-level keys on raw, but keep the original `body` content as `_body_backup`.
+    This function is non-destructive (does not delete body) and is designed to be called when creating or updating cases to make frontend mapping simpler.
+    """
+    if not isinstance(raw, dict):
+        return raw
+    try:
+        body = raw.get('body')
+        if isinstance(body, str):
+            try:
+                body = json.loads(body)
+            except Exception:
+                body = None
+        if isinstance(body, dict):
+            # preserve original body under _body_backup if not already present
+            if '_body_backup' not in raw:
+                try:
+                    raw['_body_backup'] = dict(body)
+                except Exception:
+                    raw['_body_backup'] = body
+            # promotion candidates
+            candidates = [
+                '_submission_time','submissiontime','submission_time','end','start','submitted_at','submissiondate','submissionDate',
+                'case_id','caseNumber','_id','kobo_case_id','kobo_caseNumber','kobo__id',
+            ]
+            for field in candidates:
+                if body.get(field) is not None and raw.get(field) is None:
+                    raw[field] = body.get(field)
+            # common roster aliases
+            roster_aliases = ['family_roster','family','roster','household','household_members','members','family_members','familymembers','householdMembers']
+            for alias in roster_aliases:
+                if body.get(alias) is not None and raw.get(alias) is None:
+                    raw[alias] = body.get(alias)
+            # promote nested formFields if present
+            if body.get('formFields') is not None and raw.get('formFields') is None:
+                raw['formFields'] = body.get('formFields')
+            # category aliases
+            category_aliases = ['law_followup','eng_followup','category','case_category','caseCategory','law_followup1','law_followup3','law_followup4','law_followup5']
+            for alias in category_aliases:
+                if body.get(alias) is not None and raw.get(alias) is None:
+                    raw[alias] = body.get(alias)
     except Exception:
         pass
     return raw
@@ -422,6 +472,12 @@ def create_case(case: CaseCreate, db: Session = Depends(get_db), user=Depends(re
     except Exception:
         raw = payload.get('raw')
     payload['raw'] = raw
+    # Promote wrapper fields (roster, formFields, category, timestamps)
+    try:
+        raw = _promote_wrapper_fields_in_raw(raw)
+        payload['raw'] = raw
+    except Exception:
+        pass
     # Ensure submission timestamps are available at top-level raw for frontend Age computation
     raw = _ensure_submission_time_in_raw(payload['raw'])
     payload['raw'] = raw
@@ -441,6 +497,10 @@ def create_case(case: CaseCreate, db: Session = Depends(get_db), user=Depends(re
             if raw.get('kobo_case_id') and flattened.get('kobo_case_id') is None:
                 flattened['kobo_case_id'] = raw.get('kobo_case_id')
             raw = flattened
+            try:
+                raw = _promote_wrapper_fields_in_raw(raw)
+            except Exception:
+                pass
             payload['raw'] = raw
     except Exception:
         pass
@@ -503,6 +563,11 @@ def update_case(case_id: int, case: CaseUpdate, db: Session = Depends(get_db), u
         except Exception:
             pass
         payload['raw'] = raw_payload
+        # Promote wrapper fields when passed in update payload
+        try:
+            payload['raw'] = _promote_wrapper_fields_in_raw(payload['raw'])
+        except Exception:
+            pass
         # If payload contains nested body wrapper, flatten it
         try:
             if isinstance(raw_payload, dict) and isinstance(raw_payload.get('body'), dict):
@@ -517,6 +582,10 @@ def update_case(case_id: int, case: CaseUpdate, db: Session = Depends(get_db), u
                     flattened['kobo_case_id'] = raw_payload.get('kobo_case_id')
                 raw_payload = flattened
                 payload['raw'] = raw_payload
+                try:
+                    payload['raw'] = _promote_wrapper_fields_in_raw(payload['raw'])
+                except Exception:
+                    pass
         except Exception:
             pass
     # If the title provided was a generic Kobo placeholder, try to set a useful title
@@ -553,6 +622,10 @@ def update_case(case_id: int, case: CaseUpdate, db: Session = Depends(get_db), u
             payload['raw'] = flattened
             # Ensure top-level submission time fields are set if present in nested body
             payload['raw'] = _ensure_submission_time_in_raw(payload['raw'])
+            try:
+                payload['raw'] = _promote_wrapper_fields_in_raw(payload['raw'])
+            except Exception:
+                pass
     except Exception:
         pass
     new_status = payload.get('status')
