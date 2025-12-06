@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, Tag, Button, Space, Typography, Select } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useCases } from '../context/CasesContext';
+import { getOptionLabel } from '../utils/formatters';
 import { useAuth } from '../context/AuthContext';
 
 const { Title, Paragraph } = Typography;
@@ -125,6 +126,7 @@ const CaseList = () => {
 
   const [statusFilter, setStatusFilter] = useState('');
   const [assignedFilter, setAssignedFilter] = useState('');
+  const [valueLang, setValueLang] = useState('en');
   // Follow-up filter was removed in the requested UI changes
 
   // Filter cases: admin and internal users see all cases, external users only see their assigned cases
@@ -201,9 +203,38 @@ const CaseList = () => {
           }
         }
       }
+      // Add localized value rendering for category values (use selected valueLang)
+      if (key === 'category') {
+        newCol.render = (category, record) => {
+          try {
+            const formFields = (record && record.formFields) || {};
+            const categoryFields = [
+              { field: 'law_followup5', optionsKey: 'sj0lw93' }, // External legal guidance
+              { field: 'law_followup4', optionsKey: 'sj0lw92' }, // External legal referral
+              { field: 'law_followup3', optionsKey: 'sj0lw91' }, // Internal legal referral
+              { field: 'law_followup1', optionsKey: 'sj0rz88' }, // Type of legal case
+              { field: 'eng_followup1', optionsKey: 'sj0rz77' }, // Engineering referral type
+            ];
+            for (const { field, optionsKey } of categoryFields) {
+              const value = formFields[field] || (record && record.raw && record.raw[field]);
+              if (value && value !== '') {
+                return getOptionLabel(optionsKey, value, valueLang) || 'N/A';
+              }
+            }
+          } catch (e) {
+            // ignore, fallback to record.category
+          }
+          if (category && typeof category === 'string') {
+            const parts = category.split('/');
+            if (valueLang === 'ar') return (parts[1] || parts[0]).trim();
+            return (parts[0] || category).trim();
+          }
+          return 'N/A';
+        };
+      }
       return newCol;
     });
-  }, [cases]);
+  }, [cases, valueLang]);
 
   return (
     <div>
@@ -238,6 +269,14 @@ const CaseList = () => {
             </Select>
 
             {/* Follow-up filter removed; Last Update replaces submission date and tracks recent activity */}
+          </div>
+
+          <div style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: 12, color: '#666', marginRight: 8 }}>Values language</div>
+            <Select value={valueLang} onChange={v => setValueLang(v)} style={{ minWidth: 120 }}>
+              <Select.Option value="en">English</Select.Option>
+              <Select.Option value="ar">Arabic</Select.Option>
+            </Select>
           </div>
 
           <Space style={{ marginLeft: 'auto' }}>
