@@ -111,7 +111,7 @@ const remapRosterHeader = (rawCell = '') => {
   // If header already includes the canonical group prefix, normalize and return
   const existingMatch = norm.match(/group_fj2tt69_partnernu1_(\d+(?:_\d+)*)_([a-z0-9_]+)/i);
   if (existingMatch) {
-    return `group_fj2tt69_${existingMatch[1]}_${existingMatch[2]}`;
+    return `group_fj2tt69_partnernu1_${existingMatch[1]}_${existingMatch[2]}`;
   }
   // Find slot pattern anywhere in the header (accept '7_1', '7-1', '7.1' or '01' or '1')
   let slot = null;
@@ -127,7 +127,7 @@ const remapRosterHeader = (rawCell = '') => {
     }
   });
   if (!foundSuffix || !slot) return null;
-  return `group_fj2tt69_${slot}${foundSuffix}`;
+  return `group_fj2tt69_partnernu1_${slot}${foundSuffix}`;
 };
 
 const buildAliasIndex = (sections = []) => {
@@ -601,11 +601,33 @@ export const CasesProvider = ({ children }) => {
           const canonicalFields = mapCanonicalFields(m.raw || {});
           const categoryFields = ['law_followup5', 'law_followup4', 'law_followup3', 'law_followup1', 'eng_followup1'];
           let category = '';
+          let categoryFieldName = null;
           for (const f of categoryFields) {
             const val = canonicalFields[f];
-            if (val && val !== '') { category = val; break; }
+            if (val && val !== '') { category = val; categoryFieldName = f; break; }
           }
-          if (category) m.category = category;
+          if (category) {
+            // Try to map option values to labels like in buildCaseRecord
+            try {
+              const optionKey = (() => {
+                for (const s of formSections) {
+                  for (const fd of s.fields || []) {
+                    if (fd.name === categoryFieldName) return fd.optionsKey || null;
+                  }
+                }
+                return null;
+              })();
+              if (optionKey && selectOptions && selectOptions[optionKey]) {
+                const opt = (selectOptions[optionKey] || []).find((o) => o.value === category);
+                if (opt) m.category = `${opt.label?.en || category}${opt.label?.ar ? ` / ${opt.label.ar}` : ''}`;
+                else m.category = category;
+              } else {
+                m.category = category;
+              }
+            } catch (e) {
+              m.category = category;
+            }
+          }
         } catch (err) {
           // don't crash on backfill
           console.warn('Backfill category error', m.id, err);
@@ -698,7 +720,50 @@ export const CasesProvider = ({ children }) => {
                 }
           }
         }
-        const sheetName = (workbook && Array.isArray(workbook.SheetNames) && workbook.SheetNames[0]) || null;
+        // Choose the best sheet in the workbook: prefer 'cases' sheet or sheet with case headers/rosters
+        const scoreSheet = (() => {
+          const candidates = workbook?.SheetNames || [];
+          let best = { name: null, score: -Infinity };
+          candidates.forEach((name) => {
+            try {
+              const s = workbook.Sheets[name];
+              const rows = XLSX.utils.sheet_to_json(s, { header: 1, defval: '' });
+              const nonEmptyRows = rows.filter((r) => r && r.some((c) => c !== '' && c !== null));
+              if (!nonEmptyRows.length) return;
+              const headerIdx = detectHeaderRowIndex(nonEmptyRows);
+              const headerRow = nonEmptyRows[headerIdx] || nonEmptyRows[0] || [];
+              let caseAliasHits = 0;
+              let rosterHits = 0;
+              headerRow.forEach((cell) => {
+                const raw = typeof cell === 'string' ? cell : (cell ?? '').toString();
+                const rosterCanonical = remapRosterHeader(raw);
+                if (rosterCanonical) rosterHits += 1;
+                const normalized = normalizeKey(stripHtml(raw));
+                if (aliasToCanonicalIndex[normalized]) {
+                  // If this canonical is a case field or known field, count it
+                  const canonical = aliasToCanonicalIndex[normalized];
+                  const caseFieldLike = ['case_id', 'caseNumber', 'beneficiary_name', 'beneficiary_last_name'].includes(canonical);
+                  if (caseFieldLike) caseAliasHits += 1;
+                }
+              });
+              let score = (caseAliasHits * 2) + (rosterHits * 5);
+              const lowerName = (name || '').toLowerCase();
+              if (lowerName.includes('case') || lowerName.includes('cases') || lowerName.includes('dataset') || lowerName.includes('data')) score += 10;
+              if (score > best.score) best = { name, score };
+            } catch (e) {
+              // don't fail on sheet read
+            }
+          });
+          return best;
+        })();
+        const sheetName = scoreSheet.name || (Array.isArray(workbook.SheetNames) && workbook.SheetNames[0]) || null;
+        const sheetScore = scoreSheet.score || 0;
+        try { console.debug('XLSX: selected sheet for import:', sheetName, 'score:', sheetScore); } catch (e) {}
+        if (sheetScore <= 0) {
+          // Warn the user that the uploaded workbook doesn't appear to contain Cases data (looks like a survey workbook)
+          try { message.warning('Uploaded workbook does not look like a Cases dataset (no case headers or roster columns detected).'); } catch (e) {}
+        }
+        try { console.debug('XLSX: selected sheet for import:', sheetName); } catch (e) {}
         const sheet = sheetName ? workbook.Sheets[sheetName] : null;
         if (!sheet) {
           throw new Error('No sheet found in XLSX workbook (Workbook sheet names: ' + JSON.stringify(workbook?.SheetNames || []) + ')');
@@ -905,7 +970,9 @@ export const CasesProvider = ({ children }) => {
         // Ensure local fallback rows include a created_at timestamp so Age/SLA calculations work
         const nowIso = new Date().toISOString();
         const dedupedWithTimestamps = dedupedRows.map((r) => ({ ...r, created_at: r.created_at || nowIso }));
-        setCases((prev) => [...dedupedWithTimestamps, ...prev]);
+        // Backfill formFields.family for local import rows (ensure roster parsing runs for XLSX rows)
+        const backfilledLocalRows = backfillCaseCollection(dedupedWithTimestamps);
+        setCases((prev) => [...backfilledLocalRows, ...prev]);
         if (!currentUser) {
           message.info('Imported to local workspace only. Sign in to persist to the server.');
         } else {
@@ -919,7 +986,7 @@ export const CasesProvider = ({ children }) => {
           uploadedBy: currentUser ? (currentUser.name || currentUser.username) : 'You',
           uploadedOn: new Date().toLocaleDateString(),
           status: 'Validated',
-            rows: dedupedWithTimestamps,
+            rows: backfilledLocalRows,
           serverImportSummary: importResult || null,
           failedRows: perRowFailedRows || [],
         };
