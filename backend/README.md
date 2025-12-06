@@ -68,3 +68,6 @@ curl -X POST https://api.bessar.work/auth/generate \
 
 This will return a JSON object like `{ "token": "<JWT>" }`. Store this in n8n's HTTP Header Auth as `Authorization: Bearer <JWT>`.
 
+Notes on roster and nested payloads
+- If the webhook sends a wrapped payload (with `body` object), the backend will flatten the `body` into top-level `raw` keys so repeat group fields like `group_fj2tt69_partnernu1_1_partner_name` appear directly at `raw` and are available for the roster table and case-level mapping.
+

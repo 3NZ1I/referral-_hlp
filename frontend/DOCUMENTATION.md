@@ -76,6 +76,9 @@ These are primarily functional and UX improvements; if you need me to split this
 ### UI Updates (Notes & Comments)
 - **Notes field handling**: All `note`-typed fields are now hidden from the Case Detail card views (they are still displayed as the 'Notes' column in case lists). This reduces verbosity in detail cards while keeping the list title and export-friendly columns intact. Note that `note` type fields remain available in the `raw` payload for admin users.
 - **Comments placement**: The Comments panel was moved from the bottom of the case detail page to just under the primary metadata (Case Number / Status / Assigned Staff / Category grid). This makes comments easier to find when reviewing case details.
+ - **Category**: The Category column in the cases table and the case detail header is now backfilled from form fields (priority order: `law_followup5`, `law_followup4`, `law_followup3`, `law_followup1`, `eng_followup1`). This means server-imported cases and webhook/kobo imports that include these fields will display Category correctly.
+ - **Submission Date / Age**: Frontend will try to resolve the canonical submission timestamp in the following order: `caseRecord.submissionDate`, `raw._submission_time`, `raw.submissiontime`, `formFields.today`, `raw.submissiondate`, `raw.end`, `raw.start`, `raw.created_at`.
+   - This provides robust fallbacks for different payloads and ensures the Age (days) calculation works for cases submitted both locally and via webhook/n8n.
   - **Resolve comment behavior**: When a user changes a case's status to a resolved state (`Completed` or `Closed`), the UI ensures a resolve comment is created and sent to the server as `resolve_comment` in the case update request so backend validation passes and a persistent comment is recorded for the resolution action.
 
 ### Sensitive Fields & Admin-only Visibility
