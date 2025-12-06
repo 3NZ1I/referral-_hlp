@@ -197,6 +197,40 @@ def _ensure_submission_time_in_raw(raw: dict) -> dict:
         pass
     return raw
 
+
+def _flatten_raw_wrapper(raw: dict) -> dict:
+    """Return a flattened version of raw: if raw contains a nested `body` dict or stringified body, merge it to the top-level and canonicalize timestamps.
+    This does not mutate the database; the returned object is the flattened representation used for responses.
+    """
+    if not isinstance(raw, dict):
+        return raw
+    try:
+        # If `body` is stringified JSON, attempt to parse
+        body = raw.get('body')
+        if isinstance(body, str) and body.strip():
+            try:
+                body = json.loads(body)
+            except Exception:
+                body = body
+        if isinstance(body, dict):
+            flattened = dict(body)
+            # Preserve wrapper metadata like headers & kobo ids
+            for k, v in raw.items():
+                if k == 'body':
+                    continue
+                if flattened.get(k) is None:
+                    flattened[k] = v
+            raw = flattened
+    except Exception:
+        # if anything goes wrong, return raw as-is
+        pass
+    # Ensure submission time normalization happens
+    try:
+        raw = _ensure_submission_time_in_raw(raw)
+    except Exception:
+        pass
+    return raw
+
 def has_role(user, role_name):
     if not role_name:
         return False
@@ -322,6 +356,16 @@ def get_cases(db: Session = Depends(get_db), user=Depends(optional_auth)):
                     if k in sensitive_keys:
                         sanitized.pop(k, None)
                 c.raw = sanitized
+    # Flatten nested body wrapper in raw for all cases in response to ensure frontend has direct access to fields
+    try:
+        for c in cases:
+            try:
+                if isinstance(c.raw, dict):
+                    c.raw = _flatten_raw_wrapper(c.raw)
+            except Exception:
+                pass
+    except Exception:
+        pass
             # Normalize empty emails on assigned_to relation
             if c.assigned_to and isinstance(c.assigned_to.email, str) and c.assigned_to.email.strip() == '':
                 c.assigned_to.email = None
@@ -346,6 +390,12 @@ def get_case(case_id: int, db: Session = Depends(get_db), user=Depends(optional_
         case.raw = sanitized
     if case.assigned_to and isinstance(case.assigned_to.email, str) and case.assigned_to.email.strip() == '':
         case.assigned_to.email = None
+    # Flatten any nested raw.body and canonicalize timestamp for single case response as well
+    try:
+        if isinstance(case.raw, dict):
+            case.raw = _flatten_raw_wrapper(case.raw)
+    except Exception:
+        pass
     return case
 
 @app.post("/cases", response_model=CaseRead, status_code=status.HTTP_201_CREATED)
@@ -391,8 +441,6 @@ def create_case(case: CaseCreate, db: Session = Depends(get_db), user=Depends(re
             if raw.get('kobo_case_id') and flattened.get('kobo_case_id') is None:
                 flattened['kobo_case_id'] = raw.get('kobo_case_id')
             raw = flattened
-            # Normalize/ensure submission timestamp after flatten
-            raw = _ensure_submission_time_in_raw(raw)
             payload['raw'] = raw
     except Exception:
         pass
