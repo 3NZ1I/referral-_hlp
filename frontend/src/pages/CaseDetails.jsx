@@ -48,7 +48,13 @@ const stripFormatting = (text) => {
     .trim();
 };
 
-const formatLabel = (labelValue, fallback) => stripFormatting(labelValue) || fallback;
+// Remove leading slot numbers like '1_7_1 ' or '7.1 ' from a label used as title.
+const stripSlotNumbersFromLabel = (text) => {
+  if (!text || typeof text !== 'string') return text;
+  return text.replace(/^\s*\d+(?:[_\.-]\d+)*\s*/g, '').trim();
+};
+
+const formatLabel = (labelValue, fallback) => stripSlotNumbersFromLabel(stripFormatting(labelValue)) || fallback;
 
 const excelSerialToDate = (value) => {
   const serial = Number(value);

@@ -89,6 +89,10 @@ const rosterLabelSuffixIndex = (() => {
     ['relationship', '_partner_relation1'],
     ['مسجل في الأحوال المدنية', '_partner_govreg'],
     ['registered in civil registry', '_partner_govreg'],
+    ['registered in civil', '_partner_govreg'],
+    ['registered', '_partner_govreg'],
+    ['reg', '_partner_govreg'],
+    ['civil registry', '_partner_govreg'],
     ['الاسم', '_partner_name'],
     ['الأسم', '_partner_name'],
     ['name', '_partner_name'],
@@ -136,6 +140,10 @@ const remapRosterHeader = (rawCell = '') => {
       foundSuffix = rosterLabelSuffixIndex[normalizeKey(label)];
     }
   });
+  // Additional heuristic fallback: pick 'govreg' if header contains 'regist' or 'civil'
+  if (!foundSuffix && /\b(regist|civil reg|civil|reg)\b/.test(norm)) {
+    foundSuffix = rosterLabelSuffixIndex[normalizeKey('registered')];
+  }
   if (!foundSuffix || !slot) return null;
   return `group_fj2tt69_partnernu1_${slot}${foundSuffix}`;
 };
@@ -443,10 +451,25 @@ const backfillFormFields = (caseItem) => {
         return suffix;
       };
       // Ensure roster order matches Kobo form ordering and local display expectations.
-      // Explicit slot order mapping for the survey used by the team:
-      const desiredSlotOrder = ['7_1', '5_1', '3_1', '2_1', '1', '6_1', '4_1'];
-      const restSlots = Object.keys(groups).filter((s) => !desiredSlotOrder.includes(s)).sort();
-      const slotsToUse = [...desiredSlotOrder, ...restSlots].filter((s) => groups[s]);
+      // For local file imports, preserve the header order (appearance order in file)
+      let slotsToUse;
+      try {
+        if (caseItem && caseItem.source === 'file') {
+          // Keep insertion order of groups (which matches header order for local imports)
+          slotsToUse = Object.keys(groups);
+        } else {
+          // Default order used for server/kobo cases — keeps expected form ordering
+          const desiredSlotOrder = ['7_1', '5_1', '3_1', '2_1', '1', '6_1', '4_1'];
+          const restSlots = Object.keys(groups).filter((s) => !desiredSlotOrder.includes(s)).sort();
+          slotsToUse = [...desiredSlotOrder, ...restSlots].filter((s) => groups[s]);
+        }
+      } catch (err) {
+        // Fallback to numeric sort if something goes wrong
+        slotsToUse = Object.keys(groups).sort((a, b) => {
+          const toNum = (s) => Number(s.split('_')[0] || s);
+          return toNum(a) - toNum(b);
+        });
+      }
       const rosterArr = slotsToUse.map((slot) => {
         const g = groups[slot];
         const obj = {};
