@@ -410,6 +410,8 @@ const backfillFormFields = (caseItem) => {
         try {
           caseItem.raw.formFields = caseItem.raw.formFields || {};
           caseItem.raw.formFields.family = rosterArr;
+          // also set top-level raw.family for convenience and backward compatibility
+          caseItem.raw.family = rosterArr;
         } catch (e) {
           // ignore errors setting nested object
         }
