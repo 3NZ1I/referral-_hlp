@@ -425,6 +425,15 @@ const backfillFormFields = (caseItem) => {
           // ignore errors setting nested object
         }
       }
+      // Helpful debug in development mode to inspect roster parsing
+      try {
+        if (process && process.env && process.env.NODE_ENV !== 'production') {
+          // eslint-disable-next-line no-console
+          console.debug('backfillFormFields: parsed roster slots', Object.keys(groups), '->', rosterArr.length, rosterArr);
+        }
+      } catch (e) {
+        // ignore -- do not break production behavior
+      }
     }
   } catch (e) {
     // ignore any errors
