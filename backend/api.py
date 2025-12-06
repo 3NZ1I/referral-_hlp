@@ -9,6 +9,7 @@ import logging
 import traceback
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError
 from backend.models import User, Case, Comment, ImportJob, ImportRow
 from datetime import datetime
 from .schemas import (
@@ -231,7 +232,11 @@ def get_db():
 # CASES CRUD
 @app.get("/cases", response_model=list[CaseRead])
 def get_cases(db: Session = Depends(get_db), user=Depends(optional_auth)):
-    cases = db.query(Case).all()
+    try:
+        cases = db.query(Case).all()
+    except OperationalError as e:
+        logging.exception('Database connection failed while fetching cases: %s', e)
+        raise HTTPException(status_code=503, detail='Database unavailable')
     # Hide sensitive fields in the raw payload for non-admin users
     sensitive_keys = set(['id_card_nu', 'family_card_nu', 'passport_nu_001', 'passaport_nu_001'])
     if not is_admin_user(user):
@@ -249,7 +254,11 @@ def get_cases(db: Session = Depends(get_db), user=Depends(optional_auth)):
 
 @app.get("/cases/{case_id}", response_model=CaseRead)
 def get_case(case_id: int, db: Session = Depends(get_db), user=Depends(optional_auth)):
-    case = db.get(Case, case_id)
+    try:
+        case = db.get(Case, case_id)
+    except OperationalError as e:
+        logging.exception('Database connection failed while fetching case %s: %s', case_id, e)
+        raise HTTPException(status_code=503, detail='Database unavailable')
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     # Sanitize raw fields for non-admins
@@ -343,6 +352,7 @@ def delete_case(case_id: int, db: Session = Depends(get_db), user=Depends(requir
 @app.get("/users", response_model=list[UserRead])
 def get_users(db: Session = Depends(get_db)):
     try:
+        # explicit DB connectivity check: handle OperationalError to return 503
         users = db.query(User).all()
         # Normalize empty email strings to None to avoid Pydantic EmailStr validation errors
         for u in users:
@@ -350,6 +360,9 @@ def get_users(db: Session = Depends(get_db)):
                 u.email = None
         logging.info('GET /users returned %s users', len(users))
         return users
+    except OperationalError as e:
+        logging.exception('Database connection failed while fetching users: %s', e)
+        raise HTTPException(status_code=503, detail='Database unavailable')
     except Exception as e:
         logging.exception('Failed to fetch users: %s', e)
         raise HTTPException(status_code=500, detail='Internal server error (could not fetch users)')
