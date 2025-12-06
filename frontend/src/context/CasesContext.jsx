@@ -113,9 +113,12 @@ const remapRosterHeader = (rawCell = '') => {
   if (existingMatch) {
     return `group_fj2tt69_${existingMatch[1]}_${existingMatch[2]}`;
   }
-  // Find slot pattern anywhere in the header
-  const slotMatch = norm.match(/(\d+(?:_\d+)*)/);
-  const slot = slotMatch ? slotMatch[1] : null;
+  // Find slot pattern anywhere in the header (accept '7_1', '7-1', '7.1' or '01' or '1')
+  let slot = null;
+  const slotMatch = norm.match(/(\d+(?:[._-]\d+)*)/);
+  if (slotMatch) {
+    slot = slotMatch[1].replace(/[._-]/g, '_').replace(/^0+/, '');
+  }
   // find label part by checking known roster label suffix index entries included in the header
   let foundSuffix = null;
   Object.keys(rosterLabelSuffixIndex).forEach((label) => {
