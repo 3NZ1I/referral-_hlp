@@ -438,6 +438,11 @@ The following fields are **only visible to Admin users**:
 
 - When running the frontend in development mode, the console logs a debug message when grouped roster fields are parsed. Look for a console entry like: `backfillFormFields: parsed roster slots` which shows the discovered slots and the parsed roster array length and objects (handy for diagnosing why a table is empty).
 
+**Source behavior note**
+
+- Cases created via XLSX file import are marked with `source: file` and the UI will show roster values as present in the file (no select option label mapping is applied).
+- Cases created from backend/Kobo/n8n flows often carry Kobo identifiers like `kobo_case_id` and are marked `source: kobo`. UI will format select option codes into labels for those cases (where metadata is available).
+
 ### 4. Search
 
 **Location:** `/search`
