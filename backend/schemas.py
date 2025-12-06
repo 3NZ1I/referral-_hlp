@@ -20,6 +20,11 @@ class UserRead(UserBase):
     id: int
     created_at: Optional[datetime]
     must_change_password: Optional[bool] = False
+    # The API may expose non-standard or placeholder emails created by sysadmins
+    # (e.g. admin@hlp.local). For responses we allow any string here to avoid
+    # strict EmailStr validation on historical or system-generated values.
+    # Use EmailStr on create/update flows to preserve validation for user input.
+    email: Optional[str] = None
 
     class Config:
         orm_mode = True
