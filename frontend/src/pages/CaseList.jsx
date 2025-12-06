@@ -47,8 +47,8 @@ const columns = [
     key: 'age',
     width: 140,
     render: (submissionDate, record) => {
-      // Calculate age in days
-      let dateVal = submissionDate || (record && record.raw && (record.raw._submission_time || record.raw.submissiontime || record.created_at));
+      // Calculate age in days; prefer formFields.today when present
+      let dateVal = (record && record.formFields && record.formFields.today) || submissionDate || (record && record.raw && (record.raw.today || record.raw._submission_time || record.raw.submissiontime || record.created_at)) || record.created_at;
       if (!dateVal) return '—';
       const parsedDate = new Date(dateVal);
       if (isNaN(parsedDate.getTime())) return '—';
@@ -159,6 +159,52 @@ const CaseList = () => {
 
   useEffect(() => { reloadCases(); }, [reloadCases]);
 
+  // Build column definitions with dynamic filters per column based on current cases
+  const columnsWithFilters = React.useMemo(() => {
+    const buildTextFilters = (key) => {
+      const set = new Set();
+      (cases || []).forEach((c) => {
+        const v = c[key];
+        if (v !== undefined && v !== null && v !== '') set.add(String(v));
+      });
+      return Array.from(set).sort().map(v => ({ text: v, value: v }));
+    };
+
+    return columns.map((col) => {
+      const newCol = { ...col };
+      const key = col.dataIndex || col.key;
+      if (key === 'submissionDate') {
+        newCol.filters = [ { text: '0-5 days', value: '0-5' }, { text: '6-10 days', value: '6-10' }, { text: '>10 days', value: '>10' } ];
+        newCol.onFilter = (value, record) => {
+          const dateVal = (record && record.formFields && record.formFields.today) || (record && record.raw && (record.raw.today || record.raw._submission_time || record.raw.submissiontime || record.created_at)) || record.created_at;
+          if (!dateVal) return false;
+          const parsed = new Date(dateVal);
+          if (isNaN(parsed.getTime())) return false;
+          const diffMs = Date.now() - parsed.getTime();
+          const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+          if (value === '0-5') return days <= 5;
+          if (value === '6-10') return days > 5 && days <= 10;
+          return days > 10;
+        };
+      } else if (key === 'age' || key === 'lastUpdate') {
+        // for readability, we keep build default filters for dataset and category
+      } else {
+        // For text-like fields, add filters
+        if (['status', 'caseNumber', 'assignedStaff', 'category', 'datasetName'].includes(key)) {
+          const filters = buildTextFilters(key);
+          if (filters && filters.length) {
+            newCol.filters = filters;
+            newCol.onFilter = (value, rec) => {
+              const v = rec[key] || '';
+              return String(v).toLowerCase() === String(value).toLowerCase();
+            };
+          }
+        }
+      }
+      return newCol;
+    });
+  }, [cases]);
+
   return (
     <div>
       <div className="card-panel">
@@ -202,7 +248,7 @@ const CaseList = () => {
 
         <div className="table-wrapper">
           <Table
-            columns={columns}
+            columns={columnsWithFilters}
             dataSource={filteredCases}
             pagination={false}
             rowKey="key"
