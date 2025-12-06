@@ -19,6 +19,9 @@ If you are developing a production application, we recommend using TypeScript wi
 ## Backend API: Import and Resolve Changes
 
 - Resolve comment requirement: When making a `PUT /cases/{id}` request that changes a case's status to a resolved state (e.g. `Completed`, `Closed`), include a `resolve_comment` field in the JSON payload. The server validates that `resolve_comment` is present when updating to a resolved state and will return a 400 if missing.
+### Fix: Empty email normalization
+- The server now normalizes empty string emails to `null` before returning users/cases to avoid Pydantic `EmailStr` validation errors which could result in a 500 Internal Server Error in the UI.
+
 - Import endpoint: The `/api/import` endpoint now stores `ImportJob` and `ImportRow` records and returns clearer, per-row statuses (pending, success, skipped, failed). The server attempts deduplication using JSON path queries where supported; if the DB dialect doesn't support `astext` JSON path operations (e.g. SQLite), the backend falls back to Python scanning of `raw` values for duplicates.
 - Notes on deletion: Deleting a case (`DELETE /cases/{id}`) will remove database references (null import rows) and delete comments prior to deleting the case to avoid FK constraint errors.
 
