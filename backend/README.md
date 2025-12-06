@@ -70,4 +70,5 @@ This will return a JSON object like `{ "token": "<JWT>" }`. Store this in n8n's 
 
 Notes on roster and nested payloads
 - If the webhook sends a wrapped payload (with `body` object), the backend will flatten the `body` into top-level `raw` keys so repeat group fields like `group_fj2tt69_partnernu1_1_partner_name` appear directly at `raw` and are available for the roster table and case-level mapping.
+- The frontend will parse repeated Kobo/ODK group fields that follow the `group_fj2tt69_partnernu1_<slot>_<suffix>` pattern into an array under `formFields.family` to render the family roster table. If you control ingestion (e.g., n8n), promoting `formFields` or `raw.family` to the top-level raw payload will reduce per-field parsing and improve reliability.
 
