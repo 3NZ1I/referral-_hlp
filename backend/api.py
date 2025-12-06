@@ -242,6 +242,9 @@ def get_cases(db: Session = Depends(get_db), user=Depends(optional_auth)):
                     if k in sensitive_keys:
                         sanitized.pop(k, None)
                 c.raw = sanitized
+            # Normalize empty emails on assigned_to relation
+            if c.assigned_to and isinstance(c.assigned_to.email, str) and c.assigned_to.email.strip() == '':
+                c.assigned_to.email = None
     return cases
 
 @app.get("/cases/{case_id}", response_model=CaseRead)
@@ -257,6 +260,8 @@ def get_case(case_id: int, db: Session = Depends(get_db), user=Depends(optional_
             if k in sensitive_keys:
                 sanitized.pop(k, None)
         case.raw = sanitized
+    if case.assigned_to and isinstance(case.assigned_to.email, str) and case.assigned_to.email.strip() == '':
+        case.assigned_to.email = None
     return case
 
 @app.post("/cases", response_model=CaseRead, status_code=status.HTTP_201_CREATED)
@@ -339,6 +344,10 @@ def delete_case(case_id: int, db: Session = Depends(get_db), user=Depends(requir
 def get_users(db: Session = Depends(get_db)):
     try:
         users = db.query(User).all()
+        # Normalize empty email strings to None to avoid Pydantic EmailStr validation errors
+        for u in users:
+            if isinstance(u.email, str) and u.email.strip() == '':
+                u.email = None
         logging.info('GET /users returned %s users', len(users))
         return users
     except Exception as e:
@@ -352,6 +361,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db), auth=Depends(re
     if password and not validate_password_strength(password):
         raise HTTPException(status_code=400, detail='Password does not meet strength requirements (min 8 chars; mixed case; digits or symbols)')
     user_data = user.dict(exclude={"password"})
+    # Normalize empty string email to None to avoid Pydantic EmailStr validation issues
+    if 'email' in user_data and isinstance(user_data['email'], str) and user_data['email'].strip() == '':
+        user_data['email'] = None
     if password:
         user_data["password_hash"] = hash_password(password)
     # Accept must_change_password if provided by admin
@@ -399,7 +411,10 @@ def update_user(user_id: int, payload: dict, db: Session = Depends(get_db), auth
     # Update other allowed fields: email, name, role, ability, must_change_password
     for k in ['email', 'name', 'role', 'ability', 'must_change_password']:
         if k in payload:
-            setattr(db_user, k, payload.get(k))
+            val = payload.get(k)
+            if k == 'email' and isinstance(val, str) and val.strip() == '':
+                val = None
+            setattr(db_user, k, val)
     db.commit()
     db.refresh(db_user)
     return db_user
