@@ -213,9 +213,13 @@ const CaseDetails = () => {
   }
 
   const submissionDate = caseRecord.submissionDate
+    || caseRecord.raw?._submission_time
     || caseRecord.raw?.submissiontime
     || caseRecord.formFields?.today
-    || caseRecord.raw?._submission_time;
+    || caseRecord.raw?.submissiondate
+    || caseRecord.raw?.end
+    || caseRecord.raw?.start
+    || caseRecord.raw?.created_at;
 
   // Compute category from referral/followup fields
 

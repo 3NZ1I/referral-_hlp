@@ -389,4 +389,5 @@ export const caseFieldMapping = {
   followUpDate: ['today', 'last_visit_date', 'last_stay_date'],
   notes: ['extra_note', 'case_id_note', 'law_ref_note', 'eng_ref_note'],
   submissionDate: ['_submission_time', 'submission_time', 'submissiontime'],
+  category: ['law_followup5', 'law_followup4', 'law_followup3', 'law_followup1', 'eng_followup1'],
 };

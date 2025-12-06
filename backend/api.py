@@ -136,7 +136,7 @@ def _ensure_submission_time_in_raw(raw: dict) -> dict:
     try:
         body = raw.get('body')
         if isinstance(body, dict):
-            for field in ('_submission_time', 'submissiontime', 'submission_time'):
+            for field in ('_submission_time', 'submissiontime', 'submission_time', 'end', 'start', 'submitted_at', 'submissiondate', 'submissionDate'):
                 if body.get(field) is not None and raw.get(field) is None:
                     raw[field] = body.get(field)
                     try:
@@ -148,7 +148,11 @@ def _ensure_submission_time_in_raw(raw: dict) -> dict:
 
     # Normalize known submission timestamp fields (int epoch or common string formats) into an ISO 8601 string
     try:
-        for field in ('_submission_time', 'submissiontime', 'submission_time'):
+        candidate_fields = (
+            '_submission_time', 'submissiontime', 'submission_time',
+            'end', 'start', 'submitted_at', 'submissiondate', 'submissionDate'
+        )
+        for field in candidate_fields:
             val = raw.get(field)
             if val is None:
                 continue
@@ -158,7 +162,9 @@ def _ensure_submission_time_in_raw(raw: dict) -> dict:
                 ts = int(val)
                 if ts > 1e12:  # milliseconds
                     ts = ts // 1000
-                raw[field] = datetime.utcfromtimestamp(ts).isoformat() + 'Z'
+                iso_ts = datetime.utcfromtimestamp(ts).isoformat() + 'Z'
+                raw['_submission_time'] = iso_ts
+                raw[field] = iso_ts
                 continue
             if isinstance(val, str):
                 s = val.strip()
@@ -167,7 +173,9 @@ def _ensure_submission_time_in_raw(raw: dict) -> dict:
                     ts = int(s)
                     if ts > 1e12:  # ms
                         ts = ts // 1000
-                    raw[field] = datetime.utcfromtimestamp(ts).isoformat() + 'Z'
+                    iso_ts = datetime.utcfromtimestamp(ts).isoformat() + 'Z'
+                    raw['_submission_time'] = iso_ts
+                    raw[field] = iso_ts
                     continue
                 # Normal ISO-like strings with space instead of T: replace and append Z if missing
                 try:
@@ -178,7 +186,9 @@ def _ensure_submission_time_in_raw(raw: dict) -> dict:
                     # Try parsing
                     dt = datetime.fromisoformat(s2.replace('Z', '+00:00'))
                     # Re-serialize as UTC ISO with Z
-                    raw[field] = dt.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+                    iso_ts = dt.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+                    raw['_submission_time'] = iso_ts
+                    raw[field] = iso_ts
                 except Exception:
                     # Last resort: leave as-is since frontend may accept it
                     pass
@@ -366,13 +376,23 @@ def create_case(case: CaseCreate, db: Session = Depends(get_db), user=Depends(re
     raw = _ensure_submission_time_in_raw(payload['raw'])
     payload['raw'] = raw
     try:
-        if isinstance(raw, dict) and 'headers' in raw and isinstance(raw.get('body'), dict) and len(raw) <= 2:
-            flattened = dict(raw.get('body'))
-            flattened['headers'] = raw.get('headers')
-            # move any kobo_* fields to flattened
-            if raw.get('kobo_case_id'):
+        # Flatten nested `body` if present; Kobo/webhook wrappers often provide fields under body
+        if isinstance(raw, dict) and isinstance(raw.get('body'), dict):
+            body_obj = raw.get('body') or {}
+            # merge body fields onto top-level, prefer body values but keep top-level keys that are not conflicting
+            flattened = dict(body_obj)
+            # Preserve headers and any top-level metadata (kobo_case_id, headers, etc.)
+            for k, v in raw.items():
+                if k == 'body':
+                    continue
+                if flattened.get(k) is None:
+                    flattened[k] = v
+            # If kobo id fields exist on the original wrapper, keep them
+            if raw.get('kobo_case_id') and flattened.get('kobo_case_id') is None:
                 flattened['kobo_case_id'] = raw.get('kobo_case_id')
             raw = flattened
+            # Normalize/ensure submission timestamp after flatten
+            raw = _ensure_submission_time_in_raw(raw)
             payload['raw'] = raw
     except Exception:
         pass
@@ -435,6 +455,22 @@ def update_case(case_id: int, case: CaseUpdate, db: Session = Depends(get_db), u
         except Exception:
             pass
         payload['raw'] = raw_payload
+        # If payload contains nested body wrapper, flatten it
+        try:
+            if isinstance(raw_payload, dict) and isinstance(raw_payload.get('body'), dict):
+                body_obj = raw_payload.get('body') or {}
+                flattened = dict(body_obj)
+                for k, v in raw_payload.items():
+                    if k == 'body':
+                        continue
+                    if flattened.get(k) is None:
+                        flattened[k] = v
+                if raw_payload.get('kobo_case_id') and flattened.get('kobo_case_id') is None:
+                    flattened['kobo_case_id'] = raw_payload.get('kobo_case_id')
+                raw_payload = flattened
+                payload['raw'] = raw_payload
+        except Exception:
+            pass
     # If the title provided was a generic Kobo placeholder, try to set a useful title
     if 'title' in payload:
         t = payload.get('title') or ''
@@ -456,10 +492,15 @@ def update_case(case_id: int, case: CaseUpdate, db: Session = Depends(get_db), u
     # Flatten wrapper-style raw if needed
     raw_upd = payload.get('raw')
     try:
-        if isinstance(raw_upd, dict) and 'headers' in raw_upd and isinstance(raw_upd.get('body'), dict) and len(raw_upd) <= 2:
-            flattened = dict(raw_upd.get('body'))
-            flattened['headers'] = raw_upd.get('headers')
-            if raw_upd.get('kobo_case_id'):
+        if isinstance(raw_upd, dict) and isinstance(raw_upd.get('body'), dict):
+            body_obj = raw_upd.get('body') or {}
+            flattened = dict(body_obj)
+            for k, v in raw_upd.items():
+                if k == 'body':
+                    continue
+                if flattened.get(k) is None:
+                    flattened[k] = v
+            if raw_upd.get('kobo_case_id') and flattened.get('kobo_case_id') is None:
                 flattened['kobo_case_id'] = raw_upd.get('kobo_case_id')
             payload['raw'] = flattened
             # Ensure top-level submission time fields are set if present in nested body
