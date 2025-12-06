@@ -290,6 +290,15 @@ const mapFieldsFromRow = (rawRow) => {
     const cleanKey = normalizeKey(key);
     rowLookup[cleanKey] = typeof value === 'string' ? value.trim() : value;
   });
+  // Also include any nested keys under raw.formFields (server backends often put question fields under formFields)
+  if (rawRow && rawRow.formFields && typeof rawRow.formFields === 'object') {
+    Object.entries(rawRow.formFields).forEach(([key, value]) => {
+      if (!key || value === undefined || value === null || value === '') return;
+      const cleanKey = normalizeKey(key);
+      // Do not overwrite existing top-level entries; only add if missing
+      if (rowLookup[cleanKey] === undefined) rowLookup[cleanKey] = typeof value === 'string' ? value.trim() : value;
+    });
+  }
   
   // Available keys count: Object.keys(rowLookup).length
   
@@ -415,22 +424,42 @@ const backfillFormFields = (caseItem) => {
       // Make a best-effort attempt to remap non-canonical headers in raw into canonical group keys.
       // This helps when header normalization missed them (e.g., 'First name 1' left un-mapped).
       try {
+        // Remap headers found in top-level raw keys
         Object.keys(caseItem.raw || {}).forEach((k) => {
           try {
             const maybeCanonical = remapRosterHeader(String(k));
             if (maybeCanonical && !Object.prototype.hasOwnProperty.call(caseItem.raw, maybeCanonical)) {
-              // Preserve original; only set if canonical missing
               caseItem.raw[maybeCanonical] = caseItem.raw[k];
             }
           } catch (e) {
             // ignore malformed keys
           }
         });
+        // Also remap nested keys under raw.formFields if present (server payloads often nest fields)
+        if (caseItem.raw && caseItem.raw.formFields && typeof caseItem.raw.formFields === 'object') {
+          Object.keys(caseItem.raw.formFields).forEach((k) => {
+            try {
+              const maybeCanonical = remapRosterHeader(String(k));
+              if (maybeCanonical && !Object.prototype.hasOwnProperty.call(caseItem.raw, maybeCanonical)) {
+                caseItem.raw[maybeCanonical] = caseItem.raw.formFields[k];
+              }
+            } catch (e) {
+              // ignore malformed
+            }
+          });
+        }
       } catch (remapErr) {
         // ignore remap errors; proceed with original raw
       }
       // collect keys that match the grouped roster pattern 'group_fj2tt69_partnernu1_<slot>_...'
-      const rawKeys = Object.keys(caseItem.raw || {});
+      // For group parsing, collect both top-level keys and nested raw.formFields keys
+      const rawKeys = [...Object.keys(caseItem.raw || {})];
+      if (caseItem.raw && caseItem.raw.formFields && typeof caseItem.raw.formFields === 'object') {
+        Object.keys(caseItem.raw.formFields).forEach((k) => {
+          // Avoid duplicates
+          if (!rawKeys.includes(k)) rawKeys.push(k);
+        });
+      }
       const rosterPattern = /^group_fj2tt69_partnernu1_(\d+(?:_\d+)*)_(.+)$/; // capture slot and suffix
       const groups = {};
       rawKeys.forEach((k) => {
