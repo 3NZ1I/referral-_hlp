@@ -25,6 +25,10 @@ If you are developing a production application, we recommend using TypeScript wi
 - Import endpoint: The `/api/import` endpoint now stores `ImportJob` and `ImportRow` records and returns clearer, per-row statuses (pending, success, skipped, failed). The server attempts deduplication using JSON path queries where supported; if the DB dialect doesn't support `astext` JSON path operations (e.g. SQLite), the backend falls back to Python scanning of `raw` values for duplicates.
 - Notes on deletion: Deleting a case (`DELETE /cases/{id}`) will remove database references (null import rows) and delete comments prior to deleting the case to avoid FK constraint errors.
 
+### DB availability and 503 responses
+- If the backend cannot connect to the configured database instance (for example, the DB is down or the `DATABASE_URL` is misconfigured), the API now returns HTTP 503 (Service Unavailable) for endpoints that rely on DB queries (`GET /api/users`, `GET /api/cases`, etc.). See `docker compose logs backend --tail 200` for the backend error trace if you receive 503 responses.
+
+
 ## Testing the API changes
 
 - To test Resolve comment validation:
