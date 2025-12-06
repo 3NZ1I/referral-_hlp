@@ -399,7 +399,9 @@ const backfillFormFields = (caseItem) => {
       // Ensure roster order matches Kobo form ordering and local display expectations.
       // Explicit slot order mapping for the survey used by the team:
       const desiredSlotOrder = ['7_1', '5_1', '3_1', '2_1', '1', '6_1', '4_1'];
-      const rosterArr = desiredSlotOrder.filter((s) => groups[s]).map((slot) => {
+      const restSlots = Object.keys(groups).filter((s) => !desiredSlotOrder.includes(s)).sort();
+      const slotsToUse = [...desiredSlotOrder, ...restSlots].filter((s) => groups[s]);
+      const rosterArr = slotsToUse.map((slot) => {
         const g = groups[slot];
         const obj = {};
         Object.entries(g).forEach(([suffix, val]) => {
