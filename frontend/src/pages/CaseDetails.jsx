@@ -649,7 +649,7 @@ const CaseDetails = () => {
                 <div style={{ fontSize: 12, color: '#666' }}>Preferred value language</div>
                 <div style={{ fontSize: 11, color: '#888' }}><span style={{ fontWeight: 600 }}>{valueLang === 'ar' ? 'عربي' : 'English'}</span></div>
               </div>
-              <Select value={valueLang} onChange={(v) => { setValueLang(v); try { localStorage.setItem('preferredValueLanguage', v); window.location.reload(); } catch (e) {} }} style={{ width: 160 }}>
+              <Select value={valueLang} onChange={(v) => { setValueLang(v); try { localStorage.setItem('preferredValueLanguage', v); window.location.reload(); } catch (e) {} }} style={{ width: 200 }}>
                 <Select.Option value="ar">Arabic (العربية)</Select.Option>
                 <Select.Option value="en">English</Select.Option>
               </Select>

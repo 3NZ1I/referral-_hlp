@@ -349,7 +349,7 @@ const CaseList = () => {
             dataSource={filteredCases}
             pagination={false}
             rowKey="key"
-            scroll={{ x: 800 }}
+            scroll={{ x: 1100 }}
             onRow={(record) => ({
               onClick: () => navigate(`/case/${record.key}`),
               style: { cursor: 'pointer' },
