@@ -398,7 +398,7 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
     || normalizedRow.submissiontime
     || '';
   
-  // Calculate category from referral fields
+  // Calculate category from referral fields; prefer canonicalFields then raw fallback
   let category = '';
   // Category priority: External legal guidance, External legal referral,
   // Internal legal referral, Type of legal case, then Engineering referral type.
@@ -411,7 +411,12 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
   ];
   
   for (const { field } of categoryFields) {
-    const value = canonicalFields[field];
+    // Prefer canonical mapping first
+    let value = canonicalFields[field];
+    // Fallback to a raw field alias if canonical mapping is not available
+    if ((value === undefined || value === '') && normalizedRow && normalizedRow[field]) {
+      value = normalizedRow[field];
+    }
     if (value && value !== '') {
       category = value;
       break;
@@ -435,10 +440,15 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
     notes: resolveCaseFieldValue(normalizedRow, 'notes', ''),
     category,
     submissionDate,
-    created_at: normalizedRow.created_at || normalizedRow._submission_time || normalizedRow.submissiontime || undefined,
+    // Prefer submission timestamp when available to compute age consistently
+    created_at: normalizedRow._submission_time || normalizedRow.submissiontime || normalizedRow.created_at || undefined,
     updated_at: normalizedRow.updated_at || normalizedRow._last_edited || normalizedRow._updated || normalizedRow._submission_time || undefined,
     raw: normalizedRow,
     formFields: canonicalFields,
+    // familySize: first check canonical form fields (array), then raw.family, then explicit fam_number alias
+    familySize: (canonicalFields && canonicalFields.family && Array.isArray(canonicalFields.family) ? canonicalFields.family.length :
+      (normalizedRow && normalizedRow.family && Array.isArray(normalizedRow.family) ? normalizedRow.family.length :
+        (normalizedRow && (normalizedRow.fam_number || normalizedRow.fam_number === 0) ? Number(normalizedRow.fam_number) : undefined))) || undefined,
   };
 };
 
