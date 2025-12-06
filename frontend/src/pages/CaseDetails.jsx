@@ -340,6 +340,36 @@ const CaseDetails = () => {
     }
   };
 
+  // Special action for explicit Resolve flow (Resolve Now button) that adds a resolve comment and updates status
+  const handleResolveNow = async () => {
+    if (!commentText.trim()) {
+      message.error('Please enter a resolve comment');
+      return;
+    }
+    try {
+      setSaving(true);
+      // persist comment then update status
+      if (caseRecord.id) {
+        await apiAddComment(caseRecord.id, commentText.trim());
+      } else {
+        const newComment = { id: Date.now().toString(), text: commentText.trim(), author: currentUser?.username || 'Unknown User', timestamp: new Date().toISOString() };
+        await updateCase(caseRecord.key, { comments: [ ...(caseRecord.comments || []), newComment ] });
+      }
+      // Update status with resolve_comment body to satisfy backend
+      await updateCase(caseRecord.key, { status: statusValue });
+      if (caseRecord.id) {
+        await updateCaseApi(caseRecord.id, { title: caseRecord.title, description: caseRecord.raw?.description || caseRecord.notes || '', status: statusValue, resolve_comment: commentText.trim() });
+      }
+      setCommentText('');
+      message.success('Case resolved and comment added');
+    } catch (err) {
+      console.error('Failed to resolve case', err);
+      message.error('Failed to resolve case');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleEditComment = (comment) => {
     setEditingCommentId(comment.id);
     setEditCommentText(comment.text);
@@ -684,9 +714,21 @@ const CaseDetails = () => {
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
           />
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            {/* Show Resolve Now when a resolved state is selected */}
+            {['Completed', 'Closed'].includes(statusValue) && (
+              <Button
+                type="primary"
+                onClick={handleResolveNow}
+                loading={saving}
+                disabled={!commentText.trim()}
+                danger
+              >
+                Resolve Now
+              </Button>
+            )}
             <Button
-              type="primary"
+              type="default"
               onClick={handleAddComment}
               loading={addingComment}
               disabled={!commentText.trim()}

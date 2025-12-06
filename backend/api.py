@@ -573,14 +573,33 @@ def import_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), use
                     dup_key = str(case_data.get(alias_key))
                     break
             if dup_key:
-                existing_case = db.query(Case).filter(
-                    or_(
-                        Case.raw['case_id'].astext == dup_key,
-                        Case.raw['_id'].astext == dup_key,
-                        Case.raw['_uuid'].astext == dup_key,
-                        Case.raw['caseNumber'].astext == dup_key,
-                    )
-                ).first()
+                existing_case = None
+                # Try database JSON path matching (preferred for PG/JSONB); but guard against dialects
+                try:
+                    existing_case = db.query(Case).filter(
+                        or_(
+                            Case.raw['case_id'].astext == dup_key,
+                            Case.raw['_id'].astext == dup_key,
+                            Case.raw['_uuid'].astext == dup_key,
+                            Case.raw['caseNumber'].astext == dup_key,
+                        )
+                    ).first()
+                except Exception as json_err:
+                    # Fall back to Python-level scan (works for SQLite and other dialects)
+                    logging.warning('JSON path query failed, falling back to python scan for dup key %s: %s', dup_key, json_err)
+                    try:
+                        rows_all = db.query(Case).filter(Case.raw != None).all()
+                        for r in rows_all:
+                            raw = r.raw or {}
+                            try:
+                                v = raw.get('case_id') or raw.get('_id') or raw.get('_uuid') or raw.get('caseNumber')
+                            except Exception:
+                                v = None
+                            if v and str(v) == dup_key:
+                                existing_case = r
+                                break
+                    except Exception as py_err:
+                        logging.exception('Failed to fallback-scan cases for duplicate key %s: %s', dup_key, py_err)
                 if existing_case:
                     import_row.case_id = existing_case.id
                     import_row.status = 'skipped'
