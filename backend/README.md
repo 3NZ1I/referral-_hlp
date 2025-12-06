@@ -24,6 +24,16 @@ If you are developing a production application, we recommend using TypeScript wi
 ### Incoming webhook payload parsing and title handling
 - When creating or updating cases, the backend now attempts to parse and normalize the incoming `raw` field if it is a string or a wrapped webhook payload (e.g., `{ headers: {...}, body: {...} }`). It parses stringified JSON and flattens the nested `body` to make form fields accessible to the application.
 - If the `title` is missing or a generic placeholder (e.g., 'Kobo Submission'), the API will try to derive a sensible title by looking for `case_number`, `caseNumber` or `body.case_number` fields inside `raw`, and will fall back to beneficiary name or UUID.
+### Submission timestamp handling
+- The backend now promotes submission timestamp fields from nested wrapped webhook payloads to top-level `raw` so the frontend can consistently compute Age values. If a wrapper payload contains a `body` object with `_submission_time`, `submissiontime`, or `submission_time`, these keys will be copied to `raw._submission_time`/`raw.submissiontime`/`raw.submission_time` when creating or updating cases.
+
+### Submission timestamp normalization
+- The server now normalizes submission timestamp fields to ISO 8601 (UTC) where possible so the frontend can reliably compute Age (days). Supported input forms include:
+	- ISO 8601 string (example: "2024-01-01T12:00:00Z")
+	- Space-separated datetime (example: "2024-01-01 12:00:00")
+	- Epoch seconds / milliseconds (e.g., 1704067200 or 1704067200123)
+	When the incoming payload has submission timestamps stored in `raw.body`, the server promotes and normalizes them to top-level fields such as `raw._submission_time` and `raw.submissiontime`.
+	- This ensures that cases submitted via n8n or other external systems will have their submission time available to the frontend even if the webhook nests form fields under `body`.
 ### Relax response email validation
 - The API response model for users (`UserRead`) now allows any string for `email` (i.e., not strictly validated by `EmailStr`) to avoid 500 errors when sysadmin-created accounts or legacy records include non-standard/reserved domains such as `admin@hlp.local`.
 - Input validation for `POST /users` and `PUT /users/{id}` still uses `EmailStr` to validate user-provided emails.

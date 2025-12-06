@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 import logging
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
 from backend.models import User, Case, Comment, ImportJob, ImportRow
@@ -125,6 +125,67 @@ def _normalize_roles(user):
 def is_admin_user(user):
     roles = _normalize_roles(user)
     return 'admin' in roles
+
+
+def _ensure_submission_time_in_raw(raw: dict) -> dict:
+    """If raw contains a `body` object with submission timestamp fields, copy them to top-level `raw`.
+    This helps the frontend compute Age consistently when a wrapper payload was received.
+    """
+    if not isinstance(raw, dict):
+        return raw
+    try:
+        body = raw.get('body')
+        if isinstance(body, dict):
+            for field in ('_submission_time', 'submissiontime', 'submission_time'):
+                if body.get(field) is not None and raw.get(field) is None:
+                    raw[field] = body.get(field)
+                    try:
+                        del body[field]
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
+    # Normalize known submission timestamp fields (int epoch or common string formats) into an ISO 8601 string
+    try:
+        for field in ('_submission_time', 'submissiontime', 'submission_time'):
+            val = raw.get(field)
+            if val is None:
+                continue
+            # If already an int/float timestamp, convert to ISO UTC
+            if isinstance(val, (int, float)):
+                # If milliseconds (large number), normalize to seconds
+                ts = int(val)
+                if ts > 1e12:  # milliseconds
+                    ts = ts // 1000
+                raw[field] = datetime.utcfromtimestamp(ts).isoformat() + 'Z'
+                continue
+            if isinstance(val, str):
+                s = val.strip()
+                # purely numeric string: interpret as unix seconds or ms
+                if s.isdigit():
+                    ts = int(s)
+                    if ts > 1e12:  # ms
+                        ts = ts // 1000
+                    raw[field] = datetime.utcfromtimestamp(ts).isoformat() + 'Z'
+                    continue
+                # Normal ISO-like strings with space instead of T: replace and append Z if missing
+                try:
+                    if ' ' in s and 'T' not in s and 'Z' not in s:
+                        s2 = s.replace(' ', 'T') + 'Z'
+                    else:
+                        s2 = s
+                    # Try parsing
+                    dt = datetime.fromisoformat(s2.replace('Z', '+00:00'))
+                    # Re-serialize as UTC ISO with Z
+                    raw[field] = dt.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+                except Exception:
+                    # Last resort: leave as-is since frontend may accept it
+                    pass
+    except Exception:
+        # Be resilient: do nothing on parse errors
+        pass
+    return raw
 
 def has_role(user, role_name):
     if not role_name:
@@ -301,7 +362,9 @@ def create_case(case: CaseCreate, db: Session = Depends(get_db), user=Depends(re
     except Exception:
         raw = payload.get('raw')
     payload['raw'] = raw
-    # If the raw appears to be a wrapper with headers and nested body, flatten it so the real data is accessible
+    # Ensure submission timestamps are available at top-level raw for frontend Age computation
+    raw = _ensure_submission_time_in_raw(payload['raw'])
+    payload['raw'] = raw
     try:
         if isinstance(raw, dict) and 'headers' in raw and isinstance(raw.get('body'), dict) and len(raw) <= 2:
             flattened = dict(raw.get('body'))
@@ -399,6 +462,8 @@ def update_case(case_id: int, case: CaseUpdate, db: Session = Depends(get_db), u
             if raw_upd.get('kobo_case_id'):
                 flattened['kobo_case_id'] = raw_upd.get('kobo_case_id')
             payload['raw'] = flattened
+            # Ensure top-level submission time fields are set if present in nested body
+            payload['raw'] = _ensure_submission_time_in_raw(payload['raw'])
     except Exception:
         pass
     new_status = payload.get('status')

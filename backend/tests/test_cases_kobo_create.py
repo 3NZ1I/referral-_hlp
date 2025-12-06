@@ -46,3 +46,68 @@ def test_delete_case_created_by_kobo(client):
     # Delete
     del_res = client.delete(f'/cases/{case_id}', headers=headers)
     assert del_res.status_code == 200
+
+
+def test_create_case_moves_submission_time_to_top_level(client):
+    # Register a new internal service user and get token via register
+    payload = {'username': 'svcuser2', 'email': 'svc2@example.com', 'password': 'StrongPass1!'}
+    res_reg = client.post('/auth/register', json=payload)
+    assert res_reg.status_code == 200
+    token = res_reg.json().get('token')
+    assert token
+    headers = {'Authorization': f'Bearer {token}'}
+
+    # 1) Test when payload has nested raw.body._submission_time
+    kobo_payload = {
+        'title': 'Kobo Submission',
+        'description': 'Check submission time moved',
+        'raw': {
+            'body': {'case_number': 'TEST-TS-01', '_submission_time': '2024-01-01T12:00:00Z'},
+            '_uuid': 'ts-uuid-1'
+        }
+    }
+    res = client.post('/cases', json=kobo_payload, headers=headers)
+    assert res.status_code == 201
+    body = res.json()
+    assert 'raw' in body and isinstance(body['raw'], dict)
+    assert body['raw'].get('_submission_time') == '2024-01-01T12:00:00Z'
+
+    # 2) Test when payload is wrapper style with headers/body
+    wrapper_payload = {
+        'title': 'Kobo Submission',
+        'raw': {
+            'headers': {'source': 'kobo'},
+            'body': {'case_number': 'TEST-TS-02', 'submissiontime': '2024-01-02T14:00:00Z'}
+        }
+    }
+    res2 = client.post('/cases', json=wrapper_payload, headers=headers)
+    assert res2.status_code == 201
+    body2 = res2.json()
+    assert 'raw' in body2 and isinstance(body2['raw'], dict)
+    assert body2['raw'].get('submissiontime') == '2024-01-02T14:00:00Z'
+
+    # 3) Test numeric epoch seconds (10-digit) in nested raw.body
+    epoch_payload = {
+        'title': 'Kobo Submission',
+        'raw': {
+            'body': {'case_number': 'TEST-TS-03', '_submission_time': 1704067200},  # 2024-01-01T00:00:00Z
+            '_uuid': 'ts-uuid-2'
+        }
+    }
+    res3 = client.post('/cases', json=epoch_payload, headers=headers)
+    assert res3.status_code == 201
+    body3 = res3.json()
+    assert body3['raw'].get('_submission_time') == '2024-01-01T00:00:00Z'
+
+    # 4) Test space-separated datetime string and ensure we convert to ISO
+    spaced_payload = {
+        'title': 'Kobo Submission',
+        'raw': {
+            'body': {'case_number': 'TEST-TS-04', '_submission_time': '2024-01-03 08:30:00'},
+            '_uuid': 'ts-uuid-3'
+        }
+    }
+    res4 = client.post('/cases', json=spaced_payload, headers=headers)
+    assert res4.status_code == 201
+    body4 = res4.json()
+    assert body4['raw'].get('_submission_time') == '2024-01-03T08:30:00Z'
