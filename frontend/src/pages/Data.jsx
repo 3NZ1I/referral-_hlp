@@ -23,8 +23,9 @@ const caseColumns = [
   },
   { title: 'Case Number', dataIndex: 'caseNumber', key: 'caseNumber', width: 200 },
   { title: 'Assigned Staff Name', dataIndex: 'assignedStaff', key: 'assignedStaff', width: 220 },
-  { title: 'Age (days)', dataIndex: 'submissionDate', key: 'age', width: 140, render: (submissionDate, record) => {
-      const dateVal = submissionDate || (record && record.raw && (record.raw._submission_time || record.raw.submissiontime || record.created_at));
+    { title: 'Age (days)', dataIndex: 'submissionDate', key: 'age', width: 140, render: (submissionDate, record) => {
+      // Prefer explicit formFields.today (commonly set by n8n) when present; else fall back to submission timestamp
+      const dateVal = (record && record.formFields && record.formFields.today) || submissionDate || (record && record.raw && (record.raw.today || record.raw.formFields && record.raw.formFields.today || record.raw._submission_time || record.raw.submissiontime || record.created_at));
       if (!dateVal) return '—';
       const parsedDate = new Date(dateVal);
       if (isNaN(parsedDate.getTime())) return '—';
@@ -46,7 +47,23 @@ const caseColumns = [
         </div>
       );
     } },
-  { title: 'Dataset', dataIndex: 'datasetName', key: 'datasetName', width: 220 },
+  { title: 'Dataset', dataIndex: 'datasetName', key: 'datasetName', width: 220, render: (datasetName, record) => {
+      // If case is server originated, attempt to detect 'n8n' via uploadedBy or raw markers, and show 'n8n' or 'Server'
+      try {
+        if (record && record.datasetKey === 'server') {
+          const uploader = (record.uploadedBy || record.raw?.uploaded_by || record.raw?.uploadedBy || '') || '';
+          if (typeof uploader === 'string' && uploader.toLowerCase().includes('n8n')) {
+            return 'n8n (Backend)';
+          }
+          if (record.source === 'kobo') return 'Kobo (Backend)';
+          return 'Backend';
+        }
+      } catch (e) {
+        // ignore
+      }
+      // Otherwise, present datasetName or the uploading filename
+      return datasetName || ((record && record.raw && (record.raw.fileName || record.raw._fileName)) || 'File');
+    } },
 ];
 
 // NOTE: datasetColumns depends on component scope (currentUser and retryFailedRows)
