@@ -104,7 +104,17 @@ const columns = [
       );
     },
   },
-  { title: 'Dataset', dataIndex: 'datasetName', key: 'datasetName', width: 220 },
+  { title: 'Dataset', dataIndex: 'datasetName', key: 'datasetName', width: 220, render: (datasetName, record) => {
+      try {
+        if (record && record.datasetKey === 'server') {
+          const uploader = (record.uploadedBy || record.raw?.uploaded_by || record.raw?.uploadedBy || '') || '';
+          if (typeof uploader === 'string' && uploader.toLowerCase().includes('n8n')) return 'n8n (Backend)';
+          if (record.source === 'kobo') return 'Kobo (Backend)';
+          return 'Backend';
+        }
+      } catch (e) {}
+      return datasetName || ((record && record.raw && (record.raw.fileName || record.raw._fileName)) || 'File');
+    } },
   {
     title: 'Last Update',
     dataIndex: 'updated_at',
