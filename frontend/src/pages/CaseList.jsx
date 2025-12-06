@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCases } from '../context/CasesContext';
 import { getOptionLabel } from '../utils/formatters';
 import { useAuth } from '../context/AuthContext';
+import { GlobalOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph } = Typography;
 
@@ -121,12 +122,12 @@ const columns = [
 
 const CaseList = () => {
   const navigate = useNavigate();
-  const { cases, reloadCases, staffDirectory, datasets } = useCases();
+  const { cases, reloadCases, staffDirectory, datasets, valueLang, setValueLang } = useCases();
   const { currentUser } = useAuth();
 
   const [statusFilter, setStatusFilter] = useState('');
   const [assignedFilter, setAssignedFilter] = useState('');
-  const [valueLang, setValueLang] = useState('en');
+  // Will use global preferred value language from CasesContext; the default is set in the provider
   // Follow-up filter was removed in the requested UI changes
 
   // Filter cases: admin and internal users see all cases, external users only see their assigned cases
@@ -323,10 +324,16 @@ const CaseList = () => {
           </div>
 
           <div style={{ marginLeft: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ fontSize: 12, color: '#666', marginRight: 8 }}>Values language</div>
-            <Select value={valueLang} onChange={v => setValueLang(v)} style={{ minWidth: 120 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <GlobalOutlined style={{ fontSize: 16, color: '#777' }} />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: 12, color: '#666' }}>Preferred value language</div>
+                <div style={{ fontSize: 11, color: '#888' }}><span style={{ fontWeight: 600 }}>{valueLang === 'ar' ? 'عربي' : 'English'}</span></div>
+              </div>
+            </div>
+            <Select value={valueLang} onChange={(v) => { setValueLang(v); try { localStorage.setItem('preferredValueLanguage', v); window.location.reload(); } catch (e) {} }} style={{ minWidth: 160 }}>
+              <Select.Option value="ar">Arabic (العربية)</Select.Option>
               <Select.Option value="en">English</Select.Option>
-              <Select.Option value="ar">Arabic</Select.Option>
             </Select>
           </div>
 

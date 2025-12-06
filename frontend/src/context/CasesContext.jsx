@@ -5,6 +5,7 @@ import React, {
   useContext,
   useMemo,
   useState,
+  useEffect,
 } from 'react';
 import * as XLSX from 'xlsx';
 import { fetchCases as apiFetchCases, importXLSX as apiImportXLSX, createCase as apiCreateCase, deleteCaseApi as apiDeleteCase } from '../api';
@@ -661,6 +662,29 @@ export const CasesProvider = ({ children }) => {
     rows: backfillCaseCollection(dataset.rows || []),
   })));
 
+  // Preferred value language persisted to localStorage. Default to Arabic 'ar'.
+  const [valueLang, setValueLang] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const v = window.localStorage.getItem('preferredValueLanguage');
+        return v || 'ar';
+      }
+    } catch (e) {
+      // ignore
+    }
+    return 'ar';
+  });
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('preferredValueLanguage', valueLang);
+      }
+    } catch (e) {
+      // ignore persistence errors
+    }
+  }, [valueLang]);
+
   // Create staffDirectory from users
   const staffDirectory = useMemo(() => 
     users.map(user => ({
@@ -1240,6 +1264,8 @@ export const CasesProvider = ({ children }) => {
     updateCase,
     reloadCases,
     retryFailedRows,
+    valueLang,
+    setValueLang,
   }), [cases, datasets, importDataset, deleteDatasets, deleteCases, updateCase, staffDirectory]);
 
   return (

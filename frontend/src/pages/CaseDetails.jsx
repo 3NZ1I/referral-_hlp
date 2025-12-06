@@ -14,7 +14,7 @@ import {
   Avatar,
   Tooltip,
 } from 'antd';
-import { EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { EditOutlined, SaveOutlined, CloseOutlined, GlobalOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCases } from '../context/CasesContext';
 import { useAuth } from '../context/AuthContext';
@@ -73,9 +73,11 @@ const CaseDetails = () => {
     updateCase,
     staffDirectory = [],
     reloadCases,
+    valueLang,
+    setValueLang,
   } = useCases();
   const { currentUser, canSeeHiddenFields } = useAuth();
-  const [valueLang, setValueLang] = useState('en');
+  // Preferred value language stored in context (default 'ar')
 
   const caseRecord = useMemo(() => cases.find((row) => row.key === id), [cases, id]);
   const [statusValue, setStatusValue] = useState(caseRecord?.status || 'Pending');
@@ -642,9 +644,14 @@ const CaseDetails = () => {
               Detailed capture of the intake form using the latest metadata schema.
             </Paragraph>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Select value={valueLang} onChange={(v) => setValueLang(v)} style={{ width: 120 }}>
-                <Select.Option value="en">Values: English</Select.Option>
-                <Select.Option value="ar">Values: Arabic</Select.Option>
+              <GlobalOutlined style={{ fontSize: 16, color: '#777' }} />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ fontSize: 12, color: '#666' }}>Preferred value language</div>
+                <div style={{ fontSize: 11, color: '#888' }}><span style={{ fontWeight: 600 }}>{valueLang === 'ar' ? 'عربي' : 'English'}</span></div>
+              </div>
+              <Select value={valueLang} onChange={(v) => { setValueLang(v); try { localStorage.setItem('preferredValueLanguage', v); window.location.reload(); } catch (e) {} }} style={{ width: 160 }}>
+                <Select.Option value="ar">Arabic (العربية)</Select.Option>
+                <Select.Option value="en">English</Select.Option>
               </Select>
             </div>
           </div>
