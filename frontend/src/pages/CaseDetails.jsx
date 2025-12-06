@@ -474,7 +474,21 @@ const CaseDetails = () => {
       en: formatLabel(headerNoteField?.label?.en, 'Please enter family member information'),
     };
 
-    const rows = rosterSlots
+    // If formFields.family array exists, build rows from the array (legacy n8n or Kobo roster arrays)
+    const ffFamily = (caseRecord.formFields && caseRecord.formFields.family) || (caseRecord.raw && caseRecord.raw.family);
+    const rows = Array.isArray(ffFamily) ? ffFamily.map((member, memberIndex) => {
+      const slot = memberIndex + 1;
+      return {
+        key: slot,
+        slotLabel: slot,
+        relation: member.relation || member.relationship || member.relation1 || '',
+        govreg: member.govreg || '',
+        name: member.name || member.beneficiary_name || '',
+        lastName: member.lastname || member.last_name || member.family_name || '',
+        birthDate: member.birthDate || member.birthday || member.date_of_birth || '',
+        nationality: member.nationality || '',
+      };
+    }).filter(Boolean) : rosterSlots
       .map((slot, slotIndex) => {
         const prefix = `group_fj2tt69_partnernu1_${slot}_partner`;
         const relationKey = `${prefix}_relation1`;

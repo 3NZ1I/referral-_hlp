@@ -272,6 +272,16 @@ def _promote_wrapper_fields_in_raw(raw: dict) -> dict:
             # promote nested formFields if present
             if body.get('formFields') is not None and raw.get('formFields') is None:
                 raw['formFields'] = body.get('formFields')
+            # if body contains a family roster array and formFields doesn't, promote it to formFields.family
+            if raw.get('formFields') is None and any(body.get(alias) is not None for alias in roster_aliases):
+                # pick first alias found and use for family roster
+                for alias in roster_aliases:
+                    if body.get(alias) is not None:
+                        try:
+                            raw['formFields'] = {'family': body.get(alias)}
+                        except Exception:
+                            raw['formFields'] = {'family': list(body.get(alias))}
+                        break
             # category aliases
             category_aliases = ['law_followup','eng_followup','category','case_category','caseCategory','law_followup1','law_followup3','law_followup4','law_followup5']
             for alias in category_aliases:

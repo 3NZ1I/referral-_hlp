@@ -111,3 +111,38 @@ def test_create_case_moves_submission_time_to_top_level(client):
     assert res4.status_code == 201
     body4 = res4.json()
     assert body4['raw'].get('_submission_time') == '2024-01-03T08:30:00Z'
+
+def test_create_case_promotes_family_to_formfields(client):
+    payload = {'username': 'svcuserfam', 'email': 'svcfam@example.com', 'password': 'StrongPass1!'}
+    res_reg = client.post('/auth/register', json=payload)
+    token = res_reg.json().get('token')
+    headers = {'Authorization': f'Bearer {token}'}
+    # nested payload with family
+    kobo_payload = {
+        'title': 'Kobo Family',
+        'raw': {
+            'body': {
+                'family': [{'name': 'Member1', 'relation': 'child'}],
+                'caseNumber': 'FAM-001',
+                '_submission_time': '2024-04-01T10:00:00Z',
+                'category': 'law_followup4'
+            },
+            '_uuid': 'fam-uuid-1'
+        }
+    }
+    res = client.post('/cases', json=kobo_payload, headers=headers)
+    assert res.status_code == 201
+    created = res.json()
+    assert created['raw'].get('caseNumber') == 'FAM-001'
+    assert created['raw'].get('_submission_time') == '2024-04-01T10:00:00Z'
+    # GET /cases should show formFields.family promoted
+    all_cases = client.get('/cases', headers=headers).json()
+    found = None
+    for item in all_cases:
+        if item['title'] == 'Kobo Family':
+            found = item
+            break
+    assert found is not None
+    assert 'formFields' in found['raw'] and found['raw']['formFields'].get('family') is not None
+    # Category promotion
+    assert found['raw'].get('category') == 'law_followup4'

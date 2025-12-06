@@ -65,4 +65,7 @@ def test_get_case_after_migration_is_flattened(client):
     assert found is not None
     assert found['raw'].get('caseNumber') == 'MIG-333'
     assert found['raw'].get('_submission_time') == '2024-01-04T12:00:00Z'
+    # Ensure family roster is promoted to formFields.family for UI rendering
+    assert 'formFields' in found['raw'] and isinstance(found['raw']['formFields'], dict)
+    assert found['raw']['formFields'].get('family') is not None
     db.close()

@@ -366,6 +366,15 @@ const backfillFormFields = (caseItem) => {
   
   // Backfill complete
   
+  // If raw has a direct family roster array (e.g., raw.family) and we didn't map it yet, ensure it populates formFields.family
+  try {
+    if ((!mergedFields || Object.keys(mergedFields).length === 0) && caseItem.raw && (caseItem.raw.family || caseItem.raw.formFields && caseItem.raw.formFields.family)) {
+      mergedFields.family = caseItem.raw.formFields && caseItem.raw.formFields.family ? caseItem.raw.formFields.family : caseItem.raw.family;
+    }
+  } catch (e) {
+    // ignore any errors
+  }
+
   return { ...caseItem, formFields: mergedFields };
 };
 
