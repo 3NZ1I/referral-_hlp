@@ -562,6 +562,7 @@ export const CasesProvider = ({ children }) => {
         notes: c.description || c.raw?.extra_note || '',
         title: c.title || c.raw?.beneficiary_name || '',
         id: c.id,
+        source: (c.raw && (c.raw.kobo_case_id || c.raw.kobo_caseNumber || c.raw.kobo__id)) ? 'kobo' : 'server',
         raw: c.raw || c,
         created_at: c.created_at || (c.raw && (c.raw._submission_time || c.raw.submissiontime)) || undefined,
         updated_at: c.updated_at || (c.raw && (c.raw._last_edited || c.raw._updated)) || undefined,
