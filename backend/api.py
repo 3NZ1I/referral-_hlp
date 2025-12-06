@@ -195,9 +195,13 @@ def validate_password_strength(password: str) -> bool:
     return has_lower and has_upper and (has_digit or has_symbol)
 
 
-def create_token(payload: dict):
+def create_token(payload: dict, exp_minutes: int | None = None):
+    """Create a JWT token with an optional custom expiry (in minutes).
+    If exp_minutes is None, defaults to JWT_EXP_MINUTES from env.
+    """
     to_encode = payload.copy()
-    to_encode.update({"exp": datetime.utcnow() + timedelta(minutes=JWT_EXP_MINUTES)})
+    minutes = JWT_EXP_MINUTES if exp_minutes is None else int(exp_minutes)
+    to_encode.update({"exp": datetime.utcnow() + timedelta(minutes=minutes)})
     return jwt.encode(to_encode, JWT_SECRET, algorithm="HS256")
 
 
@@ -911,8 +915,26 @@ def on_startup():
 @app.post("/auth/token")
 def issue_token(payload: dict):
     # payload can include {"sub": "n8n", "role": "system"}
+    # Keep legacy behavior (simple token creation for debugging) - default expiry
     token = create_token(payload)
     return {"token": token}
+
+
+@app.post("/auth/generate")
+def generate_token(payload: dict, user=Depends(require_auth)):
+    """Generate a token for a given payload. Requires admin authorization.
+    Accepts optional 'exp_minutes' in payload to set token TTL. Returns the signed token and expiry (minutes).
+    """
+    if not is_admin_user(user):
+        raise HTTPException(status_code=403, detail="Admin privileges required to generate tokens")
+    sub = payload.get('sub', 'n8n')
+    role = payload.get('role', 'system')
+    exp_minutes = payload.get('exp_minutes', None)
+    token_payload = {"sub": sub, "role": role}
+    if 'user_id' in payload:
+        token_payload['user_id'] = payload.get('user_id')
+    token = create_token(token_payload, exp_minutes=exp_minutes)
+    return {"token": token, "expires_in_minutes": JWT_EXP_MINUTES if exp_minutes is None else int(exp_minutes)}
 
 # Registration endpoint (no auth required - first user setup)
 @app.post("/auth/register")

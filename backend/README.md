@@ -37,9 +37,24 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Testing the API changes
 
-- To test Resolve comment validation:
 	1. Create a case or locate one in the DB.
 	2. Attempt to `PUT /cases/{id}` with a payload that sets `status` to `Completed` but omit `resolve_comment`. The server should respond 400 with a message that `resolve_comment` is required.
 	3. Re-run with `resolve_comment` included; the update should succeed and create a comment record.
 
----
+
+## Admin token generator
+
+To create tokens for automation tools (for example n8n) without exposing user passwords, use the secure admin-only endpoint:
+
+- POST /auth/generate (requires an admin Bearer token)
+
+Example:
+```bash
+curl -X POST https://api.bessar.work/auth/generate \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -d '{"sub":"n8n","role":"system","exp_minutes":525600}'
+```
+
+This will return a JSON object like `{ "token": "<JWT>" }`. Store this in n8n's HTTP Header Auth as `Authorization: Bearer <JWT>`.
+
