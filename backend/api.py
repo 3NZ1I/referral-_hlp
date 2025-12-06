@@ -275,7 +275,69 @@ def get_case(case_id: int, db: Session = Depends(get_db), user=Depends(optional_
 
 @app.post("/cases", response_model=CaseRead, status_code=status.HTTP_201_CREATED)
 def create_case(case: CaseCreate, db: Session = Depends(get_db), user=Depends(require_auth)):
-    new_case = Case(**case.dict())
+    # Backed-up original code:
+    # new_case = Case(**case.dict())
+    # Sanitize and normalize incoming payload before creating the case
+    payload = case.dict()
+    raw = payload.get('raw')
+    try:
+        # If raw was received as a JSON string, parse it
+        if isinstance(raw, str) and raw.strip():
+            try:
+                raw = json.loads(raw)
+            except Exception:
+                # keep the raw string in a 'body' key if not JSON
+                raw = {'body': raw}
+        # If raw contains `body` that is stringified JSON, parse it
+        if isinstance(raw, dict) and isinstance(raw.get('body'), str):
+            try:
+                raw['body'] = json.loads(raw['body'])
+            except Exception:
+                pass
+    except Exception:
+        raw = payload.get('raw')
+    payload['raw'] = raw
+    # If the raw appears to be a wrapper with headers and nested body, flatten it so the real data is accessible
+    try:
+        if isinstance(raw, dict) and 'headers' in raw and isinstance(raw.get('body'), dict) and len(raw) <= 2:
+            flattened = dict(raw.get('body'))
+            flattened['headers'] = raw.get('headers')
+            # move any kobo_* fields to flattened
+            if raw.get('kobo_case_id'):
+                flattened['kobo_case_id'] = raw.get('kobo_case_id')
+            raw = flattened
+            payload['raw'] = raw
+    except Exception:
+        pass
+
+    # Compute title if missing or unhelpful (e.g. 'Kobo Submission')
+    title = payload.get('title') or ''
+    def _first_nonempty(*vals):
+        for v in vals:
+            if v is None:
+                continue
+            if isinstance(v, str) and v.strip() == '':
+                continue
+            return v
+        return None
+    # Try to find case number in various known locations
+    case_number = None
+    if isinstance(raw, dict):
+        case_number = _first_nonempty(
+            raw.get('case_number'),
+            raw.get('caseNumber'),
+            (raw.get('body') or {}).get('case_number') if isinstance(raw.get('body'), dict) else None,
+            payload.get('caseNumber')
+        )
+    # If title is blank or default value, prefer case_number or beneficiary name
+    if not title or title.strip() == '' or title.strip().lower() == 'kobo submission':
+        if case_number:
+            title = str(case_number)
+        else:
+            beneficiary = _first_nonempty((raw or {}).get('beneficiary_name'), (raw or {}).get('name'))
+            title = str(beneficiary) if beneficiary else (payload.get('title') or f'Kobo {raw.get("_uuid") if raw and isinstance(raw, dict) else "submission"}')
+    payload['title'] = title
+    new_case = Case(**payload)
     db.add(new_case)
     db.commit()
     db.refresh(new_case)
@@ -289,6 +351,52 @@ def update_case(case_id: int, case: CaseUpdate, db: Session = Depends(get_db), u
         raise HTTPException(status_code=404, detail="Case not found")
     # enforce resolve comment when changing status to resolved states
     payload = case.dict(exclude_unset=True)
+    # Sanitize raw if present in payload
+    raw_payload = payload.get('raw')
+    if raw_payload is not None:
+        try:
+            if isinstance(raw_payload, str) and raw_payload.strip():
+                try:
+                    raw_payload = json.loads(raw_payload)
+                except Exception:
+                    raw_payload = {'body': raw_payload}
+            if isinstance(raw_payload, dict) and isinstance(raw_payload.get('body'), str):
+                try:
+                    raw_payload['body'] = json.loads(raw_payload['body'])
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        payload['raw'] = raw_payload
+    # If the title provided was a generic Kobo placeholder, try to set a useful title
+    if 'title' in payload:
+        t = payload.get('title') or ''
+        if t.strip().lower() == 'kobo submission' or t.strip() == '':
+            # find a case number in raw or body
+            raw = payload.get('raw')
+            def _first_nonempty(*vals):
+                for v in vals:
+                    if v is None:
+                        continue
+                    if isinstance(v, str) and v.strip() == '':
+                        continue
+                    return v
+                return None
+            if isinstance(raw, dict):
+                case_number = _first_nonempty(raw.get('case_number'), raw.get('caseNumber'), (raw.get('body') or {}).get('case_number') if isinstance(raw.get('body'), dict) else None)
+                if case_number:
+                    payload['title'] = str(case_number)
+    # Flatten wrapper-style raw if needed
+    raw_upd = payload.get('raw')
+    try:
+        if isinstance(raw_upd, dict) and 'headers' in raw_upd and isinstance(raw_upd.get('body'), dict) and len(raw_upd) <= 2:
+            flattened = dict(raw_upd.get('body'))
+            flattened['headers'] = raw_upd.get('headers')
+            if raw_upd.get('kobo_case_id'):
+                flattened['kobo_case_id'] = raw_upd.get('kobo_case_id')
+            payload['raw'] = flattened
+    except Exception:
+        pass
     new_status = payload.get('status')
     resolved_states = ['Completed', 'Closed']
     if new_status and new_status in resolved_states and new_status != (db_case.status or ''):

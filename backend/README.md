@@ -21,6 +21,9 @@ If you are developing a production application, we recommend using TypeScript wi
 - Resolve comment requirement: When making a `PUT /cases/{id}` request that changes a case's status to a resolved state (e.g. `Completed`, `Closed`), include a `resolve_comment` field in the JSON payload. The server validates that `resolve_comment` is present when updating to a resolved state and will return a 400 if missing.
 ### Fix: Empty email normalization
 - The server now normalizes empty string emails to `null` before returning users/cases to avoid Pydantic `EmailStr` validation errors which could result in a 500 Internal Server Error in the UI.
+### Incoming webhook payload parsing and title handling
+- When creating or updating cases, the backend now attempts to parse and normalize the incoming `raw` field if it is a string or a wrapped webhook payload (e.g., `{ headers: {...}, body: {...} }`). It parses stringified JSON and flattens the nested `body` to make form fields accessible to the application.
+- If the `title` is missing or a generic placeholder (e.g., 'Kobo Submission'), the API will try to derive a sensible title by looking for `case_number`, `caseNumber` or `body.case_number` fields inside `raw`, and will fall back to beneficiary name or UUID.
 ### Relax response email validation
 - The API response model for users (`UserRead`) now allows any string for `email` (i.e., not strictly validated by `EmailStr`) to avoid 500 errors when sysadmin-created accounts or legacy records include non-standard/reserved domains such as `admin@hlp.local`.
 - Input validation for `POST /users` and `PUT /users/{id}` still uses `EmailStr` to validate user-provided emails.
