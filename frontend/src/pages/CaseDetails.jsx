@@ -484,7 +484,7 @@ const CaseDetails = () => {
     const ffFamily = (caseRecord.formFields && caseRecord.formFields.family) || (caseRecord.raw && caseRecord.raw.family);
     const rows = Array.isArray(ffFamily) ? ffFamily.map((member, memberIndex) => {
       const slot = (member && member.slot) || (memberIndex + 1);
-      return {
+      const obj = {
         key: slot,
         slotLabel: slot,
         relation: (() => {
@@ -543,6 +543,11 @@ const CaseDetails = () => {
           }
         })(),
       };
+      // Only return rows with at least one non-empty roster field (exclude slotLabel)
+      const hasData = rosterColumns
+        .filter((column) => column.key !== 'slotLabel')
+        .some((column) => (obj[column.key] !== undefined && obj[column.key] !== '' && obj[column.key] !== null));
+      return hasData ? obj : null;
     }).filter(Boolean) : rosterSlots
       .map((slot, slotIndex) => {
         const prefix = `group_fj2tt69_partnernu1_${slot}_partner`;
@@ -607,7 +612,7 @@ const CaseDetails = () => {
                         const cellContent = column.key === 'slotLabel'
                           ? (
                               <div className="roster-table__slot">
-                                <span className="roster-table__slot-number">{String(value).padStart(2, '0')}</span>
+                                {/* Do not display the numeric slot number for either file or server cases; only show the label */}
                                 <span className="roster-table__slot-text roster-table__slot-text-ar">{column.label.ar}</span>
                                 <span className="roster-table__slot-text">{column.label.en}</span>
                               </div>
