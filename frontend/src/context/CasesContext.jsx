@@ -9,7 +9,7 @@ import React, {
 import * as XLSX from 'xlsx';
 import { fetchCases as apiFetchCases, importXLSX as apiImportXLSX, createCase as apiCreateCase, deleteCaseApi as apiDeleteCase } from '../api';
 import { message } from 'antd';
-import { formSections, caseFieldMapping } from '../data/formMetadata';
+import { formSections, caseFieldMapping, selectOptions } from '../data/formMetadata';
 import { useAuth } from './AuthContext';
 import { validateXlsxFile } from '../utils/xlsxGuard';
 
@@ -107,23 +107,24 @@ const rosterLabelSuffixIndex = (() => {
 const remapRosterHeader = (rawCell = '') => {
   if (typeof rawCell !== 'string') return null;
   const stripped = stripHtml(rawCell).trim();
-  // match forms like partnernu1_7_1-... or partnernu1_7_1 - ...
-  let match = stripped.match(/(partnernu1_[^\s-]+)[\s-]+(.+)/i);
-  // fallback: match slot notation anywhere like '7_1 First name' or 'First name 7_1'
-  if (!match) match = stripped.match(/(\d+(?:_\d+)+)[\s-]+(.+)/i) || stripped.match(/(.+?)[\s-]+(\d+(?:_\d+)+)/i);
-  if (!match) return null;
-  // match will have the slot in either position (1 or 2); determine which one contains digits
-  let slotPart = match[1];
-  let labelPart = match[2];
-  if (!/\d/.test(slotPart) && /\d/.test(labelPart)) {
-    // swap
-    const tmp = slotPart; slotPart = labelPart; labelPart = tmp;
+  const norm = normalizeKey(stripped);
+  // If header already includes the canonical group prefix, normalize and return
+  const existingMatch = norm.match(/group_fj2tt69_partnernu1_(\d+(?:_\d+)*)_([a-z0-9_]+)/i);
+  if (existingMatch) {
+    return `group_fj2tt69_${existingMatch[1]}_${existingMatch[2]}`;
   }
-  slotPart = slotPart.replace(/\s+/g, '');
-  labelPart = labelPart.replace(/[_*]/g, '').trim();
-  const suffix = rosterLabelSuffixIndex[normalizeKey(labelPart)];
-  if (!suffix) return null;
-  return `group_fj2tt69_${slotPart}${suffix}`;
+  // Find slot pattern anywhere in the header
+  const slotMatch = norm.match(/(\d+(?:_\d+)*)/);
+  const slot = slotMatch ? slotMatch[1] : null;
+  // find label part by checking known roster label suffix index entries included in the header
+  let foundSuffix = null;
+  Object.keys(rosterLabelSuffixIndex).forEach((label) => {
+    if (norm.includes(normalizeKey(label)) && !foundSuffix) {
+      foundSuffix = rosterLabelSuffixIndex[normalizeKey(label)];
+    }
+  });
+  if (!foundSuffix || !slot) return null;
+  return `group_fj2tt69_${slot}${foundSuffix}`;
 };
 
 const buildAliasIndex = (sections = []) => {
@@ -496,7 +497,27 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
       value = normalizedRow[field];
     }
     if (value && value !== '') {
-      category = value;
+      // Map option value to human-friendly label using selectOptions if possible
+      try {
+        const optionKey = (() => {
+          // find field definition by name in formSections
+          for (const s of formSections) {
+            for (const f of s.fields || []) {
+              if (f.name === field) return f.optionsKey || null;
+            }
+          }
+          return null;
+        })();
+        if (optionKey && selectOptions && selectOptions[optionKey]) {
+          const opt = (selectOptions[optionKey] || []).find((o) => o.value === value);
+          if (opt) category = `${opt.label?.en || value}${opt.label?.ar ? ` / ${opt.label.ar}` : ''}`;
+          else category = value;
+        } else {
+          category = value;
+        }
+      } catch (e) {
+        category = value;
+      }
       break;
     }
   }
