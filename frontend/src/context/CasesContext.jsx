@@ -414,6 +414,8 @@ const backfillFormFields = (caseItem) => {
           const mapped = mapSuffixToField(suffix) || suffix;
           if (val !== undefined && val !== null && val !== '') obj[mapped] = val;
         });
+        // retain the slot for later rendering (slot name like '7_1')
+        obj.slot = slot;
         return Object.keys(obj).length ? obj : null;
       }).filter(Boolean);
       if (rosterArr.length) {
@@ -512,6 +514,8 @@ const buildCaseRecord = (normalizedRow, datasetKey, datasetName, index, defaultA
     updated_at: normalizedRow.updated_at || normalizedRow._last_edited || normalizedRow._updated || normalizedRow._submission_time || undefined,
     raw: normalizedRow,
     formFields: canonicalFields,
+    // Source: 'file' for local XLSX uploads; 'server' for backend cases; set datasetKey so callers can detect
+    source: (datasetKey === 'server' ? 'server' : 'file'),
     // roster family data is kept under `formFields.family` for rendering in details; do not expose a family size in the case list
   };
 };

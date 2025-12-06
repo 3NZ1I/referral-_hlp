@@ -477,16 +477,65 @@ const CaseDetails = () => {
     // If formFields.family array exists, build rows from the array (legacy n8n or Kobo roster arrays)
     const ffFamily = (caseRecord.formFields && caseRecord.formFields.family) || (caseRecord.raw && caseRecord.raw.family);
     const rows = Array.isArray(ffFamily) ? ffFamily.map((member, memberIndex) => {
-      const slot = memberIndex + 1;
+      const slot = (member && member.slot) || (memberIndex + 1);
       return {
         key: slot,
         slotLabel: slot,
-        relation: member.relation || member.relationship || member.relation1 || '',
-        govreg: member.govreg || '',
-        name: member.name || member.beneficiary_name || '',
-        lastName: member.lastname || member.last_name || member.family_name || '',
-        birthDate: member.birthDate || member.birthday || member.date_of_birth || '',
-        nationality: member.nationality || '',
+        relation: (() => {
+          // If we have a slot and a field def, format select labels using form metadata
+          try {
+            const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_relation1`;
+            const fieldDef = getFieldDef(fieldName);
+            return formatFieldValue(member.relation || member.relationship || member.relation1 || '', fieldDef);
+          } catch (e) {
+            return member.relation || member.relationship || member.relation1 || '';
+          }
+        })(),
+        govreg: (() => {
+          try {
+            const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_govreg`;
+            const fieldDef = getFieldDef(fieldName);
+            return formatFieldValue(member.govreg || '', fieldDef);
+          } catch (e) {
+            return member.govreg || '';
+          }
+        })(),
+        name: (() => {
+          try {
+            const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_name`;
+            const fieldDef = getFieldDef(fieldName);
+            return formatFieldValue(member.name || member.beneficiary_name || '', fieldDef);
+          } catch (e) {
+            return member.name || member.beneficiary_name || '';
+          }
+        })(),
+        lastName: (() => {
+          try {
+            const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_lastname`;
+            const fieldDef = getFieldDef(fieldName);
+            return formatFieldValue(member.lastname || member.last_name || member.family_name || '', fieldDef);
+          } catch (e) {
+            return member.lastname || member.last_name || member.family_name || '';
+          }
+        })(),
+        birthDate: (() => {
+          try {
+            const fieldName = `group_fj2tt69_partnernu1_${slot}_partner`;
+            const fieldDef = getFieldDef(fieldName);
+            return formatFieldValue(member.birthDate || member.birthday || member.date_of_birth || '', fieldDef);
+          } catch (e) {
+            return member.birthDate || member.birthday || member.date_of_birth || '';
+          }
+        })(),
+        nationality: (() => {
+          try {
+            const fieldName = `group_fj2tt69_partnernu1_${slot}_partner_nationality`;
+            const fieldDef = getFieldDef(fieldName);
+            return formatFieldValue(member.nationality || '', fieldDef);
+          } catch (e) {
+            return member.nationality || '';
+          }
+        })(),
       };
     }).filter(Boolean) : rosterSlots
       .map((slot, slotIndex) => {
